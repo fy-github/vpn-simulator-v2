@@ -1,6 +1,7 @@
 # VPN Simulator v2
 
 Multi-protocol VPN Server Simulator with modern Web UI — supports **8 VPN protocols** for teaching, testing, and security research.
+![Uploading image.png…]()
 
 ## Features
 
