@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import { useEffect, useState, useCallback, useRef } from 'react'
 
-import { ConnectionIcon, ProtocolIcon, ClockIcon, VendorCLIIcon, PlayIcon, StopIcon, RefreshCwIcon } from '../components/Icons'
+import { ConnectionIcon, ProtocolIcon, ClockIcon, VendorCLIIcon, PlayIcon, StopIcon, RefreshCwIcon, SettingsIcon, ChevronUpIcon, ChevronDownIcon, EyeIcon, EyeOffIcon } from '../components/Icons'
 import { api } from '../api/client'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/Dialog'
 
 interface ProtocolStatus {
   name: string
@@ -23,11 +24,41 @@ interface SystemStats {
   cpuUsage: number
 }
 
+interface ProtocolPreference {
+  name: string
+  visible: boolean
+  order: number
+}
+
+const STORAGE_KEY = 'dashboard_protocol_prefs'
+
+const loadPreferences = (protocolNames: string[]): ProtocolPreference[] => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored) as ProtocolPreference[]
+      const storedNames = new Set(parsed.map(p => p.name))
+      const newProtocols = protocolNames.filter(n => !storedNames.has(n))
+      return [
+        ...parsed.filter(p => protocolNames.includes(p.name)),
+        ...newProtocols.map((name, i) => ({ name, visible: true, order: parsed.length + i })),
+      ]
+    }
+  } catch {}
+  return protocolNames.map((name, i) => ({ name, visible: true, order: i }))
+}
+
+const savePreferences = (prefs: ProtocolPreference[]) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs))
+}
+
 const Dashboard = () => {
   const { t } = useTranslation()
   const [protocols, setProtocols] = useState<ProtocolStatus[]>([])
   const [stats, setStats] = useState<SystemStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showSettings, setShowSettings] = useState(false)
+  const [preferences, setPreferences] = useState<ProtocolPreference[]>([])
   const statsRef = useRef<HTMLDivElement>(null)
   const protocolsRef = useRef<HTMLDivElement>(null)
   const actionsRef = useRef<HTMLDivElement>(null)
@@ -45,6 +76,16 @@ const Dashboard = () => {
       const statsData = statsRes.data as Record<string, unknown> | null
 
       if (Array.isArray(protocolData) && protocolData.length > 0) {
+        const names = protocolData.map(p => (p.name as string || '').toLowerCase())
+        setPreferences(prev => {
+          if (prev.length === 0) {
+            const prefs = loadPreferences(names)
+            savePreferences(prefs)
+            return prefs
+          }
+          return prev
+        })
+
         setProtocols(protocolData.map(p => ({
           name: p.name as string || '',
           status: (p.state as 'running' | 'stopped') || 'stopped',
@@ -83,7 +124,6 @@ const Dashboard = () => {
     return () => clearInterval(interval)
   }, [fetchData])
 
-  // GSAP animations
   useEffect(() => {
     if (!loading) {
       if (statsRef.current) {
@@ -117,6 +157,67 @@ const Dashboard = () => {
     }
   }, [protocols, fetchData])
 
+  const toggleVisibility = (name: string) => {
+    setPreferences(prev => {
+      const updated = prev.map(p =>
+        p.name === name ? { ...p, visible: !p.visible } : p
+      )
+      savePreferences(updated)
+      return updated
+    })
+  }
+
+  const moveUp = (name: string) => {
+    setPreferences(prev => {
+      const idx = prev.findIndex(p => p.name === name)
+      if (idx <= 0) return prev
+      const updated = [...prev]
+      const temp = updated[idx - 1]
+      updated[idx - 1] = { ...updated[idx], order: idx - 1 }
+      updated[idx] = { ...temp, order: idx }
+      savePreferences(updated)
+      return updated
+    })
+  }
+
+  const moveDown = (name: string) => {
+    setPreferences(prev => {
+      const idx = prev.findIndex(p => p.name === name)
+      if (idx >= prev.length - 1) return prev
+      const updated = [...prev]
+      const temp = updated[idx + 1]
+      updated[idx + 1] = { ...updated[idx], order: idx + 1 }
+      updated[idx] = { ...temp, order: idx }
+      savePreferences(updated)
+      return updated
+    })
+  }
+
+  const getOrderedProtocols = (): ProtocolStatus[] => {
+    const sorted = [...preferences].sort((a, b) => a.order - b.order)
+    const protocolMap = new Map(protocols.map(p => [p.name.toLowerCase(), p]))
+    return sorted
+      .filter(p => p.visible)
+      .map(p => protocolMap.get(p.name))
+      .filter((p): p is ProtocolStatus => p !== undefined)
+  }
+
+  const showAll = () => {
+    setPreferences(prev => {
+      const updated = prev.map(p => ({ ...p, visible: true }))
+      savePreferences(updated)
+      return updated
+    })
+  }
+
+  const hideAll = () => {
+    setPreferences(prev => {
+      const updated = prev.map(p => ({ ...p, visible: false }))
+      savePreferences(updated)
+      return updated
+    })
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -135,6 +236,8 @@ const Dashboard = () => {
         return 'secondary'
     }
   }
+
+  const orderedProtocols = getOrderedProtocols()
 
   return (
     <div className="space-y-6">
@@ -203,31 +306,43 @@ const Dashboard = () => {
       {/* Protocol Status Grid */}
       <Card ref={protocolsRef}>
         <CardHeader className="border-b">
-          <CardTitle>{t('dashboard.protocolStatus')}</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>{t('dashboard.protocolStatus')}</CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => setShowSettings(true)}>
+              <SettingsIcon className="w-4 h-4 mr-2" />
+              {t('dashboard.customize', '自定义')}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {protocols.map((protocol) => (
-              <Card key={protocol.name} variant="hover" className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold">{protocol.name}</h4>
-                  <Badge variant={statusVariant(protocol.status)}>
-                    {protocol.status}
-                  </Badge>
-                </div>
-                <div className="space-y-2 text-sm text-muted-foreground">
-                  <div className="flex justify-between">
-                    <span>{t('dashboard.port')}</span>
-                    <span className="font-mono text-foreground">{protocol.port}</span>
+          {orderedProtocols.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {t('dashboard.noProtocolsVisible', '没有可见的协议。点击"自定义"按钮添加。')}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {orderedProtocols.map((protocol) => (
+                <Card key={protocol.name} variant="hover" className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold">{protocol.name}</h4>
+                    <Badge variant={statusVariant(protocol.status)}>
+                      {protocol.status}
+                    </Badge>
                   </div>
-                  <div className="flex justify-between">
-                    <span>{t('dashboard.connections')}</span>
-                    <span className="font-mono text-foreground">{protocol.connections}</span>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="flex justify-between">
+                      <span>{t('dashboard.port')}</span>
+                      <span className="font-mono text-foreground">{protocol.port}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>{t('dashboard.connections')}</span>
+                      <span className="font-mono text-foreground">{protocol.connections}</span>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                </Card>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -253,6 +368,65 @@ const Dashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Settings Dialog */}
+      <Dialog open={showSettings} onClose={() => setShowSettings(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('dashboard.customizeProtocols', '自定义协议显示')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-muted-foreground">
+                {t('dashboard.dragToReorder', '拖拽排序，点击眼睛图标控制显示')}
+              </p>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="sm" onClick={showAll}>显示全部</Button>
+                <Button variant="ghost" size="sm" onClick={hideAll}>隐藏全部</Button>
+              </div>
+            </div>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {preferences.map((pref, index) => (
+                <div
+                  key={pref.name}
+                  className="flex items-center gap-3 p-3 rounded-lg border bg-muted"
+                >
+                  <div className="flex flex-col gap-1">
+                    <button
+                      onClick={() => moveUp(pref.name)}
+                      disabled={index === 0}
+                      className="p-1 hover:bg-background rounded disabled:opacity-30"
+                    >
+                      <ChevronUpIcon className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => moveDown(pref.name)}
+                      disabled={index === preferences.length - 1}
+                      className="p-1 hover:bg-background rounded disabled:opacity-30"
+                    >
+                      <ChevronDownIcon className="w-3 h-3" />
+                    </button>
+                  </div>
+                  <div className="flex-1">
+                    <span className="font-medium">{pref.name.toUpperCase()}</span>
+                  </div>
+                  <button
+                    onClick={() => toggleVisibility(pref.name)}
+                    className="p-2 hover:bg-background rounded transition-colors"
+                    title={pref.visible ? '点击隐藏' : '点击显示'}
+                  >
+                    {pref.visible ? (
+                      <EyeIcon className="w-4 h-4 text-primary" />
+                    ) : (
+                      <EyeOffIcon className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
