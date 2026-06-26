@@ -20,9 +20,14 @@ _VALID_PROTOCOLS = ["pptp", "l2tp", "openvpn", "ipsec", "ikev2", "wireguard"]
 _VALID_TIME_RANGES = ["1m", "5m", "15m", "1h"]
 
 
+_metrics_service = None
+
 def _get_service():
-    from vpn_simulator.services.metrics import MetricsService
-    return MetricsService()
+    global _metrics_service
+    if _metrics_service is None:
+        from vpn_simulator.services.metrics import MetricsService
+        _metrics_service = MetricsService()
+    return _metrics_service
 
 
 def _validate_protocol(protocol: Optional[str]) -> Optional[str]:

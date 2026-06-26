@@ -98,7 +98,12 @@ class MetricsService:
 
     def __init__(self) -> None:
         self._start_time = time.time()
-        self._last_net_bytes = (0, 0)
+        try:
+            import psutil
+            counters = psutil.net_io_counters()
+            self._last_net_bytes = (counters.bytes_sent, counters.bytes_recv)
+        except (ImportError, Exception):
+            self._last_net_bytes = (0, 0)
         self._last_net_time = time.time()
 
     def _get_real_network_throughput(self) -> float:
