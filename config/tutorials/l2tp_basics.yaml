@@ -1,0 +1,76 @@
+name: "L2TP 基础教程"
+protocol: l2tp
+description: "学习 L2TP 协议的完整握手流程，包括控制连接建立、会话建立和 PPP 协商。"
+difficulty: beginner
+estimated_time: 15
+
+steps:
+  - title: "发送 SCCRQ"
+    description: "客户端发起控制连接请求（Start-Control-Connection-Request）。L2TP 使用 UDP 1701 端口，SCCRQ 是控制通道建立的第一步。"
+    packet_info: "SCCRQ 报文包含：协议版本号、隧道 ID（客户端分配）、会话 ID、Framing Capabilities（异步/同步）、Bearer Capabilities（模拟/数字）、Tie Breaker（可选，用于冲突解决）、Firmware Revision、Host Name、Vendor Name。"
+    rfc_reference: "RFC 2661 Section 3.1"
+    expected_state: "WAIT_SCCRP"
+    hint: "L2TP 使用 UDP 协议，端口 1701。隧道 ID 用于标识控制连接。"
+
+  - title: "接收 SCCRP"
+    description: "服务端响应控制连接回复（Start-Control-Connection-Reply）。服务端验证客户端能力，分配自己的隧道 ID。"
+    packet_info: "SCCRP 报文包含：协议版本号、隧道 ID（服务端分配）、对端隧道 ID（客户端的隧道 ID）、Result Code、Error Code、Framing Capabilities、Bearer Capabilities、Firmware Revision、Host Name、Vendor Name。"
+    rfc_reference: "RFC 2661 Section 3.2"
+    expected_state: "SCCRP_RECEIVED"
+    hint: "服务端和客户端各自分配隧道 ID，后续通信使用对方的隧道 ID。"
+
+  - title: "发送 SCCCN"
+    description: "客户端发送控制连接完成（Start-Control-Connection-Connected）。客户端确认收到 SCCRP，控制连接正式建立。"
+    packet_info: "SCCCN 报文包含：协议版本号、隧道 ID、对端隧道 ID。此时 L2TP 控制通道进入 Established 状态，可以进行会话管理。"
+    rfc_reference: "RFC 2661 Section 3.3"
+    expected_state: "CONTROL_CONNECTED"
+    hint: "SCCCN 发送后，L2TP 控制连接建立完成。"
+
+  - title: "发送 ICRQ"
+    description: "客户端发起入站呼叫请求（Incoming-Call-Request）。客户端请求建立一个会话来承载 PPP 数据。"
+    packet_info: "ICRQ 报文包含：会话 ID（客户端分配）、对端隧道 ID、Call Serial Number、Bearer Type、Framing Type、Called Number、Calling Number、Sub-Address。"
+    rfc_reference: "RFC 2661 Section 3.4"
+    expected_state: "WAIT_ICRP"
+    hint: "ICRQ 中的会话 ID 用于标识隧道内的具体会话。"
+
+  - title: "接收 ICRP"
+    description: "服务端响应入站呼叫回复（Incoming-Call-Reply）。服务端分配自己的会话 ID，同意建立会话。"
+    packet_info: "ICRP 报文包含：会话 ID（服务端分配）、对端会话 ID（客户端的会话 ID）、Result Code、Error Code、Framing Type。"
+    rfc_reference: "RFC 2661 Section 3.5"
+    expected_state: "ICRP_RECEIVED"
+    hint: "双方都分配了会话 ID，会话参数已协商完成。"
+
+  - title: "发送 ICCN"
+    description: "客户端发送入站呼叫连接完成（Incoming-Call-Connected）。客户端确认收到 ICRP，会话正式建立。"
+    packet_info: "ICCN 报文包含：会话 ID、对端会话 ID、Tx Connect Speed、Framing Type、Called Number、Sub-Address。此时 L2TP 会话进入 Established 状态。"
+    rfc_reference: "RFC 2661 Section 3.6"
+    expected_state: "SESSION_ESTABLISHED"
+    hint: "ICCN 发送后，L2TP 会话建立完成，可以开始 PPP 协商。"
+
+  - title: "LCP 协商"
+    description: "PPP 链路控制协议（Link Control Protocol）协商。LCP 负责建立、配置和测试数据链路连接。"
+    packet_info: "LCP 在 L2TP 隧道内传输，报文类型包括：Configure-Request、Configure-Ack、Configure-Nak、Configure-Reject。协商参数包括 MRU（最大接收单元）、认证协议、Magic Number、ACCM（异步控制字符映射）。"
+    rfc_reference: "RFC 1661"
+    expected_state: "LCP_NEGOTIATED"
+    hint: "LCP 是 PPP 的基础，L2TP 使用 PPP 封装上层协议。"
+
+  - title: "CHAP 认证"
+    description: "使用 Challenge Handshake Authentication Protocol 进行身份验证。L2TP 通常使用 CHAP 或 MS-CHAPv2。"
+    packet_info: "CHAP 流程：(1) 服务端发送 Challenge（包含 ID 和 Challenge Value）；(2) 客户端计算 Response = MD5(ID + Password + Challenge)，发送给服务端；(3) 服务端验证并发送 Success/Failure。"
+    rfc_reference: "RFC 1994"
+    expected_state: "AUTHENTICATED"
+    hint: "CHAP 比 PAP 更安全，密码不以明文传输。"
+
+  - title: "IPCP 协商"
+    description: "IP 控制协议（IP Control Protocol）协商。IPCP 负责配置 IP 层参数。"
+    packet_info: "IPCP 协商选项：IP-Address（客户端 IP 地址）、Primary-DNS-Address、Secondary-DNS-Address、Compression-Type。服务端通过 Configure-Nak 推送 IP 和 DNS 配置。"
+    rfc_reference: "RFC 1332"
+    expected_state: "IPCP_NEGOTIATED"
+    hint: "IPCP 完成后，客户端获得 IP 地址，可以进行网络通信。"
+
+  - title: "隧道建立完成"
+    description: "L2TP VPN 隧道完全建立。PPP 帧通过 L2TP 隧道传输，实现安全通信。"
+    packet_info: "数据流：客户端 IP 包 -> PPP 封装 -> L2TP 封装（添加 L2TP 头部，包含隧道 ID 和会话 ID）-> UDP 封装（端口 1701）-> IP 传输。如果启用了 IPSec，还会进行 ESP 加密封装。"
+    rfc_reference: "RFC 2661 Section 4"
+    expected_state: "TUNNEL_ACTIVE"
+    hint: "恭喜！L2TP 隧道已成功建立。L2TP 通常与 IPSec 结合使用（L2TP/IPSec）以提供加密保护。"

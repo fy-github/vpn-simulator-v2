@@ -1,0 +1,107 @@
+# RFC 文档引用配置
+# 定义各 VPN 协议相关的 RFC 文档
+
+protocols:
+  pptp:
+    name: PPTP
+    full_name: Point-to-Point Tunneling Protocol
+    rfcs:
+      - number: "RFC 2637"
+        title: "Point-to-Point Tunneling Protocol (PPTP)"
+        url: "https://datatracker.ietf.org/doc/html/rfc2637"
+        description: "定义 PPTP 协议规范，包括控制连接管理和 GRE 隧道封装"
+        published: "1999-07"
+        status: "Informational"
+
+  l2tp:
+    name: L2TP
+    full_name: Layer 2 Tunneling Protocol
+    rfcs:
+      - number: "RFC 2661"
+        title: "Layer Two Tunneling Protocol 'L2TP'"
+        url: "https://datatracker.ietf.org/doc/html/rfc2661"
+        description: "定义 L2TPv2 协议规范，包括 LAC 和 LNS 的交互"
+        published: "1999-08"
+        status: "Proposed Standard"
+      - number: "RFC 3931"
+        title: "Layer Two Tunneling Protocol - Version 3 (L2TPv3)"
+        url: "https://datatracker.ietf.org/doc/html/rfc3931"
+        description: "L2TPv3 协议规范，支持 IP 和 UDP 封装"
+        published: "2005-03"
+        status: "Proposed Standard"
+
+  openvpn:
+    name: OpenVPN
+    full_name: OpenVPN Protocol
+    rfcs: []
+    references:
+      - title: "OpenVPN Protocol Specification (Draft)"
+        url: "https://openvpn.net/community-resources/openvpn-protocol/"
+        description: "OpenVPN 协议规范草案，基于 TLS 的 VPN 解决方案"
+      - title: "OpenVPN 2.4 Manual"
+        url: "https://openvpn.net/community-resources/reference-manual-for-openvpn-2-4/"
+        description: "OpenVPN 2.4 官方参考手册"
+
+  ipsec:
+    name: IPSec
+    full_name: Internet Protocol Security
+    rfcs:
+      - number: "RFC 2409"
+        title: "The Internet Key Exchange (IKE)"
+        url: "https://datatracker.ietf.org/doc/html/rfc2409"
+        description: "定义 IKEv1 协议，用于自动建立 IPSec SA"
+        published: "1998-11"
+        status: "Proposed Standard"
+      - number: "RFC 4301"
+        title: "Security Architecture for the Internet Protocol"
+        url: "https://datatracker.ietf.org/doc/html/rfc4301"
+        description: "IPSec 安全架构，定义 AH 和 ESP 协议"
+        published: "2005-12"
+        status: "Draft Standard"
+      - number: "RFC 4303"
+        title: "IP Encapsulating Security Payload (ESP)"
+        url: "https://datatracker.ietf.org/doc/html/rfc4303"
+        description: "ESP 协议规范，提供机密性和完整性保护"
+        published: "2005-12"
+        status: "Draft Standard"
+
+  ikev2:
+    name: IKEv2
+    full_name: Internet Key Exchange Protocol Version 2
+    rfcs:
+      - number: "RFC 7296"
+        title: "Internet Key Exchange Protocol Version 2 (IKEv2)"
+        url: "https://datatracker.ietf.org/doc/html/rfc7296"
+        description: "IKEv2 协议规范，替代 IKEv1，更简洁高效"
+        published: "2014-10"
+        status: "Internet Standard"
+      - number: "RFC 7427"
+        title: "Signature Authentication in the Internet Key Exchange Protocol Version 2 (IKEv2)"
+        url: "https://datatracker.ietf.org/doc/html/rfc7427"
+        description: "IKEv2 签名认证扩展"
+        published: "2015-01"
+        status: "Proposed Standard"
+
+  wireguard:
+    name: WireGuard
+    full_name: WireGuard Protocol
+    rfcs: []
+    references:
+      - title: "WireGuard Protocol Specification"
+        url: "https://www.wireguard.com/protocol/"
+        description: "WireGuard 协议规范，基于 Noise_IKpsk2 框架"
+      - title: "WireGuard Whitepaper"
+        url: "https://www.wireguard.com/papers/wireguard.pdf"
+        description: "WireGuard 白皮书，详细描述协议设计原理"
+
+  sstp:
+    name: SSTP
+    full_name: Secure Socket Tunneling Protocol
+    rfcs: []
+    references:
+      - title: "MS-SSTP Specification"
+        url: "https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-sstp"
+        description: "Microsoft SSTP 协议规范，基于 HTTPS 的 VPN 隧道"
+      - title: "SSTP Protocol Extensions"
+        url: "https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-sstp/5bda0d5e-3f3f-4a8e-8d5e-1f3f3f3f3f3f"
+        description: "SSTP 协议扩展规范"

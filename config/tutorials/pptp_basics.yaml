@@ -1,0 +1,76 @@
+name: "PPTP 基础教程"
+protocol: pptp
+description: "学习 PPTP 协议的完整握手流程，包括控制连接建立、GRE 隧道建立和 PPP 协商。"
+difficulty: beginner
+estimated_time: 15
+
+steps:
+  - title: "发送 SCCRQ"
+    description: "客户端发起控制连接请求（Start-Control-Connection-Request）。这是 PPTP 握手的第一步，客户端向服务端的 1723 端口发送 TCP 连接，并发送 SCCRQ 报文。"
+    packet_info: "SCCRQ 报文包含：协议版本号（通常为 1.0）、帧能力（异步/同步）、承载能力（模拟/数字）、最大通道数、固件版本、主机名、厂商字符串。"
+    rfc_reference: "RFC 2637 Section 3.1"
+    expected_state: "WAIT_SCCRP"
+    hint: "SCCRQ 是 PPTP 控制连接的起点，使用 TCP 1723 端口。"
+
+  - title: "接收 SCCRP"
+    description: "服务端响应控制连接回复（Start-Control-Connection-Reply）。服务端收到 SCCRQ 后，验证客户端能力，返回自己的能力参数。"
+    packet_info: "SCCRP 报文包含：结果代码（成功/通用错误/通道已存在等）、错误代码、协议版本号、帧能力、承载能力、最大通道数、固件版本、主机名、厂商字符串。"
+    rfc_reference: "RFC 2637 Section 3.2"
+    expected_state: "SCCRP_RECEIVED"
+    hint: "如果 SCCRP 返回非成功结果代码，连接将被终止。"
+
+  - title: "发送 SCCCN"
+    description: "客户端发送控制连接完成（Start-Control-Connection-Connected）。客户端确认收到 SCCRP，控制连接正式建立。"
+    packet_info: "SCCCN 报文结构简单，主要包含协议版本号。此时 TCP 控制通道已就绪，可以进行调用管理。"
+    rfc_reference: "RFC 2637 Section 3.3"
+    expected_state: "CONTROL_CONNECTED"
+    hint: "SCCCN 发送后，PPTP 控制连接进入 Established 状态。"
+
+  - title: "发送 OCRQ"
+    description: "客户端发起出站呼叫请求（Outgoing-Call-Request）。客户端请求建立 GRE 隧道来承载 PPP 数据。"
+    packet_info: "OCRQ 报文包含：呼叫 ID（客户端分配）、调用序列号、最小 BPS、最大 BPS、Bearer 类型、帧类型、窗口大小（流量控制窗口大小）、包处理延迟。"
+    rfc_reference: "RFC 2637 Section 3.4"
+    expected_state: "WAIT_OCRP"
+    hint: "呼叫 ID 用于标识 GRE 隧道中的会话。"
+
+  - title: "接收 OCRP"
+    description: "服务端响应出站呼叫回复（Outgoing-Call-Reply）。服务端分配自己的呼叫 ID，同意建立 GRE 隧道。"
+    packet_info: "OCRP 报文包含：呼叫 ID（服务端分配）、对端呼叫 ID（客户端的呼叫 ID）、结果代码、错误代码、Cause Code、连接速度、窗口大小、包处理延迟、通道号。"
+    rfc_reference: "RFC 2637 Section 3.5"
+    expected_state: "GRE_NEGOTIATING"
+    hint: "此时双方都分配了呼叫 ID，GRE 隧道参数已协商完成。"
+
+  - title: "建立 GRE 隧道"
+    description: "双方建立 Enhanced GRE（Generic Routing Encapsulation）隧道。GRE 协议号 47，用于封装 PPP 帧。"
+    packet_info: "Enhanced GRE 头部包含：GRE 版本、Key Present 标志、Sequence Number Present 标志、Key（包含 Payload Length 和 Call ID）、可选的 Sequence Number 和 Acknowledgment Number。"
+    rfc_reference: "RFC 2637 Section 4"
+    expected_state: "GRE_ESTABLISHED"
+    hint: "GRE 隧道建立后，PPP 协议数据将通过 GRE 封装传输。"
+
+  - title: "LCP 协商"
+    description: "PPP 链路控制协议（Link Control Protocol）协商。LCP 负责建立、配置和测试数据链路连接。"
+    packet_info: "LCP 报文类型包括：Configure-Request、Configure-Ack、Configure-Nak、Configure-Reject、Terminate-Request、Terminate-Ack、Code-Reject、Protocol-Reject、Echo-Request、Echo-Reply、Discard-Request。协商参数包括 MRU（最大接收单元）、认证协议、Magic Number 等。"
+    rfc_reference: "RFC 1661"
+    expected_state: "LCP_NEGOTIATED"
+    hint: "LCP 是 PPP 的基础，必须先完成 LCP 才能进行认证和网络层配置。"
+
+  - title: "MS-CHAPv2 认证"
+    description: "使用 Microsoft Challenge Handshake Authentication Protocol v2 进行身份验证。这是 PPTP 最常用的认证方式。"
+    packet_info: "MS-CHAPv2 流程：(1) 服务端发送 Challenge（16字节随机数）；(2) 客户端计算 Response（包含客户端 Challenge、Hashed Challenge Response、用户名）；(3) 服务端验证并发送 Success/Failure Response（包含认证响应和会话密钥）。"
+    rfc_reference: "RFC 2759"
+    expected_state: "AUTHENTICATED"
+    hint: "MS-CHAPv2 比 MS-CHAPv1 更安全，支持双向认证。"
+
+  - title: "IPCP 协商"
+    description: "IP 控制协议（IP Control Protocol）协商。IPCP 负责配置 IP 层参数，包括 IP 地址分配和 DNS 服务器。"
+    packet_info: "IPCP 协商的选项包括：IP-Address（分配给客户端的 IP）、Primary-DNS-Address、Secondary-DNS-Address、Compression-Type。服务端通常通过 IPCP Configure-Nak 向客户端推送 IP 地址和 DNS。"
+    rfc_reference: "RFC 1332"
+    expected_state: "IPCP_NEGOTIATED"
+    hint: "IPCP 完成后，客户端将获得 IP 地址，可以进行网络通信。"
+
+  - title: "隧道建立完成"
+    description: "PPTP VPN 隧道完全建立。客户端现在可以通过 GRE 隧道发送和接收 IP 数据包。"
+    packet_info: "数据流：客户端 IP 包 -> PPP 封装 -> GRE 封装 -> TCP/IP 传输 -> 服务端解封装 -> 转发到目标网络。GRE 头部的 Call ID 用于区分不同的隧道会话。"
+    rfc_reference: "RFC 2637 Section 4"
+    expected_state: "TUNNEL_ACTIVE"
+    hint: "恭喜！PPTP 隧道已成功建立，可以开始安全通信。"

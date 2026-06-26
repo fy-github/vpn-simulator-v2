@@ -1,0 +1,412 @@
+# FAQ 配置
+# 定义各 VPN 协议的常见问题
+
+categories:
+  - id: general
+    name: 通用问题
+    icon: "help-circle"
+    questions:
+      - id: what_is_vpn
+        question: "什么是 VPN？"
+        answer: |
+          VPN（虚拟专用网络）是一种通过公共网络（如互联网）建立安全加密连接的技术。
+          它创建一个虚拟的点对点连接，使远程用户可以安全地访问私有网络资源。
+          VPN 主要用于保护数据隐私、绕过地理限制和远程访问企业网络。
+        tags: ["基础概念", "入门"]
+
+      - id: vpn_protocols
+        question: "常见的 VPN 协议有哪些？"
+        answer: |
+          常见的 VPN 协议包括：
+          1. **PPTP** - 点对点隧道协议，速度快但安全性较低
+          2. **L2TP/IPSec** - 第二层隧道协议，安全性好但速度较慢
+          3. **OpenVPN** - 开源协议，安全性和灵活性都很好
+          4. **IPSec** - 互联网协议安全，常用于站点到站点连接
+          5. **IKEv2** - 互联网密钥交换协议 v2，适合移动设备
+          6. **WireGuard** - 新一代协议，简洁高效
+          7. **SSTP** - 安全套接字隧道协议，微软开发
+        tags: ["协议对比", "入门"]
+
+  - id: pptp
+    name: PPTP 问题
+    icon: "iot"
+    questions:
+      - id: pptp_security
+        question: "PPTP 安全吗？"
+        answer: |
+          PPTP 的安全性较低，主要问题包括：
+          1. **MS-CHAPv2 认证已被破解** - 可以在 23 小时内破解
+          2. **MPPE 加密强度弱** - 128 位密钥易受暴力破解
+          3. **无完美前向保密** - 密钥泄露会危及所有历史通信
+
+          **建议**：仅在学习或测试环境中使用，生产环境请使用更安全的协议如 WireGuard 或 OpenVPN。
+        tags: ["安全", "PPTP"]
+
+      - id: pptp_ports
+        question: "PPTP 需要开放哪些端口？"
+        answer: |
+          PPTP 需要开放以下端口：
+          - **TCP 1723** - PPTP 控制连接
+          - **IP 协议 47 (GRE)** - 通用路由封装，用于数据传输
+
+          注意：GRE 是 IP 层协议，不是 TCP/UDP 端口，需要在防火墙上单独配置。
+        tags: ["端口", "PPTP", "防火墙"]
+
+  - id: l2tp
+    name: L2TP 问题
+    icon: "connection"
+    questions:
+      - id: l2tp_vs_pptp
+        question: "L2TP 和 PPTP 有什么区别？"
+        answer: |
+          L2TP 和 PPTP 的主要区别：
+
+          | 特性 | PPTP | L2TP/IPSec |
+          |------|------|------------|
+          | 加密 | MPPE (弱) | AES (强) |
+          | 认证 | MS-CHAPv2 | 证书/PSK |
+          | 端口 | TCP 1723 + GRE | UDP 500/4500 + ESP |
+          | 速度 | 快 | 较慢 |
+          | 安全性 | 低 | 高 |
+          | NAT 穿透 | 差 | 好 |
+
+          L2TP 通常与 IPSec 结合使用，提供更强的安全性。
+        tags: ["协议对比", "L2TP", "PPTP"]
+
+      - id: l2tp_slow
+        question: "为什么 L2TP 连接速度慢？"
+        answer: |
+          L2TP 速度较慢的原因：
+          1. **双重封装** - L2TP 封装后再用 IPSec 封装，增加开销
+          2. **加密开销** - IPSec 加密消耗 CPU 资源
+          3. **MTU 问题** - 封装导致有效 MTU 减小，可能引发分片
+
+          优化建议：
+          - 调整 MTU 值（建议 1400 左右）
+          - 使用 AES-NI 硬件加速
+          - 选择 UDP 封装而非 TCP（避免 TCP over TCP 问题）
+        tags: ["性能", "L2TP"]
+
+  - id: openvpn
+    name: OpenVPN 问题
+    icon: "protocol"
+    questions:
+      - id: openvpn_config
+        question: "如何配置 OpenVPN？"
+        answer: |
+          OpenVPN 基本配置步骤：
+          1. **生成证书** - 使用 easy-rsa 生成 CA、服务器和客户端证书
+          2. **服务器配置** - 编写 server.conf 配置文件
+          3. **客户端配置** - 编写 client.ovpn 配置文件
+          4. **启动服务** - 运行 openvpn --config server.conf
+
+          关键配置项：
+          - `port 1194` - 监听端口
+          - `proto udp` - 使用 UDP 协议
+          - `dev tun` - 使用 TUN 设备（三层）
+          - `ca/server/client` - 证书路径
+        tags: ["配置", "OpenVPN"]
+
+      - id: openvpn_tcp_udp
+        question: "OpenVPN 应该用 TCP 还是 UDP？"
+        answer: |
+          选择建议：
+
+          **UDP（推荐）**：
+          - 速度更快，延迟更低
+          - 无重传机制，适合实时应用
+          - 大多数场景下的首选
+
+          **TCP**：
+          - 可靠性更高
+          - 能穿透某些限制 TCP 的防火墙
+          - 避免 TCP over TCP 问题（不推荐）
+
+          一般建议使用 UDP 1194，除非网络环境强制要求 TCP。
+        tags: ["配置", "OpenVPN", "性能"]
+
+  - id: ipsec
+    name: IPSec 问题
+    icon: "shield"
+    questions:
+      - id: ipsec_modes
+        question: "IPSec 有哪两种模式？"
+        answer: |
+          IPSec 有两种工作模式：
+
+          **传输模式（Transport Mode）**：
+          - 只加密 IP 载荷，保留原始 IP 头
+          - 用于端到端通信
+          - 开销较小
+
+          **隧道模式（Tunnel Mode）**：
+          - 加密整个 IP 包，并添加新 IP 头
+          - 用于 VPN 隧道
+          - 提供更好的隐私保护
+
+          VPN 场景通常使用隧道模式。
+        tags: ["模式", "IPSec"]
+
+      - id: ipsec_nat
+        question: "IPSec 如何穿越 NAT？"
+        answer: |
+          IPSec 穿越 NAT 的方法：
+
+          1. **NAT-T（NAT Traversal）**：
+             - 将 ESP 封装在 UDP 4500 端口中
+             - 自动检测 NAT 设备
+             - 最常用的解决方案
+
+          2. **UDP 封装**：
+             - 手动配置 UDP 封装
+             - 兼容性较好
+
+          3. **TCP 封装**：
+             - 使用 TCP 443 端口
+             - 能穿透严格防火墙
+
+          现代 IPSec 实现通常自动启用 NAT-T。
+        tags: ["NAT", "IPSec"]
+
+  - id: ikev2
+    name: IKEv2 问题
+    icon: "key"
+    questions:
+      - id: ikev2_vs_ikev1
+        question: "IKEv2 和 IKEv1 有什么区别？"
+        answer: |
+          IKEv2 相比 IKEv1 的改进：
+
+          | 特性 | IKEv1 | IKEv2 |
+          |------|-------|-------|
+          | 消息数量 | 9 (主模式) | 4 |
+          | 认证方式 | 多种 | EAP 支持 |
+          | MOBIKE | 不支持 | 支持 |
+          | 错误处理 | 复杂 | 简化 |
+          | 配置推送 | 有限 | 完善 |
+          | 生存时间 | 有限 | 灵活 |
+
+          IKEv2 更简洁、高效，支持移动设备切换网络。
+        tags: ["协议对比", "IKEv2", "IKEv1"]
+
+      - id: ikev2_mobile
+        question: "为什么 IKEv2 适合移动设备？"
+        answer: |
+          IKEv2 适合移动设备的原因：
+
+          1. **MOBIKE 支持**：
+             - 网络切换时保持连接
+             - WiFi 切换到 4G 无需重连
+
+          2. **快速重连**：
+             - 使用 CREATE_CHILD_SA 快速恢复
+             - 减少重连延迟
+
+          3. **EAP 认证**：
+             - 支持用户名/密码认证
+             - 便于移动设备配置
+
+          4. **UDP 封装**：
+             - 穿透移动网络 NAT
+             - 兼容性好
+        tags: ["移动设备", "IKEv2"]
+
+  - id: wireguard
+    name: WireGuard 问题
+    icon: "zap"
+    questions:
+      - id: wireguard_speed
+        question: "为什么 WireGuard 这么快？"
+        answer: |
+          WireGuard 速度快的原因：
+
+          1. **代码精简**：
+             - 仅 4000 行代码（OpenVPN 100,000+）
+             - 攻击面小，审计容易
+
+          2. **现代加密**：
+             - ChaCha20-Poly1305 加密
+             - Curve25519 密钥交换
+             - BLAKE2s 哈希
+
+          3. **内核实现**：
+             - 运行在 Linux 内核空间
+             - 减少上下文切换
+
+          4. **无状态设计**：
+             - 接收方无需维护状态
+             - 简化处理逻辑
+        tags: ["性能", "WireGuard"]
+
+      - id: wireguard_mobile
+        question: "WireGuard 在移动设备上表现如何？"
+        answer: |
+          WireGuard 在移动设备上的优势：
+
+          1. **低功耗**：
+             - 高效加密减少 CPU 使用
+             - 延长电池续航
+
+          2. **快速漫游**：
+             - 网络切换时快速恢复
+             - 类似 IKEv2 的 MOBIKE
+
+          3. **简单配置**：
+             - 仅需公钥/私钥对
+             - 配置文件简洁
+
+          4. **跨平台**：
+             - iOS/Android 原生支持
+             - 客户端应用成熟
+        tags: ["移动设备", "WireGuard"]
+
+  - id: sstp
+    name: SSTP 问题
+    icon: "monitor"
+    questions:
+      - id: sstp_windows
+        question: "SSTP 只能在 Windows 上使用吗？"
+        answer: |
+          SSTP 的平台支持：
+
+          **原生支持**：
+          - Windows Vista SP1+
+          - Windows Server 2008+
+
+          **第三方支持**：
+          - Linux - sstp-client
+          - macOS - SSTP Client
+          - Android - VPN Client
+          - iOS - 通过配置文件
+
+          虽然 SSTP 是微软专有协议，但已有开源实现支持其他平台。
+        tags: ["平台", "SSTP"]
+
+      - id: sstp_port
+        question: "SSTP 使用什么端口？"
+        answer: |
+          SSTP 使用 **TCP 443** 端口：
+
+          优势：
+          - 与 HTTPS 相同端口，穿透性好
+          - 通常不被防火墙阻止
+          - 流量看起来像普通 HTTPS
+
+          劣势：
+          - 可能被 DPI 检测
+          - 某些企业代理可能干扰
+          - TCP over TCP 性能问题
+        tags: ["端口", "SSTP"]
+
+  - id: troubleshooting
+    name: 连接问题排查
+    icon: "tool"
+    questions:
+      - id: connection_timeout
+        question: "VPN 连接超时怎么办？"
+        answer: |
+          连接超时排查步骤：
+
+          1. **检查网络连通性**：
+             - ping 服务器 IP
+             - 检查 DNS 解析
+
+          2. **检查端口**：
+             - telnet 服务器 端口号
+             - 检查防火墙规则
+
+          3. **检查服务状态**：
+             - 确认 VPN 服务已启动
+             - 查看服务日志
+
+          4. **检查配置**：
+             - 验证服务器地址和端口
+             - 确认证书/密钥正确
+
+          5. **检查认证**：
+             - 用户名/密码正确
+             - 证书未过期
+        tags: ["故障排查", "连接"]
+
+      - id: mtu_issues
+        question: "如何解决 MTU 问题？"
+        answer: |
+          MTU 问题解决方法：
+
+          **症状**：
+          - 大文件传输失败
+          - 网页加载不完整
+          - 连接不稳定
+
+          **解决方案**：
+
+          1. **调整 MTU 值**：
+             - Windows: `netsh interface ipv4 set subinterface "VPN" mtu=1400`
+             - Linux: `ip link set dev tun0 mtu 1400`
+
+          2. **启用 MSS 钳制**：
+             - iptables -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+
+          3. **禁用 PMTUD**：
+             - 某些网络环境需要禁用
+
+          建议 MTU 值：
+          - OpenVPN: 1400
+          - WireGuard: 1420
+          - IPSec: 1400
+        tags: ["故障排查", "MTU", "性能"]
+
+  - id: performance
+    name: 性能优化
+    icon: "trending-up"
+    questions:
+      - id: speed_up_vpn
+        question: "如何提高 VPN 速度？"
+        answer: |
+          VPN 性能优化建议：
+
+          1. **选择合适的协议**：
+             - WireGuard > IKEv2 > OpenVPN(UDP) > L2TP > PPTP
+
+          2. **优化加密设置**：
+             - 使用 AES-NI 硬件加速
+             - 选择较轻量的加密算法
+
+          3. **调整网络参数**：
+             - 优化 MTU/MSS 值
+             - 启用压缩（谨慎使用）
+
+          4. **选择就近服务器**：
+             - 物理距离影响延迟
+             - 选择负载较低的服务器
+
+          5. **使用有线连接**：
+             - WiFi 不稳定影响性能
+             - 5GHz 频段优于 2.4GHz
+        tags: ["性能", "优化"]
+
+      - id: cpu_usage
+        question: "VPN 导致 CPU 使用率高怎么办？"
+        answer: |
+          降低 VPN CPU 使用率的方法：
+
+          1. **启用硬件加速**：
+             - 确认 CPU 支持 AES-NI
+             - 在 VPN 配置中启用
+
+          2. **更换协议**：
+             - WireGuard 对 CPU 更友好
+             - 避免使用 OpenVPN TCP
+
+          3. **优化加密算法**：
+             - AES-128-GCM 比 AES-256-GCM 快
+             - ChaCha20 在无 AES-NI 时更快
+
+          4. **减少加密开销**：
+             - 仅加密必要流量
+             - 使用分流（Split Tunneling）
+
+          5. **升级硬件**：
+             - 更强的 CPU
+             - 专用加密卡
+        tags: ["性能", "CPU", "优化"]

@@ -1,0 +1,76 @@
+name: "IKEv2/IPSec 基础教程"
+protocol: ikev2
+description: "学习 IKEv2/IPSec 协议的握手流程，包括 IKE_SA_INIT 和 IKE_AUTH 交换。"
+difficulty: advanced
+estimated_time: 20
+
+steps:
+  - title: "IKE_SA_INIT - 发起方发送 SA 提案"
+    description: "发起方（Initiator）向响应方（Responder）发送 IKE_SA_INIT 请求。该消息包含安全关联（SA）提案列表、Diffie-Hellman 公钥值和随机数（Nonce）。SA 提案定义了支持的加密算法、完整性算法和伪随机函数（PRF）。这是 IKEv2 握手的第一阶段，目的是协商 IKE SA 参数并建立共享密钥材料。"
+    packet_info: "IKE_SA_INIT 请求包含：(1) IKE Header - SPIi（发起方 SPI，8字节）、SPIr（响应方 SPI，初始为 0）、Next Payload 为 SA、Version 2.0、Exchange Type 为 IKE_SA_INIT；(2) SA Payload - 包含一个或多个 Proposal，每个 Proposal 包含加密算法（如 AES-256-GCM）、完整性算法（如 HMAC-SHA256-128）、PRF（如 HMAC-SHA256）、DH 组（如 MODP-2048/Group 14）；(3) KE Payload - DH 公钥值（Group 14 为 256 字节）；(4) Nonce Payload - 发起方随机数（16-256 字节）。"
+    rfc_reference: "RFC 7296 Section 1.2 / Section 3.2"
+    expected_state: "WAIT_IKE_SA_INIT_RESP"
+    hint: "IKEv2 使用 UDP 端口 500，NAT 环境下使用 4500。SPI 是 IKE SA 的唯一标识符。"
+
+  - title: "IKE_SA_INIT - 响应方回复选定参数"
+    description: "响应方收到 IKE_SA_INIT 请求后，从发起方的提案列表中选择一组安全参数，并回复选定的 SA 参数、自己的 DH 公钥值和随机数（Nonce）。此时双方都拥有了 DH 公钥交换所需的材料，可以计算出共享密钥 SKEYSEED，并派生出完整的密钥集（SK_d, SK_ai, SK_ar, SK_ei, SK_er, SK_pi, SK_pr）。IKE SA 在此时建立完成。"
+    packet_info: "IKE_SA_INIT 响应包含：(1) IKE Header - SPIi（发起方 SPI）、SPIr（响应方 SPI，新分配 8 字节）、Exchange Type 为 IKE_SA_INIT；(2) SA Payload - 仅包含选定的 Proposal（如 ENCR_AES_GCM_16_256 / PRF_HMAC_SHA2_256 / DH_14）；(3) KE Payload - 响应方 DH 公钥值；(4) Nonce Payload - 响应方随机数；(5) 可选 Notify Payload（如 NAT_DETECTION_SOURCE_IP, NAT_DETECTION_DESTINATION_IP）。密钥派生：SKEYSEED = PRF(Ni | Nr, g^ir)，后续所有 SK_* 密钥均从此派生。"
+    rfc_reference: "RFC 7296 Section 1.2 / Section 3.3 / Section 3.4"
+    expected_state: "IKE_SA_ESTABLISHED"
+    hint: "IKE_SA_INIT 完成后，IKE SA 建立成功。后续 IKE_AUTH 消息将使用协商的加密算法进行加密传输。"
+
+  - title: "IKE_AUTH - 发起方发送身份与证书"
+    description: "发起方使用 IKE SA 保护的加密通道发送 IKE_AUTH 请求。该消息包含发起方身份标识（IDi）、认证数据（AUTH）和可选的数字证书。认证方式可以是预共享密钥（PSK）、数字证书或 EAP。IKE_AUTH 同时包含第一个 Child SA 的提案（Traffic Selectors），用于建立 IPSec SA。所有敏感信息现在都已加密保护。"
+    packet_info: "IKE_AUTH 请求（已加密）包含：(1) IKE Header - SPIi/SPIr、Exchange Type 为 IKE_AUTH、Flags 含 Encryption 位；(2) IDi Payload - 发起方身份（如 FQDN: user@example.com 或 IP 地址 192.168.1.100）；(3) AUTH Payload - 认证数据（PSK 模式为 PRF(PSK, IDi | Ni | Nr)；证书模式为数字签名）；(4) Certificate Payload（可选）- X.509 证书；(5) SA Payload - Child SA 提案（如 ENCR_AES_CBC_256 / AUTH_HMAC_SHA2_256_128）；(6) TSi/TSr - 流量选择器（源/目的 IP 和端口范围）；(7) CP(CFG_REQUEST) - 请求内部 IP 地址。"
+    rfc_reference: "RFC 7296 Section 1.2 / Section 2.15 / Section 3.5"
+    expected_state: "WAIT_IKE_AUTH_RESP"
+    hint: "IKE_AUTH 是 IKEv2 的核心认证交换。与 IKEv1 不同，IKEv2 只需 4 条消息即可完成 IKE SA + Child SA 建立。"
+
+  - title: "IKE_AUTH - 响应方认证并建立 Child SA"
+    description: "响应方验证发起方身份和认证数据后，回复自己的身份（IDr）、认证数据（AUTH）以及选定的 Child SA 参数。响应方通过 CP(CFG_REPLY) 分配内部 IP 地址给客户端。如果认证成功，Child SA（IPSec SA）在此时建立完成，双方拥有了用于 ESP 加密的密钥材料。"
+    packet_info: "IKE_AUTH 响应（已加密）包含：(1) IKE Header - SPIi/SPIr、Encryption 位已设置；(2) IDr Payload - 响应方身份标识；(3) AUTH Payload - 响应方认证数据；(4) Certificate Payload（可选）- 响应方证书；(5) SA Payload - 选定的 Child SA 参数（如 ENCR_AES_CBC_256 / AUTH_HMAC_SHA2_256_128 / ESN）；(6) TSi/TSr - 选定的流量选择器；(7) CP(CFG_REPLY) - 分配的内部 IP（如 10.0.0.2）和 DNS；(8) 可选 Notify（如 USE_TRANSPORT_MODE）。此时 IPSec SA 已建立，ESP 密钥已派生。"
+    rfc_reference: "RFC 7296 Section 1.2 / Section 2.8 / Section 3.5"
+    expected_state: "CHILD_SA_ESTABLISHED"
+    hint: "IKE_AUTH 完成后，Child SA 建立成功。ESP 加密隧道已就绪，可以传输加密数据。"
+
+  - title: "Child SA 建立 - IPSec SA 创建"
+    description: "Child SA（IPSec SA）已成功建立。此时双方拥有两组安全关联：入站 SA（Inbound）和出站 SA（Outbound），每组包含独立的加密密钥和完整性密钥。SA 由 SPI（Security Parameter Index）唯一标识，SPI 在 ESP 头部中传输。IKEv2 的 Child SA 对应 IKEv1 的 Phase 2，但建立过程更简洁高效。"
+    packet_info: "IPSec SA 参数：(1) Inbound SA - SPI（4字节，如 0xA1B2C3D4）、加密密钥（如 AES-256 的 32 字节）、完整性密钥（如 HMAC-SHA256 的 32 字节）；(2) Outbound SA - SPI（如 0xE5F6A7B8）、独立的加密和完整性密钥；(3) Traffic Selectors - 保护的流量范围（如 0.0.0.0/0 -> 0.0.0.0/0，所有流量）；(4) SA Lifetime - 默认 3600 秒或 100MB 数据量；(5) Mode - 隧道模式（Tunnel）或传输模式（Transport）。ESP 协议号 50。"
+    rfc_reference: "RFC 7296 Section 2.7 / RFC 4303"
+    expected_state: "IPSEC_SA_READY"
+    hint: "每个 Child SA 有独立的生命周期，到期后需要通过 CREATE_CHILD_SA 重新协商。"
+
+  - title: "ESP 隧道激活 - 加密数据通道"
+    description: "ESP（Encapsulating Security Payload）隧道已激活。所有匹配流量选择器的数据包将被 ESP 加密封装后传输。ESP 使用协商的加密算法（如 AES-CBC-256）对整个 IP 载荷进行加密，并使用完整性算法（如 HMAC-SHA256）生成 ICV（完整性校验值）以防止篡改。隧道模式下，原始 IP 包被完全封装在新的 ESP 包中。"
+    packet_info: "ESP 数据包结构（隧道模式）：(1) 新 IP 头部 - 源 IP 为 VPN 网关，目的 IP 为对端；(2) ESP 头部 - SPI（4字节，匹配 SA）+ Sequence Number（4字节，防重放）；(3) IV（初始化向量，如 AES-CBC 为 16 字节）；(4) 加密载荷 - 原始 IP 包（含原始 IP 头部和数据）；(5) Padding（填充至块大小）+ Pad Length + Next Header；(6) ESP Trailer - ICV（完整性校验值，如 HMAC-SHA256 为 16 字节）。ESP 协议号 50。"
+    rfc_reference: "RFC 4303 Section 2 / Section 3"
+    expected_state: "ESP_ACTIVE"
+    hint: "ESP 序列号用于防重放攻击，接收方维护滑动窗口检查序列号有效性。"
+
+  - title: "CREATE_CHILD_SA - 重新协商 IKE SA"
+    description: "当 IKE SA 接近生命周期到期时，任何一方可以发送 CREATE_CHILD_SA 请求来重新协商 IKE SA。该过程使用当前 IKE SA 保护，交换新的 DH 值和 Nonce 以生成新的密钥材料。新的 IKE SA 使用新的 SPI 对标识，旧的 IKE SA 在新 SA 激活后被删除。这保证了密钥材料的前向安全性（PFS）。"
+    packet_info: "CREATE_CHILD_SA 请求包含：(1) IKE Header - Exchange Type 为 CREATE_CHILD_SA；(2) SA Payload - 新 IKE SA 的提案（与 IKE_SA_INIT 类似）；(3) KE Payload - 新的 DH 公钥值（实现 PFS）；(4) Nonce Payload - 新的随机数；(5) Notify(SK_NEW_SKEW_LIMIT, 可选) - 提示密钥偏移限制。响应方回复选定的 SA 参数、KE 和 Nonce。新密钥材料通过 PRF(SK_d, Ni | Nr | SPIi | SPIr) 派生。旧 SA 的删除通过后续 INFORMATIONAL 交换中的 Delete Payload 完成。"
+    rfc_reference: "RFC 7296 Section 1.3 / Section 2.8"
+    expected_state: "IKE_SA_REKEYED"
+    hint: "CREATE_CHILD_SA 也可用于建立额外的 Child SA 或重新协商现有 Child SA。"
+
+  - title: "INFORMATIONAL - 状态检查与维护"
+    description: "INFORMATIONAL 交换用于 IKE SA 的状态维护，包括发送通知（Notify）、删除 SA（Delete）和空消息保活（Keepalive）。任何一方都可以发起 INFORMATIONAL 交换。空的 INFORMATIONAL 消息（仅含加密头和空载荷）作为心跳检测，确认对端存活。收到 INFORMATIONAL 响应表示 IKE SA 和底层连接正常。"
+    packet_info: "INFORMATIONAL 消息包含：(1) IKE Header - Exchange Type 为 INFORMATIONAL、Flags 含 Response 位（如果是回复）；(2) 可选 Notify Payload - 状态或错误通知（如 INITIAL_CONTACT 通知对端这是新连接、REKEY_SA 通知 SA 重密钥）；(3) 可选 Delete Payload - 请求删除指定 SPI 的 SA；(4) 空载荷 - 仅含加密头（28字节）和填充，用于保活。所有 INFORMATIONAL 消息都必须加密（除初始的 IKE_SA_INIT 外），否则接收方应丢弃。"
+    rfc_reference: "RFC 7296 Section 1.4 / Section 2.1"
+    expected_state: "INFORMATIONAL_DONE"
+    hint: "IKEv2 不依赖 UDP 保活，使用 INFORMATIONAL 空消息作为专用保活机制。"
+
+  - title: "数据传输 - 加密数据包流"
+    description: "IKEv2 隧道已完全建立，加密数据包持续流经 ESP 隧道。每个 ESP 数据包都使用协商的密钥进行加密和完整性保护。发送方使用出站 SA 的密钥加密，接收方使用入站 SA 的密钥解密。序列号递增用于防重放，ICV 校验确保数据完整性。整个过程对上层应用完全透明。"
+    packet_info: "加密数据流（隧道模式）：应用数据 -> IP 封装 -> ESP 加密（AES-256-CBC，IV + 加密载荷 + ICV）-> 新 IP 封装（源：VPN 网关 IP，目的：对端 VPN IP）-> UDP 封装（NAT 环境下端口 4500，含 Non-ESP 标记 0x00000000）-> 传输。接收方逆向处理：解 UDP -> 解 IP -> 解 ESP（校验 ICV + 解密）-> 还原原始 IP 包 -> 交付上层。每个 ESP 包的 Sequence Number 递增，接收方维护滑动窗口（默认 64 包）防重放。"
+    rfc_reference: "RFC 4303 Section 3.1 / RFC 3948"
+    expected_state: "DATA_TRANSFER"
+    hint: "NAT 穿越（NAT-T）使用 UDP 4500 端口，并在 ESP 包前添加 4 字节 Non-ESP 标记。"
+
+  - title: "隧道运行中 - 完整 IKEv2 隧道"
+    description: "IKEv2/IPSec VPN 隧道已完全建立并正常运行。完整的 IKEv2 隧道包含：1 个 IKE SA（管理通道）和 1 个或多个 Child SA（数据通道）。IKE SA 负责密钥管理和 SA 维护，Child SA 负责实际数据的加密传输。隧道支持自动重密钥（Rekeying）、DPD（Dead Peer Detection）检测对端存活、以及 MOBIKE（Mobility and Multihoming）实现无缝漫游。"
+    packet_info: "隧道运行状态：(1) IKE SA - SPI: SPIi|SPIr，状态：ESTABLISHED，Lifetime 剩余可查看；(2) Child SA - Inbound SPI / Outbound SPI，加密算法、完整性算法、流量选择器已配置；(3) 统计信息 - 已传输字节数、ESP 包计数、重放计数；(4) 保活机制 - INFORMATIONAL 消息周期发送（默认 20 秒）；(5) DPD 检测 - 连续 5 次无响应判定对端离线；(6) 自动重密钥 - SA Lifetime 到期前自动触发 CREATE_CHILD_SA 重新协商。"
+    rfc_reference: "RFC 7296 Section 2.8 / RFC 4555 / RFC 3947"
+    expected_state: "TUNNEL_ACTIVE"
+    hint: "恭喜！IKEv2/IPSec 隧道已成功建立。IKEv2 相比 IKEv1 更高效（4 条消息建立隧道），支持 MOBIKE 漫游和 EAP 认证。"

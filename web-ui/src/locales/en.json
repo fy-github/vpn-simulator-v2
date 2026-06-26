@@ -1,0 +1,225 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "protocols": "Protocols",
+    "connections": "Connections",
+    "comparison": "Protocol Comparison",
+    "faults": "Fault Injection",
+    "attacks": "Attack Management",
+    "tutorials": "Tutorials",
+    "learning": "Learning Resources",
+    "packets": "Packet Analysis"
+  },
+  "status": {
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "running": "Running",
+    "stopped": "Stopped",
+    "error": "Error"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "delete": "Delete",
+    "edit": "Edit",
+    "refresh": "Refresh",
+    "start": "Start",
+    "stop": "Stop",
+    "loading": "Loading...",
+    "confirm": "Confirm",
+    "success": "Success",
+    "error": "Error",
+    "applying": "Applying...",
+    "removing": "Removing..."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "totalConnections": "Total Connections",
+    "activeProtocols": "Active Protocols",
+    "uptime": "Uptime",
+    "systemLoad": "System Load",
+    "protocolStatus": "Protocol Status",
+    "quickActions": "Quick Actions",
+    "startAll": "Start All",
+    "stopAll": "Stop All",
+    "refresh": "Refresh Status",
+    "port": "Port",
+    "connections": "Connections"
+  },
+  "protocols": {
+    "title": "Protocol Management",
+    "subtitle": "Manage VPN protocol services",
+    "startAll": "Start All",
+    "port": "Port",
+    "transport": "Transport",
+    "connections": "Connections",
+    "status": "Status",
+    "configuration": "Configuration",
+    "start": "Start",
+    "stop": "Stop",
+    "configure": "Configure",
+    "configurationModal": "Configuration feature coming soon..."
+  },
+  "connections": {
+    "title": "Connection Management",
+    "subtitle": "View and manage active connections",
+    "allProtocols": "All Protocols",
+    "refresh": "Refresh",
+    "totalConnections": "Total Connections",
+    "totalTraffic": "Total Traffic",
+    "protocolsInUse": "Protocols In Use",
+    "activeConnections": "Active Connections",
+    "protocol": "Protocol",
+    "client": "Client",
+    "server": "Server",
+    "duration": "Duration",
+    "traffic": "Traffic",
+    "status": "Status",
+    "actions": "Actions",
+    "disconnect": "Disconnect",
+    "noConnections": "No active connections"
+  },
+  "faults": {
+    "title": "Fault Injection",
+    "subtitle": "Simulate network faults and anomalies",
+    "createFault": "Create Fault",
+    "faultDefinitions": "Fault Definitions",
+    "noFaults": "No fault definitions",
+    "createFirst": "Click the button above to create the first fault",
+    "name": "Name",
+    "namePlaceholder": "Enter fault name",
+    "description": "Description",
+    "descriptionPlaceholder": "Enter fault description",
+    "type": "Type",
+    "severityLabel": "Severity",
+    "target": "Target",
+    "targetPlaceholder": "Enter target address or protocol",
+    "status": "Status",
+    "inject": "Inject",
+    "clear": "Clear",
+    "types": {
+      "network": "Network Fault",
+      "protocol": "Protocol Fault",
+      "authentication": "Authentication Fault",
+      "encryption": "Encryption Fault"
+    },
+    "severity": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    }
+  },
+  "attacks": {
+    "title": "Attack Management",
+    "subtitle": "Simulate network attack scenarios",
+    "createAttack": "Create Attack",
+    "attackSimulations": "Attack Simulations",
+    "noAttacks": "No attack simulations",
+    "createFirst": "Click the button above to create the first attack",
+    "name": "Name",
+    "namePlaceholder": "Enter attack name",
+    "description": "Description",
+    "descriptionPlaceholder": "Enter attack description",
+    "type": "Type",
+    "target": "Target",
+    "targetPlaceholder": "Enter target address",
+    "packets": "Packets",
+    "successRate": "Success Rate",
+    "duration": "Duration",
+    "start": "Start",
+    "stop": "Stop",
+    "types": {
+      "dos": "Denial of Service",
+      "dosDesc": "DoS attack simulation",
+      "mitm": "Man-in-the-Middle",
+      "mitmDesc": "MITM attack simulation",
+      "replay": "Replay Attack",
+      "replayDesc": "Packet replay",
+      "bruteforce": "Brute Force",
+      "bruteforceDesc": "Password brute force",
+      "injection": "Injection Attack",
+      "injectionDesc": "Protocol injection"
+    }
+  },
+  "comparison": {
+    "title": "Protocol Comparison",
+    "subtitle": "Compare VPN protocol state machines side by side to understand similarities and differences"
+  },
+  "tutorial": {
+    "title": "VPN Protocol Tutorials",
+    "subtitle": "Learn VPN protocol handshake flows through step-by-step guidance",
+    "backToList": "Back to Tutorial List",
+    "minutes": "minutes",
+    "progress": "Progress",
+    "prev": "Previous",
+    "next": "Next",
+    "reset": "Reset",
+    "completed": "Completed",
+    "steps": "steps",
+    "noTutorials": "No Tutorials",
+    "noTutorialsDesc": "Tutorial configuration files have not been added yet.",
+    "congratulations": "Congratulations on completing the tutorial!",
+    "completedMessage": "You have successfully completed all steps of this tutorial."
+  },
+  "learning": {
+    "title": "Learning Resources",
+    "subtitle": "RFC documents, FAQs, and learning paths",
+    "tabs": {
+      "rfc": "RFC Documents",
+      "faq": "FAQ",
+      "paths": "Learning Paths"
+    },
+    "rfc": {
+      "documents": "RFC Documents",
+      "otherReferences": "Other References",
+      "published": "Published",
+      "noFormalRFC": "No formal RFC document"
+    },
+    "faq": {
+      "searchPlaceholder": "Search questions...",
+      "allCategories": "All"
+    },
+    "paths": {
+      "targetAudience": "Target Audience",
+      "protocols": "Protocols",
+      "estimatedTime": "Estimated Time",
+      "startLearning": "Start Learning"
+    },
+    "difficulty": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced"
+    }
+  },
+  "scenarios": {
+    "title": "Network Scenarios",
+    "subtitle": "Apply predefined network condition presets for testing",
+    "activeScenario": "Active Scenario",
+    "applyScenario": "Apply",
+    "removeScenario": "Remove",
+    "noScenarios": "No scenarios available",
+    "quickReference": "Quick Reference",
+    "active": "Active",
+    "categories": {
+      "all": "All",
+      "mobile": "Mobile",
+      "satellite": "Satellite",
+      "wifi": "WiFi",
+      "wired": "Wired"
+    },
+    "params": {
+      "latency": "Latency",
+      "packetLoss": "Packet Loss",
+      "bandwidth": "Bandwidth"
+    },
+    "table": {
+      "scenario": "Scenario",
+      "latency": "Latency",
+      "jitter": "Jitter",
+      "loss": "Loss",
+      "bandwidth": "Bandwidth"
+    }
+  }
+}

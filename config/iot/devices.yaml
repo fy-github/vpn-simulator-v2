@@ -1,0 +1,302 @@
+# IoT 设备配置
+# 定义常见 IoT 设备的网络行为模拟参数
+
+devices:
+  ip_camera:
+    id: ip_camera
+    name: "IP 摄像头"
+    name_en: "IP Camera"
+    description: "网络摄像头，持续传输视频流"
+    icon: "videocam"
+    category: "security"
+    protocols:
+      - RTSP
+      - HTTP
+    traffic_pattern: continuous
+    default_params:
+      bitrate_kbps: 4000
+      resolution: "1080p"
+      fps: 30
+    network_profile:
+      upload_kbps: 4000
+      download_kbps: 100
+      packet_size_bytes: 1400
+      interval_ms: 33
+
+  temperature_sensor:
+    id: temperature_sensor
+    name: "温度传感器"
+    name_en: "Temperature Sensor"
+    description: "环境温度监测，周期性上报数据"
+    icon: "thermostat"
+    category: "sensor"
+    protocols:
+      - MQTT
+      - CoAP
+    traffic_pattern: periodic
+    default_params:
+      report_interval_sec: 60
+      data_format: "json"
+    network_profile:
+      upload_kbps: 1
+      download_kbps: 1
+      packet_size_bytes: 128
+      interval_ms: 60000
+
+  smart_speaker:
+    id: smart_speaker
+    name: "智能音箱"
+    name_en: "Smart Speaker"
+    description: "语音助手设备，突发性语音数据传输"
+    icon: "speaker"
+    category: "consumer"
+    protocols:
+      - HTTPS
+      - WebSocket
+    traffic_pattern: burst
+    default_params:
+      wake_word_sensitivity: 0.8
+      streaming_duration_sec: 5
+    network_profile:
+      upload_kbps: 64
+      download_kbps: 128
+      packet_size_bytes: 320
+      interval_ms: 20
+
+  smart_bulb:
+    id: smart_bulb
+    name: "智能灯泡"
+    name_en: "Smart Bulb"
+    description: "智能照明设备，低频控制指令"
+    icon: "lightbulb"
+    category: "lighting"
+    protocols:
+      - Zigbee
+      - MQTT
+    traffic_pattern: idle
+    default_params:
+      brightness: 100
+      color_temp_k: 4000
+    network_profile:
+      upload_kbps: 0.1
+      download_kbps: 0.1
+      packet_size_bytes: 64
+      interval_ms: 300000
+
+  smart_lock:
+    id: smart_lock
+    name: "智能门锁"
+    name_en: "Smart Lock"
+    description: "BLE 门锁，低功耗空闲模式"
+    icon: "lock"
+    category: "security"
+    protocols:
+      - BLE
+      - MQTT
+    traffic_pattern: idle
+    default_params:
+      battery_level: 85
+      lock_state: "locked"
+    network_profile:
+      upload_kbps: 0.01
+      download_kbps: 0.01
+      packet_size_bytes: 32
+      interval_ms: 600000
+
+  robot_vacuum:
+    id: robot_vacuum
+    name: "扫地机器人"
+    name_en: "Robot Vacuum"
+    description: "自动清扫设备，地图数据上传"
+    icon: "cleaning_services"
+    category: "appliance"
+    protocols:
+      - HTTP
+      - MQTT
+    traffic_pattern: periodic
+    default_params:
+      battery_level: 70
+      cleaning_mode: "auto"
+    network_profile:
+      upload_kbps: 50
+      download_kbps: 10
+      packet_size_bytes: 512
+      interval_ms: 5000
+
+  smart_fridge:
+    id: smart_fridge
+    name: "智能冰箱"
+    name_en: "Smart Fridge"
+    description: "联网冰箱，状态同步和通知"
+    icon: "kitchen"
+    category: "appliance"
+    protocols:
+      - HTTP
+      - MQTT
+    traffic_pattern: periodic
+    default_params:
+      temp_celsius: 4
+      door_state: "closed"
+    network_profile:
+      upload_kbps: 5
+      download_kbps: 10
+      packet_size_bytes: 256
+      interval_ms: 30000
+
+  smart_tv:
+    id: smart_tv
+    name: "智能电视"
+    name_en: "Smart TV"
+    description: "流媒体播放设备，高带宽下行"
+    icon: "tv"
+    category: "entertainment"
+    protocols:
+      - HTTP
+      - DLNA
+    traffic_pattern: continuous
+    default_params:
+      streaming_quality: "4K"
+      active_app: "Netflix"
+    network_profile:
+      upload_kbps: 50
+      download_kbps: 25000
+      packet_size_bytes: 1400
+      interval_ms: 10
+
+  industrial_sensor:
+    id: industrial_sensor
+    name: "工业传感器"
+    name_en: "Industrial Sensor"
+    description: "Modbus 工业设备，高频数据采集"
+    icon: "factory"
+    category: "industrial"
+    protocols:
+      - Modbus
+      - MQTT
+    traffic_pattern: periodic
+    default_params:
+      sampling_rate_hz: 10
+      register_count: 10
+    network_profile:
+      upload_kbps: 10
+      download_kbps: 5
+      packet_size_bytes: 128
+      interval_ms: 100
+
+  connected_vehicle:
+    id: connected_vehicle
+    name: "车联网设备"
+    name_en: "Connected Vehicle"
+    description: "车载 OBD 设备，实时位置和诊断"
+    icon: "directions_car"
+    category: "automotive"
+    protocols:
+      - MQTT
+      - HTTP
+    traffic_pattern: periodic
+    default_params:
+      gps_update_sec: 1
+      diagnostic_interval_sec: 60
+    network_profile:
+      upload_kbps: 10
+      download_kbps: 5
+      packet_size_bytes: 256
+      interval_ms: 1000
+
+  smoke_detector:
+    id: smoke_detector
+    name: "烟雾报警器"
+    name_en: "Smoke Detector"
+    description: "安全监测设备，心跳+事件上报"
+    icon: "smoke_free"
+    category: "security"
+    protocols:
+      - MQTT
+      - Zigbee
+    traffic_pattern: idle
+    default_params:
+      battery_level: 95
+      alarm_state: "normal"
+    network_profile:
+      upload_kbps: 0.01
+      download_kbps: 0.01
+      packet_size_bytes: 32
+      interval_ms: 3600000
+
+  smart_thermostat:
+    id: smart_thermostat
+    name: "智能温控器"
+    name_en: "Smart Thermostat"
+    description: "HVAC 控制设备，周期性温度上报"
+    icon: "hvac"
+    category: "climate"
+    protocols:
+      - MQTT
+      - HTTP
+    traffic_pattern: periodic
+    default_params:
+      target_temp_celsius: 22
+      current_temp_celsius: 21
+    network_profile:
+      upload_kbps: 1
+      download_kbps: 2
+      packet_size_bytes: 128
+      interval_ms: 60000
+
+traffic_patterns:
+  continuous:
+    name: "持续流"
+    name_en: "Continuous"
+    description: "持续稳定的数据流"
+    icon: "trending_up"
+    color: "#ef4444"
+
+  periodic:
+    name: "周期性"
+    name_en: "Periodic"
+    description: "固定间隔的数据上报"
+    icon: "schedule"
+    color: "#3b82f6"
+
+  burst:
+    name: "突发性"
+    name_en: "Burst"
+    description: "短时间内的突发数据"
+    icon: "flash_on"
+    color: "#f59e0b"
+
+  idle:
+    name: "空闲"
+    name_en: "Idle"
+    description: "大部分时间空闲，偶发通信"
+    icon: "sleeping"
+    color: "#6b7280"
+
+categories:
+  security:
+    name: "安防"
+    color: "#ef4444"
+  sensor:
+    name: "传感器"
+    color: "#3b82f6"
+  consumer:
+    name: "消费电子"
+    color: "#8b5cf6"
+  lighting:
+    name: "照明"
+    color: "#f59e0b"
+  appliance:
+    name: "家电"
+    color: "#10b981"
+  entertainment:
+    name: "娱乐"
+    color: "#ec4899"
+  industrial:
+    name: "工业"
+    color: "#6366f1"
+  automotive:
+    name: "汽车"
+    color: "#14b8a6"
+  climate:
+    name: "温控"
+    color: "#f97316"

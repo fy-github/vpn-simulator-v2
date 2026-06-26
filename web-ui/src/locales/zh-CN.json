@@ -1,0 +1,225 @@
+{
+  "nav": {
+    "dashboard": "仪表盘",
+    "protocols": "协议管理",
+    "connections": "连接管理",
+    "comparison": "协议对比",
+    "faults": "故障注入",
+    "attacks": "攻击管理",
+    "tutorials": "教程引导",
+    "learning": "学习资源",
+    "packets": "报文分析"
+  },
+  "status": {
+    "connected": "已连接",
+    "disconnected": "未连接",
+    "running": "运行中",
+    "stopped": "已停止",
+    "error": "错误"
+  },
+  "common": {
+    "save": "保存",
+    "cancel": "取消",
+    "create": "创建",
+    "delete": "删除",
+    "edit": "编辑",
+    "refresh": "刷新",
+    "start": "启动",
+    "stop": "停止",
+    "loading": "加载中...",
+    "confirm": "确认",
+    "success": "成功",
+    "error": "错误",
+    "applying": "应用中...",
+    "removing": "移除中..."
+  },
+  "dashboard": {
+    "title": "仪表盘",
+    "totalConnections": "总连接数",
+    "activeProtocols": "活跃协议",
+    "uptime": "运行时间",
+    "systemLoad": "系统负载",
+    "protocolStatus": "协议状态",
+    "quickActions": "快速操作",
+    "startAll": "全部启动",
+    "stopAll": "全部停止",
+    "refresh": "刷新状态",
+    "port": "端口",
+    "connections": "连接数"
+  },
+  "protocols": {
+    "title": "协议管理",
+    "subtitle": "管理 VPN 协议服务",
+    "startAll": "全部启动",
+    "port": "端口",
+    "transport": "传输协议",
+    "connections": "连接数",
+    "status": "状态",
+    "configuration": "配置",
+    "start": "启动",
+    "stop": "停止",
+    "configure": "配置",
+    "configurationModal": "配置功能即将实现..."
+  },
+  "connections": {
+    "title": "连接管理",
+    "subtitle": "查看和管理活跃连接",
+    "allProtocols": "所有协议",
+    "refresh": "刷新",
+    "totalConnections": "总连接数",
+    "totalTraffic": "总流量",
+    "protocolsInUse": "使用协议",
+    "activeConnections": "活跃连接",
+    "protocol": "协议",
+    "client": "客户端",
+    "server": "服务端",
+    "duration": "持续时间",
+    "traffic": "流量",
+    "status": "状态",
+    "actions": "操作",
+    "disconnect": "断开",
+    "noConnections": "暂无活跃连接"
+  },
+  "faults": {
+    "title": "故障注入",
+    "subtitle": "模拟网络故障和异常",
+    "createFault": "创建故障",
+    "faultDefinitions": "故障定义",
+    "noFaults": "暂无故障定义",
+    "createFirst": "点击上方按钮创建第一个故障",
+    "name": "名称",
+    "namePlaceholder": "输入故障名称",
+    "description": "描述",
+    "descriptionPlaceholder": "输入故障描述",
+    "type": "类型",
+    "severityLabel": "严重程度",
+    "target": "目标",
+    "targetPlaceholder": "输入目标地址或协议",
+    "status": "状态",
+    "inject": "注入",
+    "clear": "清除",
+    "types": {
+      "network": "网络故障",
+      "protocol": "协议故障",
+      "authentication": "认证故障",
+      "encryption": "加密故障"
+    },
+    "severity": {
+      "low": "低",
+      "medium": "中",
+      "high": "高",
+      "critical": "严重"
+    }
+  },
+  "attacks": {
+    "title": "攻击管理",
+    "subtitle": "模拟网络攻击场景",
+    "createAttack": "创建攻击",
+    "attackSimulations": "攻击模拟",
+    "noAttacks": "暂无攻击模拟",
+    "createFirst": "点击上方按钮创建第一个攻击",
+    "name": "名称",
+    "namePlaceholder": "输入攻击名称",
+    "description": "描述",
+    "descriptionPlaceholder": "输入攻击描述",
+    "type": "类型",
+    "target": "目标",
+    "targetPlaceholder": "输入目标地址",
+    "packets": "数据包",
+    "successRate": "成功率",
+    "duration": "持续时间",
+    "start": "启动",
+    "stop": "停止",
+    "types": {
+      "dos": "拒绝服务",
+      "dosDesc": "DoS 攻击模拟",
+      "mitm": "中间人",
+      "mitmDesc": "MITM 攻击模拟",
+      "replay": "重放攻击",
+      "replayDesc": "数据包重放",
+      "bruteforce": "暴力破解",
+      "bruteforceDesc": "密码暴力破解",
+      "injection": "注入攻击",
+      "injectionDesc": "协议注入"
+    }
+  },
+  "comparison": {
+    "title": "协议对比",
+    "subtitle": "左右分栏对比两个 VPN 协议的状态机，了解相似与差异步骤"
+  },
+  "tutorial": {
+    "title": "VPN 协议教程",
+    "subtitle": "通过分步引导学习 VPN 协议的握手流程",
+    "backToList": "返回教程列表",
+    "minutes": "分钟",
+    "progress": "进度",
+    "prev": "上一步",
+    "next": "下一步",
+    "reset": "重置",
+    "completed": "已完成",
+    "steps": "步",
+    "noTutorials": "暂无教程",
+    "noTutorialsDesc": "教程配置文件尚未添加。",
+    "congratulations": "恭喜完成教程！",
+    "completedMessage": "您已成功完成本教程的所有步骤。"
+  },
+  "learning": {
+    "title": "学习资源",
+    "subtitle": "RFC 文档、常见问题和学习路径",
+    "tabs": {
+      "rfc": "RFC 文档",
+      "faq": "常见问题",
+      "paths": "学习路径"
+    },
+    "rfc": {
+      "documents": "RFC 文档",
+      "otherReferences": "其他参考资料",
+      "published": "发布于",
+      "noFormalRFC": "无正式 RFC 文档"
+    },
+    "faq": {
+      "searchPlaceholder": "搜索问题...",
+      "allCategories": "全部"
+    },
+    "paths": {
+      "targetAudience": "适合人群",
+      "protocols": "包含协议",
+      "estimatedTime": "预计时长",
+      "startLearning": "开始学习"
+    },
+    "difficulty": {
+      "beginner": "初学者",
+      "intermediate": "进阶",
+      "advanced": "高级"
+    }
+  },
+  "scenarios": {
+    "title": "网络场景",
+    "subtitle": "应用预定义的网络条件预设进行测试",
+    "activeScenario": "当前场景",
+    "applyScenario": "应用",
+    "removeScenario": "移除",
+    "noScenarios": "暂无可用场景",
+    "quickReference": "快速参考",
+    "active": "已激活",
+    "categories": {
+      "all": "全部",
+      "mobile": "移动网络",
+      "satellite": "卫星",
+      "wifi": "WiFi",
+      "wired": "有线"
+    },
+    "params": {
+      "latency": "延迟",
+      "packetLoss": "丢包率",
+      "bandwidth": "带宽"
+    },
+    "table": {
+      "scenario": "场景",
+      "latency": "延迟",
+      "jitter": "抖动",
+      "loss": "丢包",
+      "bandwidth": "带宽"
+    }
+  }
+}

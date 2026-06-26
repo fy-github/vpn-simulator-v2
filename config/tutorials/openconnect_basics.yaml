@@ -1,0 +1,76 @@
+name: "OpenConnect 基础教程"
+protocol: openconnect
+description: "学习 OpenConnect/AnyConnect 协议的工作流程，包括 HTTPS 认证、CSTP 隧道建立和 DTLS 数据通道。"
+difficulty: intermediate
+estimated_time: 15
+
+steps:
+  - title: "HTTPS Connection"
+    description: "客户端通过 TCP 连接到 VPN 服务器的 443 端口（标准 HTTPS 端口）。OpenConnect 的核心设计理念是将 VPN 流量伪装成普通 HTTPS 流量，使其能够穿透大多数防火墙和代理服务器。客户端发送 TCP SYN 包，服务端回复 SYN-ACK，完成 TCP 三次握手。由于使用标准 HTTPS 端口，网络中间设备通常不会阻止此连接。"
+    packet_info: "TCP 三次握手：客户端 → SYN（Seq=x）→ 服务端；服务端 → SYN-ACK（Seq=y, Ack=x+1）→ 客户端；客户端 → ACK（Seq=x+1, Ack=y+1）→ 服务端。连接目标端口 443，与普通网页浏览使用相同的 TCP 连接。"
+    rfc_reference: "RFC 9293 - TCP / OpenConnect Protocol Documentation"
+    expected_state: "TCP_CONNECTED"
+    hint: "OpenConnect 使用标准 HTTPS 端口 443，这是它能够在严格网络环境中工作的重要原因。"
+
+  - title: "SSL/TLS Handshake"
+    description: "TCP 连接建立后，客户端与服务端进行 TLS 握手以建立安全的加密通道。客户端发送 Client Hello，包含支持的 TLS 版本、密码套件列表和客户端随机数。服务端回复 Server Hello，选定密码套件并发送 X.509 证书。客户端验证证书链的有效性后，双方完成密钥交换，生成会话密钥。此后所有通信均使用对称加密保护。"
+    packet_info: "TLS 1.2/1.3 握手消息序列：(1) Client Hello（TLS版本 + 客户端随机数32字节 + 密码套件列表 + SNI扩展）；(2) Server Hello（选定密码套件 + 服务端随机数32字节）；(3) Certificate（X.509证书链）；(4) Server Key Exchange（DH参数或ECDHE公钥）；(5) Server Hello Done；(6) Client Key Exchange（预主密钥）；(7) ChangeCipherSpec + Finished。所有消息通过 TCP 443 端口传输。"
+    rfc_reference: "RFC 5246 - TLS 1.2 / RFC 8446 - TLS 1.3"
+    expected_state: "TLS_ESTABLISHED"
+    hint: "OpenConnect 支持 TLS 1.2 和 1.3，TLS 握手过程与浏览器访问 HTTPS 网站完全相同，对网络中间设备不可区分。"
+
+  - title: "Authentication"
+    description: "TLS 通道建立后，客户端通过 POST 请求发送认证信息到服务端的 /auth 端点。OpenConnect 支持多种认证方式：用户名/密码认证、证书认证（客户端证书）、双因素认证（TOTP/OTP）以及 SAML 认证。服务端返回 XML 格式的认证表单，客户端根据表单字段收集用户凭据后提交。这种基于 HTTP 表单的认证方式使 OpenConnect 能够灵活集成各种企业认证系统。"
+    packet_info: "认证流程使用 HTTP POST 请求：(1) 客户端 POST /auth → 服务端返回 XML 响应，包含 auth-type 和 login-form 字段；(2) 客户端 POST /auth 提交 form[username] 和 form[password]；(3) 服务端验证凭据后返回 auth-success 和 session-token。所有请求/响应通过已建立的 TLS 通道传输，Content-Type 为 application/x-www-form-urlencoded。"
+    rfc_reference: "OpenConnect Protocol - Authentication / AnyConnect Compatible"
+    expected_state: "AUTHENTICATED"
+    hint: "OpenConnect 的认证基于 HTTP 协议，支持与 Cisco ASA、Juniper Pulse、Palo Alto GlobalProtect 等多种 VPN 网关兼容。"
+
+  - title: "Configuration Request"
+    description: "认证成功后，客户端向服务端的 /config 端点发送 POST 请求，请求 VPN 隧道配置参数。请求中包含客户端支持的隧道类型（CSTP）、MTU 偏好、客户端平台信息（操作系统类型和版本）以及压缩算法偏好。服务端根据客户端能力和服务端策略决定最终的隧道参数。"
+    packet_info: "HTTP POST /config 请求头包含：X-CSTP-Version: 1（CSTP 协议版本）；X-CSTP-Base-MTU: 1406（基础 MTU 值）；X-CSTP-Client-Platform: Win（客户端平台）；X-CSTP-Accept-Encoding: deflate（支持的压缩算法）。请求体为 URL 编码的表单数据。所有请求通过 TLS 加密传输。"
+    rfc_reference: "OpenConnect Protocol - Configuration Exchange"
+    expected_state: "CONFIG_REQUESTED"
+    hint: "客户端平台信息帮助服务端推送针对特定操作系统的路由和 DNS 配置，例如 Windows、macOS、Linux 或移动端。"
+
+  - title: "Configuration Response"
+    description: "服务端处理配置请求后，通过 HTTP 响应头推送 VPN 隧道参数。关键参数包括：客户端虚拟 IP 地址（X-CSTP-Address）、子网掩码（X-CSTP-Netmask）、DNS 服务器（X-CSTP-DNS）、路由条目（X-CSTP-Split-Include/Exclude）、MTU 值和会话超时时间。客户端应用这些配置后，设置虚拟网卡接口的 IP 地址并更新路由表。"
+    packet_info: "服务端 HTTP 响应头推送配置：X-CSTP-Address: 10.0.0.100（客户端IP）；X-CSTP-Netmask: 255.255.255.0；X-CSTP-DNS: 8.8.8.8, 8.8.4.4；X-CSTP-Split-Include: 192.168.0.0/255.255.0.0（分割路由）；X-CSTP-MTU: 1406；X-CSTP-Keepalive: 30（保活间隔秒）；X-CSTP-Session-Timeout: 3600。响应体为空，HTTP 状态码 200。"
+    rfc_reference: "OpenConnect Protocol - CSTP Header Configuration"
+    expected_state: "CONFIG_RECEIVED"
+    hint: "X-CSTP-Split-Include 定义了需要通过 VPN 隧道的内网路由，未列出的流量则走本地网络（分割隧道模式）。"
+
+  - title: "CSTP Tunnel"
+    description: "配置交换完成后，客户端发送一个特殊的 HTTP 响应（空的 200 OK）以确认 CSTP 隧道建立。CSTP（Cisco Secure Tunnel Protocol）是 OpenConnect 的核心数据封装协议，它将 IP 数据包封装在 HTTP 数据流中传输。CSTP 帧格式包含帧类型、长度和载荷，所有数据通过已建立的 TLS 连接传输。此时控制通道已完全建立。"
+    packet_info: "CSTP 帧结构：Type（1字节，0x00=数据帧, 0x05=keepalive, 0x06=DPD）+ Length（2字节，网络字节序，载荷长度）+ Payload（IP数据包或控制消息）。客户端和服务端通过同一个 TLS 连接交替发送 CSTP 帧。每帧前有 TLS 记录层封装。隧道建立时客户端发送空 200 响应确认。"
+    rfc_reference: "OpenConnect Protocol - CSTP Framing"
+    expected_state: "CSTP_ESTABLISHED"
+    hint: "CSTP 将所有 VPN 流量封装为看似普通的 HTTPS 数据流，深度包检测（DPI）设备通常无法识别。"
+
+  - title: "Data Channel - DTLS/TLS"
+    description: "OpenConnect 支持双通道数据传输：主通道使用 TLS（TCP 443），备用/高速通道使用 DTLS（UDP）。DTLS 提供更低的延迟和更好的性能，因为它避免了 TCP 的队头阻塞问题。客户端首先尝试通过 UDP 端口 443（或其他配置端口）建立 DTLS 连接，使用服务端在配置阶段推送的 DTLS cookie 进行验证。如果 DTLS 建立失败，所有数据将继续通过 TLS 主通道传输。"
+    packet_info: "DTLS 建立流程：(1) 服务端通过 X-CSTP-DTLS-Cookie 头推送 DTLS cookie；(2) 客户端发送 DTLS Client Hello（UDP端口443），携带 cookie 扩展；(3) 服务端验证 cookie 后完成 DTLS 握手。DTLS 数据帧结构与 CSTP 相同：Type + Length + Payload，但通过 UDP 传输。TLS 主通道始终保活作为备份。"
+    rfc_reference: "RFC 6347 - DTLS 1.2 / OpenConnect Protocol - DTLS Data Channel"
+    expected_state: "DATA_CHANNEL_READY"
+    hint: "DTLS 通道显著提升实时应用（如语音、视频）的性能，因为它不受 TCP 重传机制的延迟影响。"
+
+  - title: "Keepalive"
+    description: "OpenConnect 使用两种机制维持连接活跃：应用层 Keepalive 和 DPD（Dead Peer Detection）。客户端定期发送 CSTP keepalive 帧（Type=0x05）以防止 NAT 表项超时和中间设备断开空闲连接。DPD 帧（Type=0x06）用于检测对端是否存活，如果连续多次未收到 DPD 响应，客户端认为连接已断开并触发重连。"
+    packet_info: "Keepalive CSTP 帧：Type（0x05）+ Length（0x0000，无载荷）。DPD CSTP 帧：Type（0x06）+ Length（0x0000）。Keepalive 间隔由服务端通过 X-CSTP-Keepalive 头配置（通常 30 秒）。DPD 间隔通常更长（如 60 秒），超时阈值为连续 3 次无响应。TLS 和 DTLS 通道各自独立维护 keepalive。"
+    rfc_reference: "OpenConnect Protocol - Keepalive / DPD"
+    expected_state: "TUNNEL_ACTIVE"
+    hint: "Keepalive 对于移动网络环境尤为重要，因为运营商的 NAT 设备通常会在几分钟内清理空闲 UDP 映射。"
+
+  - title: "Reconnection"
+    description: "OpenConnect 内置自动重连机制，当检测到连接中断（DPD 超时、TCP 断开或 TLS 错误）时，客户端自动尝试重新建立连接。重连过程中，客户端携带之前的会话 cookie 尝试恢复会话，避免重新进行完整的认证流程。如果 DTLS 通道断开，客户端会尝试重建 DTLS 而不影响 TLS 主通道。重连间隔采用指数退避策略，避免在网络恢复前产生过多重试流量。"
+    packet_info: "重连请求：POST /auth 携带 X-CSTP-Session-ID 和之前的 session cookie。服务端验证 cookie 有效性后允许会话恢复，返回 200 OK 并重新推送配置。如果 cookie 失效，客户端需要重新进行完整认证。DTLS 重连独立进行：重新发送 DTLS Client Hello 携带新的 cookie。重连超时序列：1s, 2s, 4s, 8s, 16s, 30s（最大）。"
+    rfc_reference: "OpenConnect Protocol - Session Resumption"
+    expected_state: "RECONNECTING"
+    hint: "OpenConnect 的会话恢复机制使用户在网络切换（如 WiFi 到 4G）时几乎无感知地保持 VPN 连接。"
+
+  - title: "Tunnel Active"
+    description: "OpenConnect VPN 隧道完全建立并正常运行。客户端虚拟网卡已配置 IP 地址和路由规则，所有匹配路由的 IP 数据包被封装为 CSTP 帧，通过 TLS（主通道）或 DTLS（高速通道）加密传输到服务端。服务端解封装后将数据包转发到目标网络，并将响应数据沿反向路径送回客户端。隧道支持 IPv4 和 IPv6 双栈通信。"
+    packet_info: "活跃隧道数据流：应用程序 → 系统路由表 → 虚拟网卡（tun0/ctf0）→ IP 数据包 → CSTP 封装（Type=0x00 + Length + IP包）→ TLS/DTLS 加密 → TCP/UDP 443 → 服务端。响应路径反向。DTLS 数据包可独立于 TLS 乱序到达，提供更好的网络适应性。典型 MTU 为 1406 字节（扣除 CSTP/TLS/UDP 头部开销）。"
+    rfc_reference: "OpenConnect Protocol - Data Transfer / tun/tap Driver"
+    expected_state: "TUNNEL_ACTIVE"
+    hint: "恭喜！OpenConnect 隧道已成功建立。所有流量经过 TLS/DTLS 加密保护，以标准 HTTPS 流量形式传输，难以被网络审查设备识别和阻断。"

@@ -1,0 +1,66 @@
+name: "PPTP 基础连接测试"
+description: "测试 PPTP 协议的基本连接功能"
+tags: ["pptp", "basic", "connection"]
+version: "1.0"
+timeout: 120
+
+setup:
+  - start_protocol: "pptp"
+
+steps:
+  - name: "建立 PPTP 连接"
+    action: "connect"
+    params:
+      protocol: "pptp"
+      user: "test"
+      password: "test123"
+    expect:
+      state: "connected"
+    timeout: 30
+    description: "使用 PPTP 协议建立 VPN 连接"
+
+  - name: "检查连接状态"
+    action: "check"
+    params:
+      connection_type: "pptp"
+    expect:
+      state: "connected"
+    timeout: 10
+    description: "验证 PPTP 连接已成功建立"
+
+  - name: "测试网络延迟"
+    action: "ping"
+    params:
+      target: "10.0.0.1"
+      count: 3
+    expect:
+      reachable: true
+    timeout: 15
+    description: "通过 PPTP 隧道测试网络延迟"
+
+  - name: "等待稳定"
+    action: "wait"
+    params:
+      duration: 2.0
+    description: "等待连接稳定"
+
+  - name: "断开 PPTP 连接"
+    action: "disconnect"
+    params:
+      protocol: "pptp"
+    expect:
+      state: "disconnected"
+    timeout: 10
+    description: "断开 PPTP VPN 连接"
+
+  - name: "验证连接断开"
+    action: "check"
+    params:
+      connection_type: "pptp"
+    expect:
+      state: "disconnected"
+    timeout: 10
+    description: "验证 PPTP 连接已成功断开"
+
+teardown:
+  - stop_protocol: "pptp"

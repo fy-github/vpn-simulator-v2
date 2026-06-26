@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # VPN Simulator 主服务
+  vpn-simulator:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8080:8080"     # REST API
+      - "8081:8081"     # WebSocket
+      - "1723:1723"     # PPTP
+      - "1701:1701"     # L2TP
+      - "1194:1194"     # OpenVPN
+      - "500:500"       # IPSec
+      - "4500:4500"     # IPSec NAT-T
+      - "51820:51820"   # WireGuard
+    volumes:
+      - ../config:/app/config
+      - vpn-data:/app/data
+      - vpn-logs:/app/logs
+    environment:
+      - VPN_SIM_SERVER_HOST=0.0.0.0
+      - VPN_SIM_SERVER_PORT=8080
+      - VPN_SIM_DATABASE_URL=sqlite:///data/vpn_simulator.db
+      - VPN_SIM_LOG_LEVEL=INFO
+    networks:
+      - vpn-network
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    restart: unless-stopped
+
+  # Web UI
+  web-ui:
+    build:
+      context: ../web-ui
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://vpn-simulator:8080
+    depends_on:
+      - vpn-simulator
+    networks:
+      - vpn-network
+    restart: unless-stopped
+
+networks:
+  vpn-network:
+    driver: bridge
+
+volumes:
+  vpn-data:
+  vpn-logs:

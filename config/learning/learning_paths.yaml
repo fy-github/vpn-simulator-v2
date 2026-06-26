@@ -1,0 +1,310 @@
+# 学习路径配置
+# 定义 VPN 协议学习路径
+
+paths:
+  - id: beginner
+    name: 初学者路径
+    description: 适合零基础学习者，从简单协议开始逐步深入
+    icon: "target"
+    difficulty: beginner
+    estimated_hours: 8
+    target_audience: "网络初学者、学生、对 VPN 感兴趣的用户"
+    prerequisites: []
+    protocols:
+      - protocol: pptp
+        order: 1
+        title: "PPTP 基础"
+        description: "学习 VPN 最基本的概念和 PPTP 协议工作原理"
+        objectives:
+          - "理解 VPN 的基本概念和用途"
+          - "掌握 PPTP 控制连接和 GRE 隧道"
+          - "了解 PPP 协议族（LCP、认证、IPCP）"
+          - "分析 PPTP 握手报文"
+        estimated_hours: 2
+        resources:
+          - type: tutorial
+            id: pptp_basics
+            title: "PPTP 基础教程"
+          - type: rfc
+            id: "RFC 2637"
+            title: "PPTP 协议规范"
+
+      - protocol: l2tp
+        order: 2
+        title: "L2TP/IPSec 进阶"
+        description: "学习第二层隧道协议及其与 IPSec 的结合"
+        objectives:
+          - "理解 L2TP 控制通道和数据通道"
+          - "掌握 L2TP 会话和隧道管理"
+          - "了解 L2TP 与 IPSec 的结合使用"
+          - "对比 PPTP 和 L2TP 的区别"
+        estimated_hours: 3
+        resources:
+          - type: tutorial
+            id: l2tp_basics
+            title: "L2TP 基础教程"
+          - type: rfc
+            id: "RFC 2661"
+            title: "L2TP 协议规范"
+
+      - protocol: openvpn
+        order: 3
+        title: "OpenVPN 实践"
+        description: "学习最流行的开源 VPN 解决方案"
+        objectives:
+          - "理解 OpenVPN 的 TLS 握手过程"
+          - "掌握证书体系和配置方法"
+          - "了解 TUN/TAP 设备的区别"
+          - "配置和调试 OpenVPN"
+        estimated_hours: 3
+        resources:
+          - type: tutorial
+            id: openvpn_basics
+            title: "OpenVPN 基础教程"
+          - type: reference
+            id: openvpn_docs
+            title: "OpenVPN 官方文档"
+
+  - id: intermediate
+    name: 进阶路径
+    description: 适合有基础的学习者，深入学习企业级协议"
+    icon: "tutorial"
+    difficulty: intermediate
+    estimated_hours: 12
+    target_audience: "网络工程师、安全工程师、系统管理员"
+    prerequisites:
+      - "VPN 基本概念"
+      - "TCP/IP 协议栈"
+      - "加密学基础"
+    protocols:
+      - protocol: ipsec
+        order: 1
+        title: "IPSec 深入"
+        description: "学习 IPSec 协议族，包括 IKEv1 和 ESP"
+        objectives:
+          - "理解 IPSec 的传输模式和隧道模式"
+          - "掌握 IKEv1 两阶段协商过程"
+          - "了解 ESP 封装和加密机制"
+          - "分析 IPSec 报文结构"
+        estimated_hours: 4
+        resources:
+          - type: tutorial
+            id: ipsec_basics
+            title: "IPSec 基础教程"
+          - type: rfc
+            id: "RFC 2409"
+            title: "IKEv1 协议规范"
+          - type: rfc
+            id: "RFC 4301"
+            title: "IPSec 安全架构"
+
+      - protocol: ikev2
+        order: 2
+        title: "IKEv2 现代化"
+        description: "学习 IKEv2 协议及其对 IKEv1 的改进"
+        objectives:
+          - "理解 IKEv2 的 4 消息交换"
+          - "掌握 IKEv2 的认证方式"
+          - "了解 MOBIKE 协议扩展"
+          - "配置 IKEv2 VPN 服务器"
+        estimated_hours: 4
+        resources:
+          - type: tutorial
+            id: ikev2_basics
+            title: "IKEv2 基础教程"
+          - type: rfc
+            id: "RFC 7296"
+            title: "IKEv2 协议规范"
+
+      - protocol: wireguard
+        order: 3
+        title: "WireGuard 新时代"
+        description: "学习新一代 VPN 协议 WireGuard"
+        objectives:
+          - "理解 Noise_IKpsk2 握手框架"
+          - "掌握 Curve25519 密钥交换"
+          - "了解 ChaCha20-Poly1305 加密"
+          - "部署和配置 WireGuard"
+        estimated_hours: 4
+        resources:
+          - type: tutorial
+            id: wireguard_basics
+            title: "WireGuard 基础教程"
+          - type: reference
+            id: wireguard_protocol
+            title: "WireGuard 协议规范"
+
+  - id: enterprise
+    name: 企业路径
+    description: 适合企业环境，学习企业级 VPN 解决方案"
+    icon: "server"
+    difficulty: advanced
+    estimated_hours: 10
+    target_audience: "企业 IT 管理员、安全架构师、运维工程师"
+    prerequisites:
+      - "网络架构知识"
+      - "Active Directory 基础"
+      - "PKI 证书管理"
+    protocols:
+      - protocol: sstp
+        order: 1
+        title: "SSTP 企业方案"
+        description: "学习微软 SSTP 协议及其在 Windows 环境的应用"
+        objectives:
+          - "理解 SSTP 基于 HTTPS 的隧道机制"
+          - "掌握 SSTP 与 Active Directory 集成"
+          - "配置 Windows RRAS 服务"
+          - "排查 SSTP 连接问题"
+        estimated_hours: 3
+        resources:
+          - type: tutorial
+            id: sstp_basics
+            title: "SSTP 基础教程"
+          - type: reference
+            id: ms_sstp_spec
+            title: "MS-SSTP 规范"
+
+      - protocol: openconnect
+        order: 2
+        title: "OpenConnect 方案"
+        description: "学习 Cisco AnyConnect 兼容的开源方案"
+        objectives:
+          - "理解 OpenConnect 协议"
+          - "掌握 ocserv 服务器配置"
+          - "实现证书认证和双因素认证"
+          - "配置客户端分流策略"
+        estimated_hours: 4
+        resources:
+          - type: tutorial
+            id: openconnect_basics
+            title: "OpenConnect 基础教程"
+          - type: reference
+            id: ocserv_docs
+            title: "ocserv 官方文档"
+
+      - protocol: multi_protocol
+        order: 3
+        title: "多协议管理"
+        description: "学习企业多协议 VPN 环境的管理"
+        objectives:
+          - "设计多协议 VPN 架构"
+          - "实现统一认证和管理"
+          - "监控和日志分析"
+          - "故障转移和负载均衡"
+        estimated_hours: 3
+        resources:
+          - type: reference
+            id: vpn_architecture
+            title: "企业 VPN 架构设计"
+          - type: reference
+            id: vpn_security
+            title: "VPN 安全最佳实践"
+
+  - id: security
+    name: 安全研究路径
+    description: 专注于 VPN 协议安全分析和漏洞研究"
+    icon: "lock"
+    difficulty: advanced
+    estimated_hours: 15
+    target_audience: "安全研究员、渗透测试人员、安全架构师"
+    prerequisites:
+      - "密码学基础"
+      - "网络协议分析"
+      - "逆向工程基础"
+    protocols:
+      - protocol: pptp
+        order: 1
+        title: "PPTP 安全分析"
+        description: "分析 PPTP 协议的安全漏洞"
+        objectives:
+          - "破解 MS-CHAPv2 认证"
+          - "分析 MPPE 加密弱点"
+          - "演示 PPTP 攻击场景"
+        estimated_hours: 3
+        resources:
+          - type: attack
+            id: pptp_crack
+            title: "PPTP 破解演示"
+
+      - protocol: openvpn
+        order: 2
+        title: "OpenVPN 安全审计"
+        description: "审计 OpenVPN 配置和实现"
+        objectives:
+          - "识别配置漏洞"
+          - "分析 TLS 握手安全"
+          - "测试证书验证"
+        estimated_hours: 4
+        resources:
+          - type: attack
+            id: openvpn_audit
+            title: "OpenVPN 安全审计"
+
+      - protocol: ipsec
+        order: 3
+        title: "IPSec 漏洞研究"
+        description: "研究 IPSec/IKE 协议漏洞"
+        objectives:
+          - "分析 IKEv1 暴力破解"
+          - "研究降级攻击"
+          - "测试 ESP 完整性"
+        estimated_hours: 4
+        resources:
+          - type: attack
+            id: ipsec_attacks
+            title: "IPSec 攻击技术"
+
+      - protocol: wireguard
+        order: 4
+        title: "WireGuard 形式化验证"
+        description: "学习 WireGuard 的形式化验证方法"
+        objectives:
+          - "理解 Noise 协议框架"
+          - "分析形式化验证结果"
+          - "研究潜在攻击面"
+        estimated_hours: 4
+        resources:
+          - type: reference
+            id: wireguard_formal
+            title: "WireGuard 形式化验证"
+
+milestones:
+  - id: beginner_complete
+    path_id: beginner
+    title: "VPN 入门完成"
+    description: "掌握 VPN 基本概念和三种基础协议"
+    badge: "VPN Beginner"
+    requirements:
+      - "完成初学者路径所有协议"
+      - "通过基础协议测试"
+      - "成功建立 PPTP/L2TP/OpenVPN 连接"
+
+  - id: intermediate_complete
+    path_id: intermediate
+    title: "VPN 进阶完成"
+    description: "掌握企业级 VPN 协议"
+    badge: "VPN Intermediate"
+    requirements:
+      - "完成进阶路径所有协议"
+      - "通过进阶协议测试"
+      - "成功部署 IKEv2/WireGuard"
+
+  - id: enterprise_complete
+    path_id: enterprise
+    title: "企业 VPN 专家"
+    description: "具备企业 VPN 架构设计能力"
+    badge: "Enterprise VPN Expert"
+    requirements:
+      - "完成企业路径所有协议"
+      - "设计企业 VPN 架构方案"
+      - "实现多协议 VPN 环境"
+
+  - id: security_complete
+    path_id: security
+    title: "VPN 安全研究员"
+    description: "具备 VPN 协议安全分析能力"
+    badge: "VPN Security Researcher"
+    requirements:
+      - "完成安全研究路径所有协议"
+      - "演示协议攻击技术"
+      - "提交安全分析报告"

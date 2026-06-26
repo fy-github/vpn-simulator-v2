@@ -1,0 +1,60 @@
+:root {
+  /* Background colors - dark navy */
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  
+  /* Card colors - slightly lighter */
+  --card: #1e293b;
+  --card-foreground: #e2e8f0;
+  
+  /* Popover colors */
+  --popover: #1e293b;
+  --popover-foreground: #e2e8f0;
+  
+  /* Primary colors - cyan */
+  --primary: #0ea5e9;
+  --primary-foreground: #ffffff;
+  
+  /* Secondary colors */
+  --secondary: #334155;
+  --secondary-foreground: #e2e8f0;
+  
+  /* Muted colors */
+  --muted: #334155;
+  --muted-foreground: #94a3b8;
+  
+  /* Accent colors */
+  --accent: #334155;
+  --accent-foreground: #e2e8f0;
+  
+  /* Destructive colors - red */
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  
+  /* Border */
+  --border: #334155;
+  
+  /* Input */
+  --input: #334155;
+  
+  /* Ring - focus indicator */
+  --ring: #0ea5e9;
+  
+  /* Radius */
+  --radius: 0.5rem;
+  
+  /* Semantic colors */
+  --success: #22c55e;
+  --success-foreground: #ffffff;
+  
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
+  
+  --info: #0ea5e9;
+  --info-foreground: #ffffff;
+  
+  /* Typography */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --font-display: 'Orbitron', 'Inter', sans-serif;
+}

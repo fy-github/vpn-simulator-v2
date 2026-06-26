@@ -1,0 +1,76 @@
+name: "WireGuard 基础教程"
+protocol: wireguard
+description: "学习 WireGuard 协议的 Noise_IKpsk2 握手流程，包括密钥交换和数据加密。"
+difficulty: intermediate
+estimated_time: 15
+
+steps:
+  - title: "Handshake Initiation"
+    description: "客户端发起握手请求（Handshake Initiation）。WireGuard 使用 Noise_IKpsk2 协议框架，基于 X25519 密钥交换和预共享密钥。客户端使用服务端公钥（已知）和自己的临时密钥对生成共享密钥，发起握手。此报文仅 52 字节，体现了 WireGuard 的精简设计。"
+    packet_info: "Handshake Initiation 报文（52 字节）包含：Message Type（1 字节，值为 1）、Reserved（3 字节）、Sender Index（4 字节，客户端随机生成）、Unencrypted Ephemeral（32 字节，客户端临时公钥，明文传输）、Encrypted Static（16 字节，加密后的客户端静态公钥）、Encrypted Timestamp（12 字节，加密后的时间戳，用于重放保护）、MAC1（16 字节）、MAC2（16 字节）。"
+    rfc_reference: "WireGuard Protocol Whitepaper Section 2 & Noise_IKpsk2"
+    expected_state: "WAIT_RESPONSE"
+    hint: "WireGuard 的握手报文非常精简，仅 52 字节即可完成密钥交换。客户端公钥通过加密传输，只有拥有服务端私钥的接收者才能解密。"
+
+  - title: "Handshake Response"
+    description: "服务端回复握手响应（Handshake Response）。服务端收到 Initiation 后，使用自己的私钥和客户端的临时公钥计算共享密钥，然后生成自己的临时密钥对，将公钥发送给客户端。同时，服务端派生出传输密钥对（Traffic Keys），用于后续数据加密。"
+    packet_info: "Handshake Response 报文（92 字节）包含：Message Type（1 字节，值为 2）、Reserved（3 字节）、Sender Index（4 字节，服务端随机生成）、Receiver Index（4 字节，对应客户端的 Sender Index）、Unencrypted Ephemeral（32 字节，服务端临时公钥）、Encrypted Noattr（16 字节，加密的空负载）、MAC1（16 字节）、MAC2（16 字节）。响应后双方各派生一对发送/接收密钥。"
+    rfc_reference: "WireGuard Protocol Whitepaper Section 2"
+    expected_state: "HANDSHAKE_COMPLETE"
+    hint: "Handshake Response 完成后，双方已各自计算出相同的传输密钥。WireGuard 使用 HKDF 从共享密钥派生出独立的发送和接收密钥。"
+
+  - title: "Cookie Verification"
+    description: "Cookie 验证机制（Anti-DoS）。当服务端在短时间内收到大量握手请求时，会在响应中包含一个加密的 Cookie 值。客户端必须在后续的握手请求中携带此 Cookie，否则服务端将丢弃报文。这是 WireGuard 防止 IP 伪造和 DoS 攻击的机制，类似于 IKEv2 的 COOKIE 机制。"
+    packet_info: "Cookie Reply 报文（64 字节）包含：Message Type（1 字节，值为 3）、Reserved（3 字节）、Receiver Index（4 字节，对应发起方的 Sender Index）、Nonce（24 字节，随机值）、Encrypted Cookie（16 字节，加密的 Cookie 值，仅接收方能解密）。Cookie 值基于服务端随机密钥和客户端 IP 地址生成，有效期约 120 秒。"
+    rfc_reference: "WireGuard Protocol Whitepaper Section 5.3"
+    expected_state: "COOKIE_RECEIVED"
+    hint: "Cookie 验证是 WireGuard 的防 DoS 机制。正常连接时不会触发，仅在服务端负载过高时启用。客户端收到 Cookie 后，需要在下次握手时附加到 MAC2 字段中。"
+
+  - title: "Transport Data"
+    description: "首条加密数据报文。握手完成后，客户端发送第一条 Transport Data 报文，标志着 WireGuard 隧道正式可用于数据传输。此报文使用 ChaCha20-Poly1305 加密，Nonce 从 1 开始递增，确保每条报文的加密唯一性。"
+    packet_info: "Transport Data 报文包含：Message Type（1 字节，值为 4）、Reserved（3 字节）、Receiver Index（4 字节，对应服务端的 Sender Index）、Counter（8 字节，Nonce 计数器，从 1 开始）、Encrypted Data（变长，加密后的 IP 数据包）、Encrypted AEAD Tag（16 字节，Poly1305 认证标签）。Counter 递增确保每个报文的 Nonce 唯一，防止重放攻击。"
+    rfc_reference: "WireGuard Protocol Whitepaper Section 3"
+    expected_state: "DATA_EXCHANGE"
+    hint: "Transport Data 报文的 Counter 字段从 1 开始递增，服务端会检测 Counter 是否重复，防止重放攻击。"
+
+  - title: "Keepalive"
+    description: "持久连接维护（Keepalive）。WireGuard 使用空的 Transport Data 报文作为 Keepalive，维持 NAT 映射和连接活性。默认 Keepalive 间隔为 25 秒（可配置 1-65535 秒）。Keepalive 报文不携带有效载荷，仅包含 AEAD 认证标签，大小为 32 字节。"
+    packet_info: "Keepalive 报文（32 字节）结构与 Transport Data 相同，但 Encrypted Data 为空：Message Type（1 字节，值为 4）、Reserved（3 字节）、Receiver Index（4 字节）、Counter（8 字节）、Encrypted AEAD Tag（16 字节）。Keepalive 报文消耗一个 Counter 值，确保 Nonce 唯一性。"
+    rfc_reference: "WireGuard Protocol Whitepaper Section 6.2"
+    expected_state: "KEEPALIVE_SENT"
+    hint: "Keepalive 报文虽然不携带数据，但仍然加密传输，防止中间人探测隧道活性。在 NAT 环境下，Keepalive 还负责维持 UDP 端口映射。"
+
+  - title: "Rekeying"
+    description: "密钥更新（Rekeying）。WireGuard 在以下条件之一满足时触发 Rekey：(1) 发送数据量达到 2^64 字节（约 18.4 EB）；(2) 距上次握手超过 120 秒（可配置）。Rekey 时发起新的 Noise_IKpsk2 握手，但不影响正在进行的数据传输——旧密钥继续使用直到新握手完成。"
+    packet_info: "Rekey Initiation 报文结构与初始 Handshake Initiation 完全相同（52 字节），但使用新的临时密钥对。关键区别：Sender Index 是新的随机值，Encrypted Timestamp 中的时间戳必须大于前一次握手，防止重放。Rekey 期间数据传输使用旧密钥，新握手完成后无缝切换到新密钥。"
+    rfc_reference: "WireGuard Protocol Whitepaper Section 6.1"
+    expected_state: "REKEYING"
+    hint: "WireGuard 的 Rekey 设计非常优雅：使用新密钥对进行 Rekey 握手，同时旧密钥继续传输数据，实现无缝切换。Rekey 超时默认 120 秒，即使没有数据传输也会触发。"
+
+  - title: "Roaming"
+    description: "IP 地址变更处理（Roaming）。当客户端 IP 地址发生变化（如从 WiFi 切换到移动网络），WireGuard 通过 Cookie 机制自动适应。客户端只需从新 IP 发送一条合法的 Transport Data 报文，服务端即自动更新对端地址。无需重新握手，实现真正的无缝漫游。"
+    packet_info: "Roaming 时客户端发送的 Transport Data 报文结构不变，但源 IP 和端口已更新。服务端通过 Receiver Index 识别对端，验证 MAC 后自动更新 Endpoint 地址。WireGuard 使用 Allowed-IPs 列表验证客户端身份，确保只有合法客户端能漫游。服务端的 Endpoint 更新仅响应已认证的报文。"
+    rfc_reference: "WireGuard Protocol Whitepaper Section 6.3"
+    expected_state: "ROAMING_COMPLETE"
+    hint: "WireGuard 的 Roaming 机制无需额外握手，仅通过数据报文的源地址变化即可完成。这使得 WireGuard 在移动场景下表现极佳，切换网络几乎无感知延迟。"
+
+  - title: "Data Channel"
+    description: "ChaCha20-Poly1305 数据加密通道。WireGuard 的数据通道使用 ChaCha20-Poly1305 AEAD 算法，密钥由 HKDF-SHA256 从 Noise 握手的共享密钥派生。每个方向有独立的密钥和 Counter 序列，Counter 不可重用，防止密钥流重用攻击。"
+    packet_info: "ChaCha20-Poly1305 加密过程：(1) 使用 256 位密钥 + 96 位 Nonce（由 Counter 填充）对明文 IP 包进行加密；(2) 使用 Poly1305 生成 128 位认证标签（AEAD Tag），附加在密文之后；(3) 接收方先验证 Tag，通过后才解密，实现认证加密。Counter 从 1 开始递增，2^64 个报文后触发 Rekey。"
+    rfc_reference: "RFC 8439 (ChaCha20-Poly1305)"
+    expected_state: "ENCRYPTED_CHANNEL"
+    hint: "ChaCha20-Poly1305 是 WireGuard 唯一支持的数据加密算法，比 AES-GCM 在软件实现中更快，且无需硬件加速。AEAD 确保密文完整性和真实性。"
+
+  - title: "Noise IKpsk2"
+    description: "Noise_IKpsk2 协议模式详解。WireGuard 使用 Noise 框架的 IKpsk2 模式：I 表示 Initiator 已知 Responder 的静态公钥（Known），K 表示 Responder 的公钥在握手消息中传输（Known），psk2 表示预共享密钥在第二条消息中使用。此模式仅需 1.5-RTT（一请求一响应）即可完成握手，极大降低延迟。"
+    packet_info: "Noise_IKpsk2 握手密钥推导：(1) Initiator 生成临时密钥对 (e_i, E_i)；(2) 使用 E_i 和 Responder 的静态公钥 S_r 计算共享密钥 DH(E_i, S_r)；(3) 将自己的静态公钥 S_i 用 DH(E_i, S_r) 加密后发送；(4) Responder 用自己的私钥 s_r 解密得到 S_i；(5) Responder 生成临时密钥对 (e_r, E_r)；(6) 使用 E_r、S_i、S_r 计算多个 DH 共享密钥；(7) 通过 HKDF 派生传输密钥。"
+    rfc_reference: "Noise Protocol Framework (noiseexplorer.com)"
+    expected_state: "NOISE_COMPLETE"
+    hint: "Noise_IKpsk2 是 WireGuard 的核心协议模式。'IK' 意味着双方都已知对方的静态公钥，'psk2' 提供额外的认证。这使得 WireGuard 握手仅需 1 条请求 + 1 条响应，延迟极低。"
+
+  - title: "Tunnel Active"
+    description: "WireGuard 隧道完全建立，进入活跃状态。此时客户端和服务端之间的所有 IP 流量通过 WireGuard 隧道加密传输。隧道支持 IPv4 和 IPv6 双栈，使用虚拟网卡（wg0）进行数据收发。隧道建立后，Keepalive 机制维持连接，Rekey 机制保障长期安全性。"
+    packet_info: "完整隧道状态：(1) 双方持有有效的传输密钥对（发送密钥 + 接收密钥）；(2) Allowed-IPs 配置决定哪些流量通过隧道；(3) 虚拟网卡 wg0 配置了隧道 IP 地址；(4) 路由表已更新，将目标流量导向 wg0；(5) Counter 计数器正常递增；(6) 下次 Rekey 倒计时开始（默认 120 秒）。数据路径：应用数据 -> IP 层 -> wg0 接口 -> ChaCha20-Poly1305 加密 -> UDP 封装（端口 51820）-> 物理网络。"
+    rfc_reference: "WireGuard Protocol Whitepaper Section 4"
+    expected_state: "TUNNEL_ACTIVE"
+    hint: "恭喜！WireGuard 隧道已完全建立。WireGuard 的设计哲学是'简单即安全'——代码量仅约 4000 行，远少于 IPSec/OpenVPN，却提供了更强的安全保障。隧道建立后，所有配置的 IP 流量将自动加密传输。"
