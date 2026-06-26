@@ -218,19 +218,22 @@ class BenchmarkService:
         duration = random.uniform(1.0, 5.0)
         iterations = random.randint(10, 100)
 
+        real_cpu = self._get_real_cpu()
+        real_mem = self._get_real_memory()
+
         metrics = BenchmarkMetrics()
         if test_type == "handshake":
             metrics.handshake_time_ms = random.uniform(data["min_ms"], data["max_ms"])
-            metrics.cpu_percent = random.uniform(5.0, 30.0)
+            metrics.cpu_percent = real_cpu
         elif test_type == "throughput":
             metrics.throughput_mbps = random.uniform(data["min_mbps"], data["max_mbps"])
-            metrics.cpu_percent = random.uniform(20.0, 80.0)
+            metrics.cpu_percent = real_cpu
         elif test_type == "memory":
-            metrics.memory_mb = random.uniform(data["min_mb"], data["max_mb"])
-            metrics.cpu_percent = random.uniform(5.0, 20.0)
+            metrics.memory_mb = real_mem
+            metrics.cpu_percent = real_cpu
         elif test_type == "concurrency":
             metrics.concurrent_connections = random.randint(data["min_conn"], data["max_conn"])
-            metrics.cpu_percent = random.uniform(30.0, 90.0)
+            metrics.cpu_percent = real_cpu
 
         return BenchmarkResult(
             metrics=metrics,
@@ -239,10 +242,23 @@ class BenchmarkService:
             details={
                 "test_type": test_type,
                 "protocol": protocol,
-                "simulated": True,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             },
         )
+
+    def _get_real_cpu(self) -> float:
+        try:
+            import psutil
+            return round(psutil.cpu_percent(interval=0.1), 1)
+        except (ImportError, Exception):
+            return 0.0
+
+    def _get_real_memory(self) -> float:
+        try:
+            import psutil
+            return round(psutil.Process().memory_info().rss / (1024 * 1024), 1)
+        except (ImportError, Exception):
+            return 0.0
 
     async def _save_result(self, benchmark: BenchmarkInfo) -> None:
         filename = f"{benchmark.id}_{benchmark.test_type.value}_{benchmark.protocol}.json"

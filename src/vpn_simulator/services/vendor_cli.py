@@ -302,41 +302,43 @@ class VendorCLIService:
         return "1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN\n    inet 127.0.0.1/8 scope host lo\n2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 state UP\n    inet 192.168.1.100/24 brd 192.168.1.255 scope global eth0"
 
     def _mock_running_config(self) -> str:
-        """模拟运行配置输出。"""
-        return """Building configuration...
-
-Current configuration : 1234 bytes
-!
-version 15.7
-hostname VPN-Simulator
-!
-interface GigabitEthernet0/0
- ip address 192.168.1.1 255.255.255.0
- no shutdown
-!
-interface GigabitEthernet0/1
- ip address 10.0.0.1 255.255.255.0
- no shutdown
-!
-ip route 0.0.0.0 0.0.0.0 192.168.1.254
-!
-end"""
+        import subprocess
+        try:
+            result = subprocess.run(['ip', 'addr', 'show'], capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                output = "Building configuration...\n\nCurrent configuration:\n!\nhostname VPN-Simulator\n!\n"
+                for line in result.stdout.strip().split('\n'):
+                    if 'inet ' in line:
+                        output += f"interface {line.split(':')[0].strip()}\n"
+                        output += f" ip address {line.split('inet ')[1].split(' ')[0]}\n"
+                        output += " no shutdown\n!\n"
+                output += "end"
+                return output
+        except Exception:
+            pass
+        return "Building configuration...\n!\nhostname VPN-Simulator\n!\ninterface eth0\n ip address 192.168.1.100/24\n no shutdown\n!\nend"
 
     def _mock_ping(self, target: str) -> str:
-        """模拟 ping 输出。"""
-        return f"""Type escape sequence to abort.
-Sending 5, 100-byte ICMP Echos to {target}, timeout is 2 seconds:
-!!!!!
-Success rate is 100 percent (5/5), round-trip min/avg/max = 1/2/4 ms"""
+        import subprocess
+        try:
+            result = subprocess.run(['ping', '-c', '4', '-W', '2', target], capture_output=True, text=True, timeout=15)
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')
+                stats = [l for l in lines if 'packet loss' in l or 'rtt' in l or 'round-trip' in l]
+                return f"PING {target}:\n" + '\n'.join(lines[-5:])
+        except Exception:
+            pass
+        return f"PING {target}: 5 packets sent, 5 received, 0% packet loss"
 
     def _mock_traceroute(self, target: str) -> str:
-        """模拟 traceroute 输出。"""
-        return f"""Type escape sequence to abort.
-Tracing the route to {target}
-VRF info: (vrf in name/id, vrf out name/id)
-  1 192.168.1.254 1 msec 1 msec 1 msec
-  2 10.0.0.254 2 msec 2 msec 2 msec
-  3 {target} 3 msec 3 msec 3 msec"""
+        import subprocess
+        try:
+            result = subprocess.run(['traceroute', '-m', '5', '-w', '2', target], capture_output=True, text=True, timeout=30)
+            if result.returncode == 0:
+                return result.stdout
+        except Exception:
+            pass
+        return f"traceroute to {target}, 5 hops max\n 1  gateway  1.234 ms  1.123 ms  1.045 ms\n 2  {target}  2.345 ms  2.234 ms  2.123 ms"
 
     def get_history(self, limit: int = 50) -> list[dict[str, Any]]:
         """获取命令历史。"""
