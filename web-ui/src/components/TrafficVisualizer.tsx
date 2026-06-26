@@ -364,6 +364,7 @@ export default function TrafficVisualizer() {
             edges={edges}
             speed={speed}
             paused={paused}
+            capturing={capturing}
             width={800}
             height={500}
           />

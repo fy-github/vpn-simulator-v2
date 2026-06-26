@@ -37,6 +37,7 @@ const defaultConfigs: Record<string, ProtocolConfig> = {
   wireguard: { port: 51820, transport: 'UDP', maxConnections: 500, timeout: 30, enableLogging: true },
   sstp: { port: 443, transport: 'TCP', maxConnections: 100, timeout: 30, enableLogging: true },
   openconnect: { port: 443, transport: 'TCP', maxConnections: 100, timeout: 30, enableLogging: true },
+  vxlan: { port: 4789, transport: 'UDP', maxConnections: 500, timeout: 30, enableLogging: true },
 }
 
 const Protocols = () => {
@@ -91,6 +92,7 @@ const Protocols = () => {
       wireguard: 'Modern, fast VPN protocol',
       sstp: 'Secure Socket Tunneling Protocol',
       openconnect: 'Cisco AnyConnect compatible',
+      vxlan: 'Virtual Extensible LAN - Layer 2 over Layer 3',
     }
     return descriptions[name] || 'VPN Protocol'
   }

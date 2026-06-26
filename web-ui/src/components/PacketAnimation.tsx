@@ -45,6 +45,7 @@ interface PacketAnimationProps {
   edges: Edge[]
   speed: number
   paused: boolean
+  capturing?: boolean
   width?: number
   height?: number
 }
@@ -69,6 +70,7 @@ export default function PacketAnimation({
   edges,
   speed,
   paused,
+  capturing = true,
   width = 800,
   height = 600,
 }: PacketAnimationProps) {
@@ -338,7 +340,20 @@ export default function PacketAnimation({
     ctx.fillText(`Count: ${animatedPacketsRef.current.length}`, 20, 48)
     ctx.fillText(`Speed: ${speed}x`, 20, 62)
 
-  }, [paused, packets, nodes, edges, speed, hoveredNode, createAnimatedPacket])
+    // Draw stopped state overlay
+    if (!capturing) {
+      ctx.fillStyle = '#0f172a' + '99'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.fillStyle = '#ef4444'
+      ctx.font = 'bold 18px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText('CAPTURE STOPPED', canvas.width / 2, canvas.height / 2 - 10)
+      ctx.fillStyle = '#94a3b8'
+      ctx.font = '12px sans-serif'
+      ctx.fillText('Click Start Capture to begin', canvas.width / 2, canvas.height / 2 + 15)
+    }
+  }, [paused, packets, nodes, edges, speed, hoveredNode, capturing, createAnimatedPacket])
 
   // Animation loop
   useEffect(() => {

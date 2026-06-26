@@ -1,0 +1,76 @@
+name: "VXLAN 基础教程"
+protocol: vxlan
+description: "学习 VXLAN 协议的工作原理，包括 VNI 隔离、MAC-in-UDP 封装和 Peer 管理。"
+difficulty: intermediate
+estimated_time: 15
+
+steps:
+  - title: "创建 VXLAN 接口"
+    description: "在 Linux 系统上创建 VXLAN 虚拟接口。使用 ip link 命令创建 vxlan0 接口，指定 VNI（VXLAN Network Identifier）和目标端口。VNI 是 24 位标识符，支持多达 16M 个虚拟网络。"
+    packet_info: "VXLAN 接口创建命令：ip link add vxlan0 type vxlan id <VNI> dstport 4789 dev eth0。接口创建后处于 DOWN 状态，需要手动启用。"
+    rfc_reference: "RFC 7348 - Virtual eXtensible Local Area Network (VXLAN)"
+    expected_state: "INTERFACE_CREATED"
+    hint: "VNI 类似于 VLAN ID，但范围更大（0-16777215），用于隔离不同的虚拟网络。"
+
+  - title: "配置本地 IP"
+    description: "为 VXLAN 接口配置本地 IP 地址。这个 IP 地址将作为 VXLAN 隧道的端点，所有封装的数据包都从这个地址发出。"
+    packet_info: "配置命令：ip addr add 10.0.0.1/24 dev vxlan0。IP 地址应与 VXLAN 子网匹配，确保路由正确。"
+    rfc_reference: "RFC 7348 Section 5"
+    expected_state: "INTERFACE_CREATED"
+    hint: "VXLAN 接口的 IP 地址应该在独立的子网中，避免与物理网络冲突。"
+
+  - title: "添加 Peer 地址"
+    description: "向 VXLAN 转发表添加远程 Peer 的 IP 地址。Peer 是参与同一 VXLAN 网络的其他 VTEP（VXLAN Tunnel Endpoint）。"
+    packet_info: "添加 Peer 命令：bridge fdb append 00:00:00:00:00:00 dev vxlan0 dst <Peer_IP>。FDB（Forwarding Database）条目用于 MAC 地址到 VTEP 的映射。"
+    rfc_reference: "RFC 7348 Section 4.1"
+    expected_state: "PEER_DISCOVERED"
+    hint: "可以添加多个 Peer，实现多对多的 VXLAN 网络拓扑。"
+
+  - title: "启用接口"
+    description: "启用 VXLAN 虚拟接口，使其开始工作。接口启用后，系统会开始处理 VXLAN 封装和解封装。"
+    packet_info: "启用命令：ip link set vxlan0 up。接口状态从 DOWN 变为 UP，开始监听 UDP 4789 端口的 VXLAN 数据包。"
+    rfc_reference: "RFC 7348 Section 5"
+    expected_state: "TUNNEL_ESTABLISHED"
+    hint: "启用接口前确保防火墙允许 UDP 4789 端口的流量。"
+
+  - title: "MAC-in-UDP 封装"
+    description: "了解 VXLAN 的封装格式。原始二层帧被封装在 VXLAN 头部中，外层加上 UDP、IP 和以太网头部。这种封装使得二层流量可以在三层网络上传输。"
+    packet_info: "封装格式：[Outer Ethernet][Outer IP][UDP 4789][VXLAN Header (8B, 包含 VNI)][Inner Ethernet][Original Payload]。VXLAN 头部占 8 字节，其中 24 位用于 VNI。"
+    rfc_reference: "RFC 7348 Section 5"
+    expected_state: "TUNNEL_ESTABLISHED"
+    hint: "由于额外的封装头部，VXLAN 会增加约 50 字节的开销，需要适当调整 MTU。"
+
+  - title: "数据转发"
+    description: "VXLAN 接口开始转发数据。当虚拟机或容器发送数据包时，VTEP 会查找目标 MAC 地址对应的 VTEP IP，然后进行封装和转发。"
+    packet_info: "转发流程：(1) 收到原始帧；(2) 查找目标 MAC 的 VTEP IP；(3) 添加 VXLAN 头部（设置 VNI）；(4) 添加外层 UDP/IP 头部；(5) 发送到目标 VTEP。"
+    rfc_reference: "RFC 7348 Section 4.1"
+    expected_state: "FORWARDING"
+    hint: "如果目标 MAC 地址未知，VTEP 会泛洪到所有已知的 Peer。"
+
+  - title: "ARP 代理"
+    description: "VXLAN 网络中的 ARP 处理。VTEP 可以充当 ARP 代理，响应来自本地虚拟机的 ARP 请求，减少广播流量。"
+    packet_info: "ARP 代理流程：(1) 虚拟机发送 ARP 请求；(2) VTEP 检查本地 ARP 缓存；(3) 如果命中，直接回复；(4) 如果未命中，泛洪到所有 Peer。"
+    rfc_reference: "RFC 7348 Section 5.4"
+    expected_state: "FORWARDING"
+    hint: "ARP 代理可以显著减少 VXLAN 网络中的广播流量，提高性能。"
+
+  - title: "多播支持"
+    description: "VXLAN 可以使用多播组来处理广播、未知单播和多播（BUM）流量。所有加入同一多播组的 VTEP 会收到 BUM 流量。"
+    packet_info: "多播配置：ip link add vxlan0 type vxlan id <VNI> group 239.1.1.1 dstport 4789 dev eth0。多播组地址范围：239.0.0.0 - 239.255.255.255。"
+    rfc_reference: "RFC 7348 Section 5.2"
+    expected_state: "FORWARDING"
+    hint: "在云环境中，通常使用控制平面（如 EVPN）代替多播来学习 MAC 地址。"
+
+  - title: "性能优化"
+    description: "VXLAN 性能优化技术。包括 TSO/GSO 分段卸载、RSS 多队列、以及硬件 VXLAN 卸载。这些技术可以显著提高 VXLAN 的吞吐量。"
+    packet_info: "优化命令：ethtool -K eth0 tx-udp_tnl-segmentation on（启用 TSO 卸载）。硬件卸载可以将封装/解封装操作从 CPU 转移到网卡。"
+    rfc_reference: "RFC 7348 Section 5.8"
+    expected_state: "FORWARDING"
+    hint: "启用硬件卸载后，VXLAN 的性能可以接近裸机网络的水平。"
+
+  - title: "隧道运行中"
+    description: "VXLAN 隧道完全建立并正常运行。虚拟机和容器可以通过 VXLAN 网络进行通信，就像在同一个物理网络中一样。"
+    packet_info: "运行状态：VNI=<VNI>, Port=4789, Peers=[<Peer_IPs>], MTU=1450。可以通过 bridge fdb show dev vxlan0 查看 FDB 表，ip -d link show vxlan0 查看接口详情。"
+    rfc_reference: "RFC 7348"
+    expected_state: "FORWARDING"
+    hint: "恭喜！VXLAN 隧道已成功建立，可以开始虚拟网络通信。"

@@ -447,6 +447,42 @@ const OpenConnectConfig = ({ config, onChange }: { config: Record<string, unknow
   }
 }
 
+const VXLANConfig = ({ config, onChange }: { config: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) => {
+  const peers = (config.peers as string[]) || []
+  return {
+    tabs: [
+      {
+        id: 'params',
+        label: '连接参数',
+        content: (
+          <div className="space-y-4">
+            <Input label="VNI (VXLAN Network Identifier)" type="number" value={String(config.vni || 100)} onChange={(e) => onChange('vni', parseInt(e.target.value))} />
+            <Input label="端口" type="number" value={String(config.port || 4789)} onChange={(e) => onChange('port', parseInt(e.target.value))} />
+            <Input label="本机隧道IP" value={String(config.local_ip || '0.0.0.0')} onChange={(e) => onChange('local_ip', e.target.value)} placeholder="本机 IP 地址" />
+            <Input label="MTU" type="number" value={String(config.mtu || 1450)} onChange={(e) => onChange('mtu', parseInt(e.target.value))} />
+          </div>
+        ),
+      },
+      {
+        id: 'peers',
+        label: 'Peer 管理',
+        content: (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">添加 VXLAN Peer 的 IP 地址</p>
+            {peers.map((peer, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <Input value={peer} onChange={(e) => { const updated = [...peers]; updated[index] = e.target.value; onChange('peers', updated); }} placeholder="Peer IP 地址" />
+                <Button variant="ghost" size="sm" onClick={() => onChange('peers', peers.filter((_, i) => i !== index))}>删除</Button>
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={() => onChange('peers', [...peers, ''])}>+ 添加 Peer</Button>
+          </div>
+        ),
+      },
+    ],
+  }
+}
+
 const configComponents: Record<string, (props: { config: Record<string, unknown>; onChange: (key: string, value: unknown) => void }) => { tabs: Array<{ id: string; label: string; content: React.ReactNode }> }> = {
   pptp: PPTPConfig,
   l2tp: L2TPConfig,
@@ -456,6 +492,7 @@ const configComponents: Record<string, (props: { config: Record<string, unknown>
   wireguard: WireGuardConfig,
   sstp: SSTPConfig,
   openconnect: OpenConnectConfig,
+  vxlan: VXLANConfig,
 }
 
 export default function ProtocolConfig({ protocol, config: initialConfig, onSave, onCancel }: ProtocolConfigProps) {

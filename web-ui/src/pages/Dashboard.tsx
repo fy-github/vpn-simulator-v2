@@ -79,6 +79,8 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchData()
+    const interval = setInterval(fetchData, 3000)
+    return () => clearInterval(interval)
   }, [fetchData])
 
   // GSAP animations
