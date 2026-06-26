@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import asyncio
 import random
+import socket
+import struct
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -488,52 +490,57 @@ class VoiceService:
         return max(1.0, min(5.0, mos))
 
     async def _run_call_simulation(self, call: VoiceCall) -> None:
-        """Run call simulation loop.
-
-        Generates RTP packets and calculates quality metrics.
-
-        Args:
-            call: Voice call instance.
-        """
         codec_config = CODEC_CONFIGS[call.codec]
         self._current_codec = call.codec
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        rtp_seq = 0
+        rtp_timestamp = 0
+        rtp_ssrc = random.randint(0, 0xFFFFFFFF)
 
         try:
             while call.state == CallState.ACTIVE:
-                # Simulate RTP packet generation
                 conditions = call.network_conditions
-
-                # Generate packet
                 packet_size = codec_config.packet_size_bytes
-                call.quality_metrics.packets_sent += 1
-                call.quality_metrics.bytes_sent += packet_size
 
-                # Simulate packet loss
+                rtp_header = struct.pack('!BBHII',
+                    0x80,
+                    0x00,
+                    rtp_seq & 0xFFFF,
+                    rtp_timestamp,
+                    rtp_ssrc,
+                )
+                audio_payload = bytes(random.randint(0, 255) for _ in range(max(0, packet_size - 12)))
+                rtp_packet = rtp_header + audio_payload
+
+                send_time = time.monotonic()
+                try:
+                    sock.sendto(rtp_packet, ('127.0.0.1', 10000 + (hash(call.call_id) % 1000)))
+                    call.quality_metrics.packets_sent += 1
+                    call.quality_metrics.bytes_sent += len(rtp_packet)
+                except Exception:
+                    call.quality_metrics.packets_lost += 1
+
                 if random.random() * 100 < conditions.packet_loss_percent:
                     call.quality_metrics.packets_lost += 1
                 else:
                     call.quality_metrics.packets_received += 1
-                    call.quality_metrics.bytes_received += packet_size
+                    call.quality_metrics.bytes_received += len(rtp_packet)
 
-                # Update latency with jitter
                 actual_latency = conditions.latency_ms + random.uniform(
                     -conditions.jitter_ms, conditions.jitter_ms
                 )
                 call.quality_metrics.latency_ms = max(0, actual_latency)
                 call.quality_metrics.jitter_ms = conditions.jitter_ms
 
-                # Update packet loss percentage
                 if call.quality_metrics.packets_sent > 0:
                     call.quality_metrics.packet_loss_percent = (
                         call.quality_metrics.packets_lost / call.quality_metrics.packets_sent * 100
                     )
 
-                # Calculate R-factor and MOS
                 r_factor = self._calculate_r_factor(conditions)
                 call.quality_metrics.r_factor = r_factor
                 call.quality_metrics.mos = self._calculate_mos(r_factor)
 
-                # Record quality history
                 call._quality_history.append({
                     "timestamp": time.time(),
                     "mos": call.quality_metrics.mos,
@@ -543,17 +550,20 @@ class VoiceService:
                     "latency_ms": call.quality_metrics.latency_ms,
                 })
 
-                # Trim history to last 5 minutes (300 data points at 1s interval)
                 if len(call._quality_history) > 300:
                     call._quality_history = call._quality_history[-300:]
 
-                # Wait for next packet interval
+                rtp_seq = (rtp_seq + 1) & 0xFFFF
+                rtp_timestamp += codec_config.sample_rate_hz * codec_config.frame_size_ms // 1000
+
                 await asyncio.sleep(codec_config.frame_size_ms / 1000.0)
 
         except asyncio.CancelledError:
             pass
         except Exception:
             call.state = CallState.FAILED
+        finally:
+            sock.close()
 
 
 # Global service instance

@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import asyncio
 import random
+import socket
+import struct
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -25,8 +27,13 @@ import yaml
 
 logger = structlog.get_logger(__name__)
 
-# 默认配置路径
 DEFAULT_DEVICES_PATH = Path(__file__).parent.parent.parent.parent / "config" / "iot" / "devices.yaml"
+
+_MQTT_CONNECT = 0x10
+_MQTT_PUBLISH = 0x30
+_MQTT_PINGREQ = 0xC0
+_COAP_GET = 1
+_COAP_POST = 2
 
 
 class TrafficPattern(str, Enum):
@@ -506,58 +513,86 @@ class IoTService:
             instance.stats["errors"] += 1
 
     async def _simulate_continuous(self, instance: DeviceInstance, profile: NetworkProfile) -> None:
-        """模拟持续流模式。"""
         interval = profile.interval_ms / 1000.0
         packet_size = profile.packet_size_bytes
-
-        # 模拟数据包发送
+        payload = self._generate_mqtt_publish(instance, packet_size)
+        bytes_sent = self._send_udp_packet(payload)
         instance.stats["packets_sent"] += 1
-        instance.stats["bytes_sent"] += packet_size
+        instance.stats["bytes_sent"] += bytes_sent
         instance.stats["packets_received"] += 1
-        instance.stats["bytes_received"] += packet_size // 10  # 下行通常较小
-
+        instance.stats["bytes_received"] += 32
         await asyncio.sleep(interval)
 
     async def _simulate_periodic(self, instance: DeviceInstance, profile: NetworkProfile) -> None:
-        """模拟周期性模式。"""
         interval = profile.interval_ms / 1000.0
         packet_size = profile.packet_size_bytes
-
-        # 模拟数据上报
+        payload = self._generate_coap_post(instance, packet_size)
+        bytes_sent = self._send_udp_packet(payload)
         instance.stats["packets_sent"] += 1
-        instance.stats["bytes_sent"] += packet_size
-
-        # 模拟响应
+        instance.stats["bytes_sent"] += bytes_sent
         instance.stats["packets_received"] += 1
-        instance.stats["bytes_received"] += 32  # ACK
-
+        instance.stats["bytes_received"] += 16
         await asyncio.sleep(interval)
 
     async def _simulate_burst(self, instance: DeviceInstance, profile: NetworkProfile) -> None:
-        """模拟突发性模式。"""
-        # 大部分时间空闲
         idle_time = random.uniform(5, 30)
         await asyncio.sleep(idle_time)
-
-        # 突发数据
         burst_count = random.randint(10, 100)
         packet_size = profile.packet_size_bytes
-
         for _ in range(burst_count):
+            payload = self._generate_mqtt_publish(instance, packet_size)
+            bytes_sent = self._send_udp_packet(payload)
             instance.stats["packets_sent"] += 1
-            instance.stats["bytes_sent"] += packet_size
+            instance.stats["bytes_sent"] += bytes_sent
             instance.stats["packets_received"] += 1
             instance.stats["bytes_received"] += packet_size // 2
             await asyncio.sleep(profile.interval_ms / 1000.0)
 
     async def _simulate_idle(self, instance: DeviceInstance, profile: NetworkProfile) -> None:
-        """模拟空闲模式。"""
-        # 长时间空闲
         idle_time = random.uniform(60, 600)
         await asyncio.sleep(idle_time)
-
-        # 偶尔心跳
+        payload = self._generate_mqtt_pingreq()
+        bytes_sent = self._send_udp_packet(payload)
         instance.stats["packets_sent"] += 1
-        instance.stats["bytes_sent"] += profile.packet_size_bytes
+        instance.stats["bytes_sent"] += bytes_sent
         instance.stats["packets_received"] += 1
-        instance.stats["bytes_received"] += 16  # 小响应
+        instance.stats["bytes_received"] += 16
+
+    def _send_udp_packet(self, payload: bytes) -> int:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.sendto(payload, ('127.0.0.1', 9999))
+            sock.close()
+            return len(payload)
+        except Exception:
+            return len(payload)
+
+    def _generate_mqtt_publish(self, instance: DeviceInstance, size: int) -> bytes:
+        topic = f"devices/{instance.device_id}/data"
+        topic_bytes = topic.encode('utf-8')
+        payload_data = bytes(random.randint(0, 255) for _ in range(max(0, size - len(topic_bytes) - 4)))
+        remaining = len(topic_bytes) + 2 + len(payload_data)
+        packet = bytearray()
+        packet.append(_MQTT_PUBLISH)
+        while remaining > 0x7F:
+            packet.append((remaining & 0x7F) | 0x80)
+            remaining >>= 7
+        packet.append(remaining)
+        packet.extend(struct.pack('!H', len(topic_bytes)))
+        packet.extend(topic_bytes)
+        packet.extend(payload_data)
+        return bytes(packet)
+
+    def _generate_coap_post(self, instance: DeviceInstance, size: int) -> bytes:
+        ver = 1
+        type_val = 0
+        token_len = 4
+        code = _COAP_POST
+        msg_id = random.randint(0, 65535)
+        token = bytes(random.randint(0, 255) for _ in range(token_len))
+        payload_data = bytes(random.randint(0, 255) for _ in range(max(0, size - 8 - token_len)))
+        header = struct.pack('!BBH', (ver << 6) | (type_val << 4) | token_len, code, msg_id)
+        return header + token + payload_data
+
+    def _generate_mqtt_pingreq(self) -> bytes:
+        return bytes([_MQTT_PINGREQ, 0])
