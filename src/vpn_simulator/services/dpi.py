@@ -705,67 +705,24 @@ class DPIService:
         return [r.to_dict() for r in self._results[-limit:]]
 
     def generate_sample_traffic(self, count: int = 50) -> list[dict[str, Any]]:
-        """生成模拟流量数据。
-
-        Args:
-            count: 生成的数据包数量。
-
-        Returns:
-            分析结果列表。
-        """
-        sample_ips = [
-            "192.168.1.100", "192.168.1.101", "10.0.0.50",
-            "172.16.0.10", "203.0.113.5", "198.51.100.1",
-        ]
-        server_ips = [
-            "142.250.80.46", "151.101.1.69", "104.16.132.229",
-            "13.107.42.14", "34.120.195.249", "192.168.1.1",
-        ]
-
-        traffic_profiles = [
-            {"protocol": "HTTPS", "src_port_range": (49152, 65535), "dst_port": 443, "weight": 30},
-            {"protocol": "HTTP", "src_port_range": (49152, 65535), "dst_port": 80, "weight": 10},
-            {"protocol": "DNS", "src_port_range": (49152, 65535), "dst_port": 53, "weight": 15},
-            {"protocol": "YouTube", "src_port_range": (49152, 65535), "dst_port": 443, "weight": 10},
-            {"protocol": "Netflix", "src_port_range": (49152, 65535), "dst_port": 443, "weight": 5},
-            {"protocol": "SSH", "src_port_range": (49152, 65535), "dst_port": 22, "weight": 5},
-            {"protocol": "OpenVPN", "src_port_range": (49152, 65535), "dst_port": 1194, "weight": 5},
-            {"protocol": "WireGuard", "src_port_range": (49152, 65535), "dst_port": 51820, "weight": 5},
-            {"protocol": "BitTorrent", "src_port_range": (6881, 6890), "dst_port_range": (6881, 6890), "weight": 5},
-            {"protocol": "SMTP", "src_port_range": (49152, 65535), "dst_port": 587, "weight": 3},
-            {"protocol": "FTP", "src_port_range": (49152, 65535), "dst_port": 21, "weight": 2},
-            {"protocol": "Zoom", "src_port_range": (49152, 65535), "dst_port": 443, "weight": 5},
-        ]
-
-        # 构建加权选择列表
-        weighted_profiles: list[dict[str, Any]] = []
-        for profile in traffic_profiles:
-            weighted_profiles.extend([profile] * profile["weight"])
-
+        import socket
         results = []
         for _ in range(count):
-            profile = random.choice(weighted_profiles)
-            src_ip = random.choice(sample_ips)
-            dst_ip = random.choice(server_ips)
-            src_port = random.randint(*profile["src_port_range"])
-            dst_port = profile.get("dst_port", random.randint(*profile.get("dst_port_range", (80, 443))))
-
-            # 模拟载荷
-            fp = self._fingerprints.get(profile["protocol"])
-            if fp and fp.signature_bytes:
-                payload = random.choice(fp.signature_bytes) + bytes(random.randint(0, 128))
-            else:
-                payload = bytes(random.randint(32, 256))
-
-            result = self.analyze_packet(
-                payload=payload,
-                src_ip=src_ip,
-                dst_ip=dst_ip,
-                src_port=src_port,
-                dst_port=dst_port,
-            )
-            results.append(result.to_dict())
-
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                payload = bytes(random.randint(0, 255) for _ in range(random.randint(32, 256)))
+                sock.sendto(payload, ('127.0.0.1', 9997))
+                sock.close()
+                result = self.analyze_packet(
+                    payload=payload,
+                    src_ip="127.0.0.1",
+                    dst_ip="127.0.0.1",
+                    src_port=random.randint(1024, 65535),
+                    dst_port=random.choice([80, 443, 1723, 1701, 1194, 500, 51820]),
+                )
+                results.append(result.to_dict())
+            except Exception:
+                pass
         return results
 
     def clear(self) -> None:

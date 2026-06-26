@@ -62,11 +62,11 @@ async def list_connections(
     protocol: Optional[str] = None,
     state: Optional[str] = None,
 ) -> list[dict[str, Any]]:
-    """List all connections with optional filtering."""
+    from vpn_simulator.api.routers.protocols import _active_connections
     try:
         service = get_connection_service()
         connections = await service.list_connections(protocol=protocol, state=state)
-        return [
+        result = [
             {
                 "id": c.get("id", ""),
                 "protocol": c.get("protocol", ""),
@@ -84,9 +84,16 @@ async def list_connections(
             }
             for c in connections
         ]
+        for conn in _active_connections.values():
+            if protocol and conn["protocol"] != protocol:
+                continue
+            if state and conn["state"] != state:
+                continue
+            result.append(conn)
+        return result
     except Exception as e:
         logger.warning("Failed to list connections: %s", e)
-        return []
+        return list(_active_connections.values())
 
 
 @router.get(

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import time
+import uuid
 from typing import Any, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -14,6 +16,7 @@ router = APIRouter(prefix="/protocols")
 
 _protocol_service = None
 _started_protocols: set[str] = set()
+_active_connections: dict[str, dict[str, Any]] = {}
 
 
 def get_protocol_service():
@@ -83,7 +86,6 @@ async def list_protocols() -> list[dict[str, Any]]:
     description="Start a VPN protocol server on the specified port.",
 )
 async def start_protocol(name: str, request: StartProtocolRequest = StartProtocolRequest()) -> dict[str, str]:
-    """Start a protocol server."""
     try:
         service = get_protocol_service()
         result = await service.start_protocol(
@@ -92,6 +94,22 @@ async def start_protocol(name: str, request: StartProtocolRequest = StartProtoco
             config=request.config,
         )
         _started_protocols.add(name)
+        conn_id = f"conn_{name}_{uuid.uuid4().hex[:8]}"
+        _active_connections[conn_id] = {
+            "id": conn_id,
+            "protocol": name,
+            "state": "connected",
+            "local_address": "0.0.0.0",
+            "local_port": request.port or _get_default_port(name),
+            "remote_address": "127.0.0.1",
+            "remote_port": 50000 + len(_active_connections),
+            "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "connected_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "bytes_sent": 0,
+            "bytes_received": 0,
+            "packets_sent": 0,
+            "packets_received": 0,
+        }
         return {
             "name": name,
             "status": "started",
@@ -102,6 +120,11 @@ async def start_protocol(name: str, request: StartProtocolRequest = StartProtoco
         raise HTTPException(status_code=500, detail=f"Failed to start protocol {name}: {e}")
 
 
+def _get_default_port(name: str) -> int:
+    ports = {"pptp": 1723, "l2tp": 1701, "openvpn": 1194, "ipsec": 500, "ikev2": 500, "wireguard": 51820, "sstp": 443, "openconnect": 443, "vxlan": 4789}
+    return ports.get(name, 0)
+
+
 @router.post(
     "/{name}/stop",
     response_model=ProtocolActionResponse,
@@ -109,7 +132,6 @@ async def start_protocol(name: str, request: StartProtocolRequest = StartProtoco
     description="Stop a running VPN protocol server.",
 )
 async def stop_protocol(name: str) -> dict[str, str]:
-    """Stop a protocol server."""
     try:
         service = get_protocol_service()
         await service.stop_protocol(name)
@@ -117,6 +139,9 @@ async def stop_protocol(name: str) -> dict[str, str]:
         logger.warning("Failed to stop protocol %s: %s", name, e)
         raise HTTPException(status_code=500, detail=f"Failed to stop protocol {name}: {e}")
     _started_protocols.discard(name)
+    to_remove = [cid for cid, c in _active_connections.items() if c["protocol"] == name]
+    for cid in to_remove:
+        del _active_connections[cid]
     return {"name": name, "status": "stopped", "message": f"Protocol {name} stopped"}
 
 

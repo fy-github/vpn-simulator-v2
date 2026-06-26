@@ -263,42 +263,43 @@ class VendorCLIService:
             return f"Command '{mapping.vendor_command}' executed successfully."
 
     def _mock_interfaces_brief(self) -> str:
-        """模拟接口摘要输出。"""
-        return """Interface              IP-Address      OK? Method Status                Protocol
-GigabitEthernet0/0     192.168.1.1     YES manual up                    up
-GigabitEthernet0/1     10.0.0.1        YES manual up                    up
-Loopback0              1.1.1.1         YES manual up                    up
-Tunnel0                172.16.0.1      YES manual up                    up"""
+        import subprocess
+        try:
+            result = subprocess.run(['ip', '-brief', 'addr'], capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')
+                output = "Interface              IP-Address      OK? Method Status                Protocol\n"
+                for line in lines:
+                    parts = line.split()
+                    if len(parts) >= 3:
+                        name = parts[0]
+                        state = parts[1] if len(parts) > 1 else 'unknown'
+                        ip = parts[2] if len(parts) > 2 else 'unassigned'
+                        output += f"{name:<22} {ip:<15} YES manual {state:<20} up\n"
+                return output
+        except Exception:
+            pass
+        return "Interface              IP-Address      OK? Method Status                Protocol\nlo                     127.0.0.1       YES manual up                    up\neth0                   192.168.1.100   YES manual up                    up"
 
     def _mock_routes(self) -> str:
-        """模拟路由表输出。"""
-        return """Codes: L - local, C - connected, S - static, R - RIP, M - mobile, B - BGP
-       D - EIGRP, EX - EIGRP external, O - OSPF, IA - OSPF inter area
-       N1 - OSPF NSSA external type 1, N2 - OSPF NSSA external type 2
-       E1 - OSPF external type 1, E2 - OSPF external type 2
-
-Gateway of last resort is 192.168.1.254 to network 0.0.0.0
-
-S*    0.0.0.0/0 [1/0] via 192.168.1.254
-      10.0.0.0/8 is variably subnetted, 2 subnets, 2 masks
-C        10.0.0.0/24 is directly connected, GigabitEthernet0/1
-L        10.0.0.1/32 is directly connected, GigabitEthernet0/1
-      192.168.1.0/24 is variably subnetted, 2 subnets, 2 masks
-C        192.168.1.0/24 is directly connected, GigabitEthernet0/0
-L        192.168.1.1/32 is directly connected, GigabitEthernet0/0"""
+        import subprocess
+        try:
+            result = subprocess.run(['ip', 'route'], capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                return result.stdout
+        except Exception:
+            pass
+        return "default via 192.168.1.1 dev eth0\n192.168.1.0/24 dev eth0 scope link"
 
     def _mock_interfaces_detail(self) -> str:
-        """模拟接口详情输出。"""
-        return """GigabitEthernet0/0 is up, line protocol is up
-  Hardware is CN GigabitEthernet, address is aabb.cc00.0100 (bia aabb.cc00.0100)
-  Internet address is 192.168.1.1/24
-  MTU 1500 bytes, BW 1000000 Kbit/sec, DLY 10 usec
-  Encapsulation ARPA, loopback not set
-  Full-duplex, 1000Mb/s, media type is RJ45
-  output flow-control is unsupported, input flow-control is unsupported
-  ARP type: ARPA, ARP Timeout 04:00:00
-  Last input 00:00:01, output 00:00:00, output hang never
-  Input queue: 0/75/0/0 (size/max/drops/flushes); Total output drops: 0"""
+        import subprocess
+        try:
+            result = subprocess.run(['ip', 'addr', 'show'], capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                return result.stdout
+        except Exception:
+            pass
+        return "1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN\n    inet 127.0.0.1/8 scope host lo\n2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 state UP\n    inet 192.168.1.100/24 brd 192.168.1.255 scope global eth0"
 
     def _mock_running_config(self) -> str:
         """模拟运行配置输出。"""

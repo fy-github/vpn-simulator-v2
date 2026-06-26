@@ -126,6 +126,19 @@ class MetricsService:
         except (ImportError, Exception):
             return 0.0
 
+    def _get_real_packet_loss(self) -> float:
+        """Get packet loss based on real network errors."""
+        try:
+            import psutil
+            counters = psutil.net_io_counters()
+            total = counters.packets_sent + counters.packets_recv
+            errors = counters.errin + counters.errout
+            if total == 0:
+                return 0.0
+            return round(errors / total * 100, 3)
+        except (ImportError, Exception):
+            return 0.0
+
     def _get_real_latency(self) -> float:
         """Get simulated latency based on system load."""
         try:
@@ -255,33 +268,24 @@ class MetricsService:
         timestamps = []
         values = []
 
-        if protocol and protocol.lower() in _PROTOCOL_PROFILES:
-            profile = _PROTOCOL_PROFILES[protocol.lower()]
-            for i in range(num_points):
-                ts = now - timedelta(seconds=(num_points - i - 1) * interval)
-                timestamps.append(ts.isoformat())
+        real_loss = self._get_real_packet_loss()
+
+        for i in range(num_points):
+            ts = now - timedelta(seconds=(num_points - i - 1) * interval)
+            timestamps.append(ts.isoformat())
+            if protocol and protocol.lower() in _PROTOCOL_PROFILES:
+                profile = _PROTOCOL_PROFILES[protocol.lower()]
                 base = profile["packet_loss_base"]
                 var = profile["packet_loss_variance"]
-                # Occasional burst loss
+                scale = max(0.1, real_loss / 0.5) if real_loss > 0 else 1.0
                 burst = random.uniform(2.0, 5.0) if random.random() < 0.03 else 1.0
                 noise = random.gauss(0, var * 0.1)
-                value = max(0.0, min(100.0, base * burst + noise))
-                values.append(round(value, 3))
-        else:
-            for i in range(num_points):
-                ts = now - timedelta(seconds=(num_points - i - 1) * interval)
-                timestamps.append(ts.isoformat())
-                total = 0.0
-                count = 0
-                for name, p in _PROTOCOL_PROFILES.items():
-                    conn_count = _CONNECTION_DISTRIBUTION[name]["base"]
-                    burst = random.uniform(2.0, 5.0) if random.random() < 0.02 else 1.0
-                    noise = random.gauss(0, p["packet_loss_variance"] * 0.1)
-                    val = max(0.0, min(100.0, p["packet_loss_base"] * burst + noise))
-                    total += val * conn_count
-                    count += conn_count
-                value = total / count if count > 0 else 0
-                values.append(round(value, 3))
+                value = max(0.0, min(100.0, base * burst * scale + noise))
+            else:
+                burst = random.uniform(2.0, 5.0) if random.random() < 0.02 else 1.0
+                noise = random.gauss(0, 0.05)
+                value = max(0.0, min(100.0, real_loss * burst + noise))
+            values.append(round(value, 3))
 
         return {
             "timestamps": timestamps,

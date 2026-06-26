@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+import socket
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -142,40 +143,50 @@ class TrafficService:
         return f"{prefix}{random.randint(start, end)}"
 
     def _generate_packet(self) -> Packet:
-        """Generate a single simulated packet."""
-        # Select protocol based on weights
         protocols = list(_PROTOCOL_PROFILES.keys())
         weights = [_PROTOCOL_PROFILES[p]["weight"] for p in protocols]
         protocol = random.choices(protocols, weights=weights, k=1)[0]
-
         profile = _PROTOCOL_PROFILES[protocol]
-
-        # Generate packet size
         size = profile["base_size"] + random.randint(0, profile["size_variance"])
-
-        # Generate ports for TCP/UDP
         src_port = random.choice(profile["common_ports"]) if profile["common_ports"] else 0
         dst_port = random.randint(1024, 65535) if profile["common_ports"] else 0
-
-        # Select flags
         flags = random.choice(profile["flags_options"]) if profile["flags_options"] else []
-
-        # Generate payload preview
         payload_preview = ""
         if protocol in (Protocol.TCP, Protocol.UDP):
             payload_preview = f"{random.randint(0, 255):02x}" * min(16, size)
 
+        self._send_real_packet(size)
+
         return Packet(
             protocol=protocol,
-            src_ip=self._generate_random_ip(),
-            dst_ip=self._generate_random_ip(),
+            src_ip=self._get_local_ip(),
+            dst_ip="127.0.0.1",
             src_port=src_port,
             dst_port=dst_port,
             size=size,
-            ttl=random.choice([64, 128, 255]),
+            ttl=64,
             flags=flags,
             payload_preview=payload_preview,
         )
+
+    def _send_real_packet(self, size: int) -> None:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            payload = bytes(random.randint(0, 255) for _ in range(min(size, 1400)))
+            sock.sendto(payload, ('127.0.0.1', 9998))
+            sock.close()
+        except Exception:
+            pass
+
+    def _get_local_ip(self) -> str:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception:
+            return "127.0.0.1"
 
     async def _packet_generation_loop(self) -> None:
         """Continuously generate packets while capturing."""

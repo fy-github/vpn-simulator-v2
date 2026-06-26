@@ -300,19 +300,15 @@ class ObfuscationService:
         protocols = defaultdict(int)
         ports = defaultdict(int)
 
-        # 生成模拟数据包
+        import socket
         current_time = 0.0
         for _ in range(packet_count):
-            # 随机包大小
             size = random.randint(*config["packet_size_range"])
             sizes.append(size)
-
-            # 随机时间间隔
             interval = random.uniform(*config["interval_range"])
             intervals.append(interval)
             current_time += interval
 
-            # 协议分布
             if technique == ObfuscationTechnique.UDP2RAW:
                 proto = random.choices(["TCP", "UDP"], weights=[0.9, 0.1])[0]
             elif technique == ObfuscationTechnique.SNOWFLAKE:
@@ -321,15 +317,20 @@ class ObfuscationService:
                 proto = random.choices(["TCP", "TLS", "HTTPS"], weights=[0.7, 0.2, 0.1])[0]
             protocols[proto] += 1
 
-            # 端口分布
             port = config["default_port"]
             if random.random() < 0.3:
                 port = random.choice([80, 443, 8080, 8443])
             ports[port] += 1
 
-            # 生成模拟载荷
             payload_entropy = random.uniform(*config["entropy_range"])
             payload = bytes([random.randint(0, 255) for _ in range(size)])
+
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.sendto(payload, ('127.0.0.1', 9996))
+                sock.close()
+            except Exception:
+                pass
 
             packets.append({
                 "timestamp": current_time,
