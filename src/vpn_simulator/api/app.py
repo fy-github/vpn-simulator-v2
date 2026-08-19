@@ -1,8 +1,9 @@
 """FastAPI application entry point for VPN Simulator v2."""
 
+import asyncio
 import os
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 import structlog
@@ -37,6 +38,7 @@ from vpn_simulator.api.routers import (  # noqa: E402
     packets,
     pcap,
     protocols,
+    retention,
     routing,
     scale,
     scenarios,
@@ -125,6 +127,13 @@ async def _restore_state() -> None:
     await get_impairment_service().restore_impairments()
 
 
+async def _run_retention_loop() -> None:
+    """周期性执行报文/状态历史保留清理的后台任务。"""
+    from vpn_simulator.api.routers.retention import get_retention_service
+
+    await get_retention_service().run_forever()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler for startup/shutdown."""
@@ -133,9 +142,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await _load_plugins()
     await initialize_database()
     await _restore_state()
-    yield
-    await ws_manager.disconnect_all()
-    await close_database()
+
+    retention_task = asyncio.create_task(_run_retention_loop())
+    try:
+        yield
+    finally:
+        retention_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await retention_task
+        await ws_manager.disconnect_all()
+        await close_database()
 
 
 app = FastAPI(
@@ -174,6 +190,7 @@ app.include_router(tutorials.router, prefix="/api/v1", tags=["tutorials"])
 app.include_router(learning.router, prefix="/api/v1", tags=["learning"])
 app.include_router(packets.router, prefix="/api/v1", tags=["packets"])
 app.include_router(pcap.router, prefix="/api/v1", tags=["pcap"])
+app.include_router(retention.router, prefix="/api/v1", tags=["retention"])
 app.include_router(routing.router, prefix="/api/v1", tags=["routing"])
 app.include_router(scale.router, prefix="/api/v1", tags=["scale"])
 app.include_router(scenarios.router, prefix="/api/v1", tags=["scenarios"])
