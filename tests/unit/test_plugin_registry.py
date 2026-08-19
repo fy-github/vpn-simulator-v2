@@ -166,6 +166,17 @@ class TestPluginRegistry:
         retrieved = PluginRegistry.get("duplicate")
         assert retrieved is plugin2
 
+    def test_register_replaces_existing_dedupes_type_index(self):
+        """Verify re-registering the same name does not duplicate the type index."""
+        plugin1 = MockPlugin("duplicate", PluginType.FAULT)
+        plugin2 = MockPlugin("duplicate", PluginType.FAULT)
+        PluginRegistry.register(plugin1)
+        PluginRegistry.register(plugin2)
+
+        faults = PluginRegistry.get_by_type(PluginType.FAULT)
+        assert len(faults) == 1
+        assert faults[0] is plugin2
+
     def test_get_nonexistent_returns_none(self):
         """Verify getting nonexistent plugin returns None."""
         retrieved = PluginRegistry.get("nonexistent")

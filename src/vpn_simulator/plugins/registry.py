@@ -185,6 +185,17 @@ class PluginRegistry:
             PluginRegistry.register(plugin)
         """
         meta = plugin.meta()
+
+        # 同名插件重复注册时（例如 __init__.py 重导出与 loader 直接执行
+        # plugin.py 各注册一次），先从类型索引移除旧实例，保证 get_by_type
+        # 不会累积重复项。
+        old = cls._plugins.get(meta.name)
+        if old is not None and old is not plugin:
+            old_type = old.meta().plugin_type
+            entries = cls._plugins_by_type.get(old_type)
+            if entries is not None and old in entries:
+                entries.remove(old)
+
         cls._plugins[meta.name] = plugin
 
         if meta.plugin_type not in cls._plugins_by_type:
