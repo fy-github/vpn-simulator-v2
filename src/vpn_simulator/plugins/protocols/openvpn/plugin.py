@@ -8,7 +8,7 @@ OpenVPN 使用 TLS over UDP (或 TCP) 进行控制通道协商，
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from vpn_simulator.plugins.protocols.openvpn.state_machine import OpenVPNStateMachine
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
@@ -40,7 +40,7 @@ class OpenVPNPlugin(Plugin):
         """初始化 OpenVPN 插件实例。"""
         self._context: PluginContext | None = None
         self._state_machine: OpenVPNStateMachine | None = None
-        self._logger = None
+        self._logger: Any = None
 
     def meta(self) -> PluginMeta:
         """返回 OpenVPN 插件元数据。

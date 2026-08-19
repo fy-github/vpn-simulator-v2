@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import click
 from rich.console import Console
 
@@ -10,7 +12,11 @@ from vpn_simulator.cli.utils import handle_error, handle_success, output_json
 console = Console()
 
 
-def _get_config_manager():
+if TYPE_CHECKING:
+    from vpn_simulator.core.config import ConfigManager
+
+
+def _get_config_manager() -> ConfigManager:
     from vpn_simulator.core.config import ConfigManager
 
     return ConfigManager()

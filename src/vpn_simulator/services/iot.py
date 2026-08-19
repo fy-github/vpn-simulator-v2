@@ -389,7 +389,7 @@ class IoTService:
         Returns:
             流量统计汇总字典。
         """
-        total_stats = {
+        total_stats: dict[str, Any] = {
             "total_devices": len(self._instances),
             "online_devices": 0,
             "total_packets_sent": 0,

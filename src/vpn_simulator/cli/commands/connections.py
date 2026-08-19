@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import TYPE_CHECKING
 
 import click
 from rich.console import Console
@@ -12,7 +13,11 @@ from vpn_simulator.cli.utils import handle_error, handle_success, output_json, o
 console = Console()
 
 
-def _get_service():
+if TYPE_CHECKING:
+    from vpn_simulator.services.connection import ConnectionService
+
+
+def _get_service() -> ConnectionService:
     from vpn_simulator.core.config import ConfigManager
     from vpn_simulator.core.database import DatabaseManager
     from vpn_simulator.core.events import EventBus

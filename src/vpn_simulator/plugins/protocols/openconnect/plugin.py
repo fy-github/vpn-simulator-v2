@@ -15,7 +15,7 @@ Reference:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from vpn_simulator.plugins.protocols.openconnect.state_machine import OpenConnectStateMachine
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
@@ -49,7 +49,7 @@ class OpenConnectPlugin(Plugin):
         """初始化 OpenConnect 插件实例。"""
         self._context: PluginContext | None = None
         self._state_machine: OpenConnectStateMachine | None = None
-        self._logger = None
+        self._logger: Any = None
 
     def meta(self) -> PluginMeta:
         """返回 OpenConnect 插件元数据。

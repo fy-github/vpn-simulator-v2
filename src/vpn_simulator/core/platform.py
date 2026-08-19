@@ -142,7 +142,7 @@ class WindowsAdapter(PlatformAdapter):
         try:
             import ctypes
 
-            return ctypes.windll.shell32.IsUserAnAdmin() != 0  # type: ignore[attr-defined]
+            return bool(ctypes.windll.shell32.IsUserAnAdmin() != 0)  # type: ignore[attr-defined]
         except Exception:
             return False
 
@@ -222,7 +222,7 @@ class WindowsAdapter(PlatformAdapter):
         try:
             import ctypes
 
-            return ctypes.windll.shell32.IsUserAnAdmin() != 0  # type: ignore[attr-defined]
+            return bool(ctypes.windll.shell32.IsUserAnAdmin() != 0)  # type: ignore[attr-defined]
         except Exception:
             return False
 
@@ -427,6 +427,7 @@ def get_platform_adapter() -> PlatformAdapter:
     """
     system = platform.system().lower()
 
+    adapter: PlatformAdapter
     if system == "windows":
         adapter = WindowsAdapter()
     elif system == "darwin":

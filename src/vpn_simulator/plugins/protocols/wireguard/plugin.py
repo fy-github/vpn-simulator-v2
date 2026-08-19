@@ -8,7 +8,7 @@ WireGuard 使用 Noise_IKpsk2 协议进行密钥交换，
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from vpn_simulator.plugins.protocols.wireguard.state_machine import WireGuardStateMachine
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
@@ -42,7 +42,7 @@ class WireGuardPlugin(Plugin):
         """初始化 WireGuard 插件实例。"""
         self._context: PluginContext | None = None
         self._state_machine: WireGuardStateMachine | None = None
-        self._logger = None
+        self._logger: Any = None
 
     def meta(self) -> PluginMeta:
         """返回 WireGuard 插件元数据。

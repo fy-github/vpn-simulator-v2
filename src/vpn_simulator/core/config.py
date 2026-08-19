@@ -180,8 +180,9 @@ class ConfigManager:
         Returns:
             当前配置对象
         """
-        if not self._config:
+        if self._config is None:
             self.load()
+        assert self._config is not None
         return self._config
 
     def on_change(self, callback: ConfigWatcher) -> None:
@@ -242,14 +243,17 @@ class ConfigManager:
             if value is not None:
                 try:
                     # 类型转换
+                    converted: str | int | float | bool
                     if attr_type is int:
-                        value = int(value)
+                        converted = int(value)
                     elif attr_type is float:
-                        value = float(value)
+                        converted = float(value)
                     elif attr_type is bool:
-                        value = value.lower() in ("true", "1", "yes")
+                        converted = value.lower() in ("true", "1", "yes")
+                    else:
+                        converted = value
 
-                    setattr(config, config_attr, value)
+                    setattr(config, config_attr, converted)
                     logger.debug("env_var_loaded", env_var=env_var, config_attr=config_attr)
                 except (ValueError, TypeError) as e:
                     logger.warning(

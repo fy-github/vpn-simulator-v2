@@ -13,7 +13,7 @@ Reference:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from vpn_simulator.plugins.protocols.sstp.state_machine import SSTPStateMachine
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
@@ -46,7 +46,7 @@ class SSTPPlugin(Plugin):
         """初始化 SSTP 插件实例。"""
         self._context: PluginContext | None = None
         self._state_machine: SSTPStateMachine | None = None
-        self._logger = None
+        self._logger: Any = None
 
     def meta(self) -> PluginMeta:
         """返回 SSTP 插件元数据。

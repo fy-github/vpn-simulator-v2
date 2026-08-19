@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import TYPE_CHECKING
 
 import click
 from rich.console import Console
@@ -14,7 +15,11 @@ console = Console()
 FAULT_TYPES = ["latency", "packet_loss", "bandwidth", "reorder", "duplicate", "corrupt"]
 
 
-def _get_service():
+if TYPE_CHECKING:
+    from vpn_simulator.services.fault import FaultService
+
+
+def _get_service() -> FaultService:
     from vpn_simulator.core.config import ConfigManager
     from vpn_simulator.core.database import DatabaseManager
     from vpn_simulator.core.events import EventBus

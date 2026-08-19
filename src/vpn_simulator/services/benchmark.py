@@ -15,7 +15,7 @@ import json
 import random
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import structlog
 
@@ -207,7 +207,7 @@ class BenchmarkService:
         for filepath in self._results_dir.glob("*.json"):
             if filepath.stem.startswith(benchmark_id):
                 try:
-                    return json.loads(filepath.read_text())
+                    return cast(dict[str, Any], json.loads(filepath.read_text()))
                 except Exception:
                     continue
         return None
@@ -264,7 +264,7 @@ class BenchmarkService:
         try:
             import psutil
 
-            return round(psutil.Process().memory_info().rss / (1024 * 1024), 1)
+            return float(round(psutil.Process().memory_info().rss / (1024 * 1024), 1))
         except (ImportError, Exception):
             return 0.0
 

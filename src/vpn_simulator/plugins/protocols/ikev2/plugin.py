@@ -7,7 +7,7 @@ RFC 7296: Internet Key Exchange Protocol Version 2 (IKEv2)
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from vpn_simulator.plugins.protocols.ikev2.state_machine import IKEv2StateMachine
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
@@ -40,7 +40,7 @@ class IKEv2Plugin(Plugin):
         """初始化 IKEv2 插件实例。"""
         self._context: PluginContext | None = None
         self._state_machine: IKEv2StateMachine | None = None
-        self._logger = None
+        self._logger: Any = None
 
     def meta(self) -> PluginMeta:
         """返回 IKEv2 插件元数据。

@@ -8,7 +8,7 @@ RFC 2637: Point-to-Point Tunneling Protocol (PPTP)
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from vpn_simulator.plugins.protocols.pptp.state_machine import PPTPStateMachine
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
@@ -40,7 +40,7 @@ class PPTPPlugin(Plugin):
         """初始化 PPTP 插件实例。"""
         self._context: PluginContext | None = None
         self._state_machine: PPTPStateMachine | None = None
-        self._logger = None
+        self._logger: Any = None
 
     def meta(self) -> PluginMeta:
         """返回 PPTP 插件元数据。

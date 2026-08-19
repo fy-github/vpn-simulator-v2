@@ -11,6 +11,7 @@ import random
 import socket
 import time
 import uuid
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import Enum
@@ -187,7 +188,7 @@ class TrafficService:
             s.connect(("8.8.8.8", 80))
             ip = s.getsockname()[0]
             s.close()
-            return ip
+            return str(ip)
         except Exception:
             return "127.0.0.1"
 
@@ -356,7 +357,7 @@ class TrafficService:
         packets = self._recent_packets[-limit:]
         return [p.to_dict() for p in reversed(packets)]
 
-    async def get_packet_stream(self):
+    async def get_packet_stream(self) -> AsyncIterator[dict[str, Any]]:
         """Async generator for streaming packets.
 
         Yields:

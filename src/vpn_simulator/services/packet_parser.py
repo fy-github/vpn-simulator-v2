@@ -41,7 +41,7 @@ class PacketParser:
         _packets: 存储所有解析过的报文。
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """初始化报文解析器。"""
         self._packets: dict[str, PacketInfo] = {}
 

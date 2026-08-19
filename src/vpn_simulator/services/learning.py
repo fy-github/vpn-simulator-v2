@@ -340,7 +340,7 @@ class LearningService:
             搜索结果，包含匹配的 RFC、FAQ 和学习路径。
         """
         query_lower = query.lower()
-        result = {
+        result: dict[str, Any] = {
             "rfc_references": [],
             "faq": [],
             "learning_paths": [],

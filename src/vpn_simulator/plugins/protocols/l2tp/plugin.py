@@ -8,7 +8,7 @@ RFC 2661: Layer Two Tunneling Protocol "L2TP"
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from vpn_simulator.plugins.protocols.l2tp.state_machine import L2TPStateMachine
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
@@ -40,7 +40,7 @@ class L2TPPlugin(Plugin):
         """初始化 L2TP 插件实例。"""
         self._context: PluginContext | None = None
         self._state_machine: L2TPStateMachine | None = None
-        self._logger = None
+        self._logger: Any = None
 
     def meta(self) -> PluginMeta:
         """返回 L2TP 插件元数据。

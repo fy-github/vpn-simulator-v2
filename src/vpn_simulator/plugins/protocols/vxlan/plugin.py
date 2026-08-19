@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from vpn_simulator.plugins.protocols.vxlan.state_machine import VXLANStateMachine
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
@@ -21,7 +21,7 @@ class VXLANPlugin(Plugin):
     def __init__(self) -> None:
         self._context: PluginContext | None = None
         self._state_machine: VXLANStateMachine | None = None
-        self._logger = None
+        self._logger: Any = None
 
     def meta(self) -> PluginMeta:
         return PluginMeta(

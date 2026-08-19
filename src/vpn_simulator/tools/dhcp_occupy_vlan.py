@@ -171,7 +171,7 @@ def bpf_passall():
     return p
 
 
-_bpf_refs = []
+_bpf_refs: list = []
 BROADCAST_MAC = b"\xff" * 6
 
 

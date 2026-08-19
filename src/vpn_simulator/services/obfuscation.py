@@ -303,8 +303,8 @@ class ObfuscationService:
         packets = []
         sizes = []
         intervals = []
-        protocols = defaultdict(int)
-        ports = defaultdict(int)
+        protocols: defaultdict[str, int] = defaultdict(int)
+        ports: defaultdict[int, int] = defaultdict(int)
 
         import socket
 
