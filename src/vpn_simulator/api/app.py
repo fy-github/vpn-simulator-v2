@@ -20,6 +20,7 @@ from vpn_simulator.api.middleware.logging import RequestLoggingMiddleware  # noq
 from vpn_simulator.api.routers import (  # noqa: E402
     attacks,
     benchmark,
+    c2,
     comparison,
     config,
     connections,
@@ -162,6 +163,7 @@ app.include_router(faults.router, prefix="/api/v1", tags=["faults"])
 app.include_router(grafana.router, prefix="/api/v1", tags=["grafana"])
 app.include_router(impairment.router, prefix="/api/v1", tags=["impairments"])
 app.include_router(attacks.router, prefix="/api/v1", tags=["attacks"])
+app.include_router(c2.router, prefix="/api/v1", tags=["c2"])
 app.include_router(benchmark.router, prefix="/api/v1", tags=["benchmark"])
 app.include_router(topology.router, prefix="/api/v1", tags=["topology"])
 app.include_router(logs.router, prefix="/api/v1", tags=["logs"])
