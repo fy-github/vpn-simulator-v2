@@ -149,6 +149,20 @@ class AttackRecord(Base):
     result = Column(JSON)
 
 
+class ValidationRecord(Base):
+    """VPN 配置验证历史表（F2）"""
+
+    __tablename__ = "validations"
+
+    id = Column(String(36), primary_key=True)
+    protocol = Column(String(50), nullable=False, index=True)
+    config = Column(JSON, default=dict)
+    status = Column(String(20), nullable=False)
+    steps = Column(JSON, default=list)
+    metrics = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+
+
 class ConfigHistoryRecord(Base):
     """配置历史表"""
 

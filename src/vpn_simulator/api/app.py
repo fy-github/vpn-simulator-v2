@@ -39,6 +39,7 @@ from vpn_simulator.api.routers import (  # noqa: E402
     topology,
     traffic,
     tutorials,
+    validation,
     vendor_cli,
     voice,
 )
@@ -171,6 +172,7 @@ app.include_router(iot.router, prefix="/api/v1", tags=["iot"])
 app.include_router(dpi.router, prefix="/api/v1", tags=["dpi"])
 app.include_router(obfuscation.router, prefix="/api/v1", tags=["obfuscation"])
 app.include_router(voice.router, prefix="/api/v1", tags=["voice"])
+app.include_router(validation.router, prefix="/api/v1", tags=["validation"])
 app.include_router(vendor_cli.router, prefix="/api/v1", tags=["vendor-cli"])
 app.include_router(dhcp.router, prefix="/api/v1", tags=["dhcp"])
 
