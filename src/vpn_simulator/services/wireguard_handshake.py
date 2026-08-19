@@ -23,6 +23,9 @@ from vpn_simulator.plugins.protocols.wireguard.crypto import (
     finish_responder,
     parse_initiation,
 )
+from vpn_simulator.plugins.protocols.wireguard.wire_format import (
+    parse_wireguard_message,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -60,7 +63,8 @@ class WireGuardHandshake:
         await self._trigger("SEND_INITIATION")
 
         response, _addr = await self._socket.recvfrom(timeout=timeout)
-        logger.info("wireguard_response_received", bytes=len(response))
+        packet = parse_wireguard_message(response)
+        logger.info("wireguard_response_received", bytes=len(response), msg_type=packet.msg_type)
         await self._trigger("RECEIVE_RESPONSE")
 
         send_key, recv_key = finish_initiator(handshake, response)
@@ -75,7 +79,13 @@ class WireGuardHandshake:
     ) -> tuple[bytes, bytes]:
         """响应方执行握手，返回 (接收密钥, 发送密钥)。"""
         initiation, initiator_addr = await self._socket.recvfrom(timeout=timeout)
-        logger.info("wireguard_initiation_received", bytes=len(initiation))
+        packet = parse_wireguard_message(initiation)
+        logger.info(
+            "wireguard_initiation_received",
+            bytes=len(initiation),
+            msg_type=packet.msg_type,
+            sender_index=packet.sender_index,
+        )
 
         parsed = parse_initiation(self._identity, initiation)
         response, state = build_response(
