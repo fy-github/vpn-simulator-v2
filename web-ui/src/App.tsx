@@ -17,6 +17,7 @@ import DPI from './pages/DPI'
 import Voice from './pages/Voice'
 import Obfuscation from './pages/Obfuscation'
 import VendorCLI from './pages/VendorCLI'
+import DHCP from './pages/DHCP'
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
         <Route path="voice" element={<Voice />} />
         <Route path="obfuscation" element={<Obfuscation />} />
         <Route path="vendor-cli" element={<VendorCLI />} />
+        <Route path="dhcp" element={<DHCP />} />
       </Route>
     </Routes>
   )

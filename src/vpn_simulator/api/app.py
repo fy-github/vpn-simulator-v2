@@ -1,9 +1,9 @@
 """FastAPI application entry point for VPN Simulator v2."""
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +16,7 @@ from vpn_simulator.api.routers import (
     comparison,
     config,
     connections,
+    dhcp,
     dpi,
     faults,
     iot,
@@ -40,10 +41,10 @@ logger = logging.getLogger(__name__)
 
 async def _load_plugins() -> None:
     """Load all plugins from the plugins directory."""
-    from vpn_simulator.plugins.context import PluginContext
-    from vpn_simulator.plugins.loader import PluginLoader
     from vpn_simulator.core.config import ConfigManager
     from vpn_simulator.core.events import EventBus
+    from vpn_simulator.plugins.context import PluginContext
+    from vpn_simulator.plugins.loader import PluginLoader
 
     event_bus = EventBus()
     config_manager = ConfigManager()
@@ -138,6 +139,7 @@ app.include_router(dpi.router, prefix="/api/v1", tags=["dpi"])
 app.include_router(obfuscation.router, prefix="/api/v1", tags=["obfuscation"])
 app.include_router(voice.router, prefix="/api/v1", tags=["voice"])
 app.include_router(vendor_cli.router, prefix="/api/v1", tags=["vendor-cli"])
+app.include_router(dhcp.router, prefix="/api/v1", tags=["dhcp"])
 
 
 @app.get("/health", summary="Health check", response_model=dict)

@@ -14,6 +14,7 @@ from vpn_simulator.services.attack import AttackService
 from vpn_simulator.services.benchmark import BenchmarkService
 from vpn_simulator.services.comparison import ComparisonService
 from vpn_simulator.services.connection import ConnectionService
+from vpn_simulator.services.dhcp import DHCPService
 from vpn_simulator.services.dpi import DPIService
 from vpn_simulator.services.fault import FaultService
 from vpn_simulator.services.iot import IoTService
@@ -34,6 +35,7 @@ __all__ = [
     "BenchmarkService",
     "ComparisonService",
     "ConnectionService",
+    "DHCPService",
     "DPIService",
     "FaultService",
     "IoTService",

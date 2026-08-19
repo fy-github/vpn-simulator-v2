@@ -8,7 +8,8 @@
     "attacks": "Attack Management",
     "tutorials": "Tutorials",
     "learning": "Learning Resources",
-    "packets": "Packet Analysis"
+    "packets": "Packet Analysis",
+    "dhcp": "DHCP Simulation"
   },
   "status": {
     "connected": "Connected",

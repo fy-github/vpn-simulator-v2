@@ -133,6 +133,13 @@ export const api = {
   getObfuscationResults: (limit?: number) => apiClient.get('/obfuscation/results', { params: { limit } }),
   getObfuscationComparison: () => apiClient.get('/obfuscation/comparison'),
   clearObfuscationData: () => apiClient.delete('/obfuscation'),
+
+  // DHCP
+  startDhcp: (data: Record<string, unknown>) => apiClient.post('/dhcp/start', data),
+  stopDhcp: () => apiClient.post('/dhcp/stop'),
+  releaseDhcp: (data?: Record<string, unknown>) => apiClient.post('/dhcp/release', data || {}),
+  getDhcpStatus: (after?: number) => apiClient.get('/dhcp/status', { params: { after } }),
+  getDhcpLeases: () => apiClient.get('/dhcp/leases'),
 }
 
 export default apiClient
