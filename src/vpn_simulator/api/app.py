@@ -87,6 +87,12 @@ async def _load_plugins() -> None:
         loaded = await loader.load_directory(attacks_dir)
         logger.info(f"Loaded {len(loaded)} attack plugins: {loaded}")
 
+    # Load exporter plugins
+    exporters_dir = plugins_dir / "exporters"
+    if exporters_dir.exists():
+        loaded = await loader.load_directory(exporters_dir)
+        logger.info(f"Loaded {len(loaded)} exporter plugins: {loaded}")
+
     # Initialize all loaded plugins
     initialized = await loader.initialize_all()
     logger.info(f"Initialized {len(initialized)} plugins: {initialized}")

@@ -10,6 +10,9 @@ from typing import TYPE_CHECKING, Any
 
 import structlog
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import PlainTextResponse
+
+from vpn_simulator.plugins.exporters.prometheus import render_prometheus_text
 
 logger = structlog.get_logger(__name__)
 
@@ -142,3 +145,25 @@ async def get_statistics(
     _validate_protocol(protocol)
     service = _get_service()
     return service.get_statistics(time_range=time_range, protocol=protocol)
+
+
+@router.get(
+    "/prometheus",
+    summary="Export metrics in Prometheus format",
+    description="Render aggregated metrics as Prometheus text format (0.0.4).",
+    response_class=PlainTextResponse,
+)
+async def get_prometheus_metrics(
+    time_range: str = Query("5m", description="Time range (1m, 5m, 15m, 1h)"),
+    protocol: str | None = Query(None, description="Protocol filter"),
+) -> PlainTextResponse:
+    """Export metrics in Prometheus text format for scraping."""
+    _validate_time_range(time_range)
+    _validate_protocol(protocol)
+    service = _get_service()
+    stats = service.get_statistics(time_range=time_range, protocol=protocol)
+    body = render_prometheus_text(stats)
+    return PlainTextResponse(
+        content=body,
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )

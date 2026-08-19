@@ -69,6 +69,14 @@ class TestMetricsEndpoints:
         response = client.get("/api/v1/metrics/statistics")
         assert response.status_code == 200
 
+    def test_prometheus(self, client: TestClient):
+        response = client.get("/api/v1/metrics/prometheus")
+        assert response.status_code == 200
+        assert "text/plain" in response.headers["content-type"]
+        body = response.text
+        assert "# TYPE vpn_simulator_throughput_mbps gauge" in body
+        assert "vpn_simulator_connections{" in body
+
 
 class TestPacketsEndpoints:
     def test_list_packets(self, client: TestClient):
