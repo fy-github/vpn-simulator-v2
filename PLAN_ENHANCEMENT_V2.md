@@ -111,9 +111,11 @@ config_history/topologies）且连接/故障/攻击已做写通（write-through�
   - UDP/TCP 套接字收发（asyncio `create_datagram_endpoint` / `open_connection`）
   - 报文 ↔ 领域事件（`EventBus`）桥接：收到真实握手报文 → 发布
     `protocol.packet_received` → 状态机推进
-- 首个试点协议：**WireGuard**（UDP，握手结构简单）与 **OpenVPN**（先做
-  TCP + 静态密钥 `--tls-auth` 路径，避免复杂证书）。
-- 密码学边界：密钥派生/加解密先 stubbed（返回假值），只验证报文结构与状态跳转。
+- 首个试点协议：**WireGuard**（UDP，握手结构简单）——已定案；OpenVPN 后续
+  （TCP + 静态密钥 `--tls-auth` 路径）暂缓。
+- 密码学边界：**接入真实曲线**（已定案）——握手密钥协商走真实
+  X25519 ECDH + ChaCha20-Poly1305 AEAD + BLAKE2s 哈希/KDF，实现 Noise_IKpsk2
+  握手；不做数据面转发，也不作为生产 VPN 网关对外提供隧道。
 
 ### 4.3 验收标准
 
@@ -237,6 +239,7 @@ src/vpn_simulator/
 | 依赖 | 用途 | 版本 | 引入阶段 |
 |------|------|------|----------|
 | scapy | 报文构造/解析、PCAP 回放 | 2.5+ | Phase 1 / F3 |
+| cryptography | X25519 / ChaCha20-Poly1305 / BLAKE2s（WireGuard 握手真实曲线） | 42+ | Phase 1 |
 | pysnmp | SNMP 协议 | 6.0+ | F4 |
 | prometheus-client | Prometheus 指标 | 0.17+ | P0-2 H3 / F6 |
 | pyshark | PCAP 深度解析（可选） | 0.6+ | F3 |
@@ -250,7 +253,7 @@ src/vpn_simulator/
 | 风险 | 影响 | 缓解 |
 |------|------|------|
 | scapy 报文解析性能 | 中 | 仅控制面报文；异步 I/O；必要时缓存解析 |
-| 真实握手密码学复杂度 | 高 | 先 stubbed 密钥，只验证报文结构与状态跳转 |
+| 真实握手密码学复杂度 | 高 | 用 `cryptography` 库真实实现 Noise_IKpsk2；以单测锁住握手往返与密钥一致性 |
 | 大规模模拟资源 | 高 | asyncio + 连接池 + 懒加载 + 聚合落库 |
 | 安全/伦理（C2、攻击模拟） | 高 | 默认绑 127.0.0.1、API Key、隔离声明 |
 | 持久化迁移兼容 | 中 | `create_all` 幂等；新增表不影响既有表 |
@@ -259,8 +262,8 @@ src/vpn_simulator/
 
 ## 十、待确认问题
 
-1. **真实报文首协议**：WireGuard（UDP，结构简单）与 OpenVPN（TCP+静态密钥）二选一还是并行？
-2. **密码学边界**：握手加解密是否全部 stubbed，还是接入真实曲线（如 WireGuard 的 X25519）？
+1. ~~**真实报文首协议**~~ ✅ **已定案：WireGuard**（UDP，握手结构简单）；OpenVPN 暂缓。
+2. ~~**密码学边界**~~ ✅ **已定案：接入真实曲线**（X25519 ECDH + ChaCha20-Poly1305 + BLAKE2s，实现 Noise_IKpsk2 握手）。
 3. **持久化范围**：是否连"报文记录 packets / 状态历史 state_transitions"也做清理策略（防止无限增长）？
 4. **exporters 首实现**：Prometheus 文本导出是否就是 P0-2 的"最小 exporter"，还是先做 JSON/CSV 报告导出更贴合教学场景？
 5. **SNMP 版本**：仅 v2c 还是同时 v3（加密/认证）？

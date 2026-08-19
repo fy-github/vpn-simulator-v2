@@ -23,7 +23,7 @@ class WireGuardPlugin(Plugin):
 
     提供 WireGuard VPN 协议的服务端模拟功能。WireGuard 使用
     Noise_IKpsk2 协议进行密钥交换，握手仅需 2 个消息
-    (Initiation 52B + Response 92B)，之后通过 ChaCha20-Poly1305
+    (Initiation 148B + Response 92B)，之后通过 ChaCha20-Poly1305
     加密数据通道传输。
 
     插件生命周期:
@@ -55,7 +55,7 @@ class WireGuardPlugin(Plugin):
             version="1.0.0",
             author="VPN Simulator",
             description="WireGuard 协议实现 - "
-            "Noise_IKpsk2 握手 (Initiation 52B + Response 92B) + "
+            "Noise_IKpsk2 握手 (Initiation 148B + Response 92B) + "
             "ChaCha20-Poly1305 数据通道",
             plugin_type=PluginType.PROTOCOL,
             dependencies=[],

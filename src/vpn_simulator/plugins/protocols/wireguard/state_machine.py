@@ -1,7 +1,7 @@
 """WireGuard 协议状态机。
 
 实现 WireGuard 的握手流程状态机。
-握手流程: Initiation (52B) -> Response (92B) -> 数据通道 -> 完成
+握手流程: Initiation (148B) -> Response (92B) -> 数据通道 -> 完成
 
 WireGuard 使用 Noise_IKpsk2 协议进行密钥交换。
 """
@@ -15,7 +15,7 @@ class WireGuardStateMachine(ProtocolStateMachine):
     """WireGuard 协议状态机。
 
     完整的 WireGuard 握手流程 (Noise_IKpsk2):
-    1. INITIAL -> INITIATION_SENT: 发送 Handshake Initiation (52 字节)
+    1. INITIAL -> INITIATION_SENT: 发送 Handshake Initiation (148 字节)
        - 包含: Sender Index + ephemeral_private + encrypted_static + encrypted_timestamp
     2. INITIATION_SENT -> RESPONSE_RECEIVED: 收到 Handshake Response (92 字节)
        - 包含: Sender Index + Receiver Index + ephemeral_private + encrypted_nothing
@@ -28,13 +28,13 @@ class WireGuardStateMachine(ProtocolStateMachine):
     Attributes:
         protocol_name: 固定为 "WireGuard"。
         default_port: 默认端口 51820。
-        initiation_size: Initiation 消息大小，52 字节。
+        initiation_size: Initiation 消息大小，148 字节。
         response_size: Response 消息大小，92 字节。
         transport_header_size: Transport 消息头大小，32 字节。
     """
 
     default_port: int = 51820
-    initiation_size: int = 52
+    initiation_size: int = 148
     response_size: int = 92
     transport_header_size: int = 32
 
@@ -49,7 +49,7 @@ class WireGuardStateMachine(ProtocolStateMachine):
 
         状态列表:
         - INITIAL: 初始状态
-        - INITIATION_SENT: 已发送 Handshake Initiation (52B)
+        - INITIATION_SENT: 已发送 Handshake Initiation (148B)
         - RESPONSE_RECEIVED: 已收到 Handshake Response (92B)
         - TRANSPORT_READY: 会话密钥已派生，数据通道就绪
         - CONNECTED: 已连接（终态）
@@ -57,7 +57,7 @@ class WireGuardStateMachine(ProtocolStateMachine):
         """
         states = [
             State("INITIAL", "初始状态", is_initial=True),
-            State("INITIATION_SENT", "已发送 Handshake Initiation (52B)"),
+            State("INITIATION_SENT", "已发送 Handshake Initiation (148B)"),
             State("RESPONSE_RECEIVED", "已收到 Handshake Response (92B)"),
             State("TRANSPORT_READY", "会话密钥已派生，数据通道就绪"),
             State("CONNECTED", "WireGuard 隧道已连接", is_final=True),
@@ -82,7 +82,7 @@ class WireGuardStateMachine(ProtocolStateMachine):
                 "INITIAL",
                 "INITIATION_SENT",
                 "SEND_INITIATION",
-                description="发送 Handshake Initiation (52B): "
+                description="发送 Handshake Initiation (148B): "
                 "msg_type=1 + sender_index + unencrypted_ephemeral + "
                 "encrypted_static + encrypted_timestamp",
             ),
