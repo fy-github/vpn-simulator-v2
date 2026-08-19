@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -73,7 +73,7 @@ class Tutorial:
         """获取教程总步骤数。"""
         return len(self.steps)
 
-    def get_step(self, index: int) -> Optional[TutorialStep]:
+    def get_step(self, index: int) -> TutorialStep | None:
         """获取指定索引的步骤。
 
         Args:
@@ -105,7 +105,7 @@ class TutorialSession:
     tutorial_id: str
     current_step: int = 0
     started_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    completed_at: Optional[str] = None
+    completed_at: str | None = None
     is_completed: bool = False
     step_history: list[dict[str, Any]] = field(default_factory=list)
 
@@ -115,11 +115,13 @@ class TutorialSession:
         Returns:
             True 表示成功前进，False 表示已到最后一步。
         """
-        self.step_history.append({
-            "action": "next",
-            "from_step": self.current_step,
-            "timestamp": datetime.now().isoformat(),
-        })
+        self.step_history.append(
+            {
+                "action": "next",
+                "from_step": self.current_step,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self.current_step += 1
         return True
 
@@ -131,21 +133,25 @@ class TutorialSession:
         """
         if self.current_step <= 0:
             return False
-        self.step_history.append({
-            "action": "prev",
-            "from_step": self.current_step,
-            "timestamp": datetime.now().isoformat(),
-        })
+        self.step_history.append(
+            {
+                "action": "prev",
+                "from_step": self.current_step,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self.current_step -= 1
         return True
 
     def reset(self) -> None:
         """重置会话到初始状态。"""
-        self.step_history.append({
-            "action": "reset",
-            "from_step": self.current_step,
-            "timestamp": datetime.now().isoformat(),
-        })
+        self.step_history.append(
+            {
+                "action": "reset",
+                "from_step": self.current_step,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
         self.current_step = 0
         self.completed_at = None
         self.is_completed = False
@@ -154,11 +160,13 @@ class TutorialSession:
         """标记会话为已完成。"""
         self.is_completed = True
         self.completed_at = datetime.now().isoformat()
-        self.step_history.append({
-            "action": "complete",
-            "from_step": self.current_step,
-            "timestamp": datetime.now().isoformat(),
-        })
+        self.step_history.append(
+            {
+                "action": "complete",
+                "from_step": self.current_step,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """将会话转换为字典。"""

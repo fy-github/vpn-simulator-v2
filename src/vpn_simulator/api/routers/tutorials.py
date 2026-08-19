@@ -5,7 +5,7 @@ from typing import Any
 
 import yaml
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,9 @@ def _make_session(tutorial_id: str, step: int = 0) -> dict[str, Any]:
         "current_step": step,
         "total_steps": total,
         "is_completed": completed,
-        "started_at": _sessions.get(tutorial_id, {}).get("started_at", time.strftime("%Y-%m-%dT%H:%M:%S")),
+        "started_at": _sessions.get(tutorial_id, {}).get(
+            "started_at", time.strftime("%Y-%m-%dT%H:%M:%S")
+        ),
         "completed_at": time.strftime("%Y-%m-%dT%H:%M:%S") if completed else None,
         "current_step_info": current,
         "message": "Congratulations! Tutorial completed." if completed else "",
@@ -106,10 +108,7 @@ def _make_session(tutorial_id: str, step: int = 0) -> dict[str, Any]:
 @router.get("", response_model=list[TutorialSummary])
 async def list_tutorials() -> list[dict[str, Any]]:
     _load_tutorials()
-    return [
-        {k: v for k, v in t.items() if k != "steps"}
-        for t in _tutorials.values()
-    ]
+    return [{k: v for k, v in t.items() if k != "steps"} for t in _tutorials.values()]
 
 
 @router.get("/{tutorial_id}", response_model=TutorialDetail)

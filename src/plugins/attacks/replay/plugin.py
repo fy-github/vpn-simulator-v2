@@ -121,12 +121,15 @@ class ReplayPlugin(Plugin):
                 f"重放攻击已启动: capture={self._capture_count}, "
                 f"delay={self._replay_delay_ms}ms, replay={self._replay_count}次"
             )
-            self._context.emit_event("attack.started", {
-                "attack_type": "replay",
-                "capture_count": self._capture_count,
-                "replay_delay_ms": self._replay_delay_ms,
-                "replay_count": self._replay_count,
-            })
+            self._context.emit_event(
+                "attack.started",
+                {
+                    "attack_type": "replay",
+                    "capture_count": self._capture_count,
+                    "replay_delay_ms": self._replay_delay_ms,
+                    "replay_count": self._replay_count,
+                },
+            )
 
     async def stop(self) -> None:
         """停止重放攻击。"""
@@ -137,11 +140,14 @@ class ReplayPlugin(Plugin):
                 f"重放攻击已停止: captured={self._captured_packets}, "
                 f"replayed={self._replayed_packets}"
             )
-            self._context.emit_event("attack.completed", {
-                "attack_type": "replay",
-                "captured_packets": self._captured_packets,
-                "replayed_packets": self._replayed_packets,
-            })
+            self._context.emit_event(
+                "attack.completed",
+                {
+                    "attack_type": "replay",
+                    "captured_packets": self._captured_packets,
+                    "replayed_packets": self._replayed_packets,
+                },
+            )
 
     @property
     def is_running(self) -> bool:

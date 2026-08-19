@@ -11,9 +11,9 @@ Example:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class ProtocolType(Enum):
@@ -91,8 +91,8 @@ class FieldDefinition:
     length: int
     field_type: FieldType
     description: str
-    bit_fields: Optional[list[BitFieldDefinition]] = None
-    enum_values: Optional[dict[int, str]] = None
+    bit_fields: list[BitFieldDefinition] | None = None
+    enum_values: dict[int, str] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """转换为字典。"""
@@ -131,21 +131,37 @@ PPTP_MESSAGE_TYPE = {
 # PPTP SCCRQ 报文字段
 PPTP_SCCRQ_FIELDS = [
     FieldDefinition("length", 0, 2, FieldType.UINT16, "报文总长度"),
-    FieldDefinition("message_type", 2, 2, FieldType.ENUM, "报文类型", enum_values=PPTP_MESSAGE_TYPE),
+    FieldDefinition(
+        "message_type", 2, 2, FieldType.ENUM, "报文类型", enum_values=PPTP_MESSAGE_TYPE
+    ),
     FieldDefinition("magic_cookie", 4, 4, FieldType.UINT32, "幻数 cookie (0x1A2B3C4D)"),
     FieldDefinition("control_message_type", 8, 2, FieldType.UINT16, "控制消息类型 (1=SCCRQ)"),
     FieldDefinition("reserved", 10, 2, FieldType.UINT16, "保留字段"),
     FieldDefinition("protocol_version", 12, 2, FieldType.UINT16, "协议版本"),
-    FieldDefinition("framing_capabilities", 14, 4, FieldType.FLAGS, "帧能力", bit_fields=[
-        BitFieldDefinition("async_framing", 0, 1, "异步帧支持"),
-        BitFieldDefinition("sync_framing", 1, 1, "同步帧支持"),
-        BitFieldDefinition("reserved", 2, 30, "保留位"),
-    ]),
-    FieldDefinition("bearer_capabilities", 18, 4, FieldType.FLAGS, "承载能力", bit_fields=[
-        BitFieldDefinition("analog_access", 0, 1, "模拟接入"),
-        BitFieldDefinition("digital_access", 1, 1, "数字接入"),
-        BitFieldDefinition("reserved", 2, 30, "保留位"),
-    ]),
+    FieldDefinition(
+        "framing_capabilities",
+        14,
+        4,
+        FieldType.FLAGS,
+        "帧能力",
+        bit_fields=[
+            BitFieldDefinition("async_framing", 0, 1, "异步帧支持"),
+            BitFieldDefinition("sync_framing", 1, 1, "同步帧支持"),
+            BitFieldDefinition("reserved", 2, 30, "保留位"),
+        ],
+    ),
+    FieldDefinition(
+        "bearer_capabilities",
+        18,
+        4,
+        FieldType.FLAGS,
+        "承载能力",
+        bit_fields=[
+            BitFieldDefinition("analog_access", 0, 1, "模拟接入"),
+            BitFieldDefinition("digital_access", 1, 1, "数字接入"),
+            BitFieldDefinition("reserved", 2, 30, "保留位"),
+        ],
+    ),
     FieldDefinition("max_channels", 22, 2, FieldType.UINT16, "最大通道数"),
     FieldDefinition("firmware_revision", 24, 2, FieldType.UINT16, "固件版本"),
     FieldDefinition("host_name", 26, 64, FieldType.STRING, "主机名"),
@@ -155,38 +171,63 @@ PPTP_SCCRQ_FIELDS = [
 # PPTP SCCRP 报文字段
 PPTP_SCCRP_FIELDS = [
     FieldDefinition("length", 0, 2, FieldType.UINT16, "报文总长度"),
-    FieldDefinition("message_type", 2, 2, FieldType.ENUM, "报文类型", enum_values=PPTP_MESSAGE_TYPE),
+    FieldDefinition(
+        "message_type", 2, 2, FieldType.ENUM, "报文类型", enum_values=PPTP_MESSAGE_TYPE
+    ),
     FieldDefinition("magic_cookie", 4, 4, FieldType.UINT32, "幻数 cookie (0x1A2B3C4D)"),
     FieldDefinition("control_message_type", 8, 2, FieldType.UINT16, "控制消息类型 (2=SCCRP)"),
     FieldDefinition("reserved", 10, 2, FieldType.UINT16, "保留字段"),
     FieldDefinition("protocol_version", 12, 2, FieldType.UINT16, "协议版本"),
-    FieldDefinition("framing_capabilities", 14, 4, FieldType.FLAGS, "帧能力", bit_fields=[
-        BitFieldDefinition("async_framing", 0, 1, "异步帧支持"),
-        BitFieldDefinition("sync_framing", 1, 1, "同步帧支持"),
-        BitFieldDefinition("reserved", 2, 30, "保留位"),
-    ]),
-    FieldDefinition("bearer_capabilities", 18, 4, FieldType.FLAGS, "承载能力", bit_fields=[
-        BitFieldDefinition("analog_access", 0, 1, "模拟接入"),
-        BitFieldDefinition("digital_access", 1, 1, "数字接入"),
-        BitFieldDefinition("reserved", 2, 30, "保留位"),
-    ]),
+    FieldDefinition(
+        "framing_capabilities",
+        14,
+        4,
+        FieldType.FLAGS,
+        "帧能力",
+        bit_fields=[
+            BitFieldDefinition("async_framing", 0, 1, "异步帧支持"),
+            BitFieldDefinition("sync_framing", 1, 1, "同步帧支持"),
+            BitFieldDefinition("reserved", 2, 30, "保留位"),
+        ],
+    ),
+    FieldDefinition(
+        "bearer_capabilities",
+        18,
+        4,
+        FieldType.FLAGS,
+        "承载能力",
+        bit_fields=[
+            BitFieldDefinition("analog_access", 0, 1, "模拟接入"),
+            BitFieldDefinition("digital_access", 1, 1, "数字接入"),
+            BitFieldDefinition("reserved", 2, 30, "保留位"),
+        ],
+    ),
     FieldDefinition("max_channels", 22, 2, FieldType.UINT16, "最大通道数"),
     FieldDefinition("firmware_revision", 24, 2, FieldType.UINT16, "固件版本"),
     FieldDefinition("host_name", 26, 64, FieldType.STRING, "主机名"),
     FieldDefinition("vendor_name", 90, 64, FieldType.STRING, "厂商名称"),
-    FieldDefinition("result_code", 154, 2, FieldType.ENUM, "结果代码", enum_values={
-        1: "成功 (Successful channel establishment)",
-        2: "一般错误",
-        3: "通道已存在",
-        4: "通道不存在",
-        5: "协议错误",
-    }),
+    FieldDefinition(
+        "result_code",
+        154,
+        2,
+        FieldType.ENUM,
+        "结果代码",
+        enum_values={
+            1: "成功 (Successful channel establishment)",
+            2: "一般错误",
+            3: "通道已存在",
+            4: "通道不存在",
+            5: "协议错误",
+        },
+    ),
 ]
 
 # PPTP OCRQ 报文字段
 PPTP_OCRQ_FIELDS = [
     FieldDefinition("length", 0, 2, FieldType.UINT16, "报文总长度"),
-    FieldDefinition("message_type", 2, 2, FieldType.ENUM, "报文类型", enum_values=PPTP_MESSAGE_TYPE),
+    FieldDefinition(
+        "message_type", 2, 2, FieldType.ENUM, "报文类型", enum_values=PPTP_MESSAGE_TYPE
+    ),
     FieldDefinition("magic_cookie", 4, 4, FieldType.UINT32, "幻数 cookie (0x1A2B3C4D)"),
     FieldDefinition("control_message_type", 8, 2, FieldType.UINT16, "控制消息类型 (6=OCRQ)"),
     FieldDefinition("reserved", 10, 2, FieldType.UINT16, "保留字段"),
@@ -194,18 +235,32 @@ PPTP_OCRQ_FIELDS = [
     FieldDefinition("call_serial_number", 14, 2, FieldType.UINT16, "呼叫序列号"),
     FieldDefinition("min_bps", 16, 4, FieldType.UINT32, "最小比特率"),
     FieldDefinition("max_bps", 20, 4, FieldType.UINT32, "最大比特率"),
-    FieldDefinition("bearer_type", 24, 4, FieldType.FLAGS, "承载类型", bit_fields=[
-        BitFieldDefinition("analog", 0, 1, "模拟"),
-        BitFieldDefinition("digital", 1, 1, "数字"),
-        BitFieldDefinition("any", 2, 1, "任意"),
-        BitFieldDefinition("reserved", 3, 29, "保留位"),
-    ]),
-    FieldDefinition("framing_type", 28, 4, FieldType.FLAGS, "帧类型", bit_fields=[
-        BitFieldDefinition("async", 0, 1, "异步"),
-        BitFieldDefinition("sync", 1, 1, "同步"),
-        BitFieldDefinition("any", 2, 1, "任意"),
-        BitFieldDefinition("reserved", 3, 29, "保留位"),
-    ]),
+    FieldDefinition(
+        "bearer_type",
+        24,
+        4,
+        FieldType.FLAGS,
+        "承载类型",
+        bit_fields=[
+            BitFieldDefinition("analog", 0, 1, "模拟"),
+            BitFieldDefinition("digital", 1, 1, "数字"),
+            BitFieldDefinition("any", 2, 1, "任意"),
+            BitFieldDefinition("reserved", 3, 29, "保留位"),
+        ],
+    ),
+    FieldDefinition(
+        "framing_type",
+        28,
+        4,
+        FieldType.FLAGS,
+        "帧类型",
+        bit_fields=[
+            BitFieldDefinition("async", 0, 1, "异步"),
+            BitFieldDefinition("sync", 1, 1, "同步"),
+            BitFieldDefinition("any", 2, 1, "任意"),
+            BitFieldDefinition("reserved", 3, 29, "保留位"),
+        ],
+    ),
     FieldDefinition("packet_recv_size", 32, 2, FieldType.UINT16, "接收包大小"),
     FieldDefinition("packet_processing_delay", 34, 2, FieldType.UINT16, "包处理延迟"),
     FieldDefinition("phone_number", 36, 64, FieldType.STRING, "电话号码"),
@@ -215,20 +270,29 @@ PPTP_OCRQ_FIELDS = [
 # PPTP OCRP 报文字段
 PPTP_OCRP_FIELDS = [
     FieldDefinition("length", 0, 2, FieldType.UINT16, "报文总长度"),
-    FieldDefinition("message_type", 2, 2, FieldType.ENUM, "报文类型", enum_values=PPTP_MESSAGE_TYPE),
+    FieldDefinition(
+        "message_type", 2, 2, FieldType.ENUM, "报文类型", enum_values=PPTP_MESSAGE_TYPE
+    ),
     FieldDefinition("magic_cookie", 4, 4, FieldType.UINT32, "幻数 cookie (0x1A2B3C4D)"),
     FieldDefinition("control_message_type", 8, 2, FieldType.UINT16, "控制消息类型 (7=OCRP)"),
     FieldDefinition("reserved", 10, 2, FieldType.UINT16, "保留字段"),
     FieldDefinition("call_id", 12, 2, FieldType.UINT16, "呼叫 ID"),
     FieldDefinition("peer_call_id", 14, 2, FieldType.UINT16, "对端呼叫 ID"),
-    FieldDefinition("result_code", 16, 2, FieldType.ENUM, "结果代码", enum_values={
-        1: "成功 (Connected)",
-        2: "一般错误",
-        3: "无载波",
-        4: "忙",
-        5: "无拨号音",
-        6: "超时",
-    }),
+    FieldDefinition(
+        "result_code",
+        16,
+        2,
+        FieldType.ENUM,
+        "结果代码",
+        enum_values={
+            1: "成功 (Connected)",
+            2: "一般错误",
+            3: "无载波",
+            4: "忙",
+            5: "无拨号音",
+            6: "超时",
+        },
+    ),
     FieldDefinition("error_code", 18, 2, FieldType.UINT16, "错误代码"),
     FieldDefinition("cause_code", 20, 2, FieldType.UINT16, "原因代码"),
     FieldDefinition("connect_speed", 22, 4, FieldType.UINT32, "连接速度"),
@@ -265,16 +329,23 @@ L2TP_MESSAGE_TYPE = {
 
 # L2TP SCCRQ 报文字段
 L2TP_SCCRQ_FIELDS = [
-    FieldDefinition("flags", 0, 2, FieldType.FLAGS, "标志位", bit_fields=[
-        BitFieldDefinition("type", 0, 1, "类型 (0=数据, 1=控制)"),
-        BitFieldDefinition("length", 1, 1, "长度位"),
-        BitFieldDefinition("sequence", 2, 1, "序列号位"),
-        BitFieldDefinition("offset", 3, 1, "偏移位"),
-        BitFieldDefinition("priority", 4, 1, "优先级位"),
-        BitFieldDefinition("reserved", 5, 3, "保留位"),
-        BitFieldDefinition("version", 8, 4, "版本号"),
-        BitFieldDefinition("reserved2", 12, 4, "保留位"),
-    ]),
+    FieldDefinition(
+        "flags",
+        0,
+        2,
+        FieldType.FLAGS,
+        "标志位",
+        bit_fields=[
+            BitFieldDefinition("type", 0, 1, "类型 (0=数据, 1=控制)"),
+            BitFieldDefinition("length", 1, 1, "长度位"),
+            BitFieldDefinition("sequence", 2, 1, "序列号位"),
+            BitFieldDefinition("offset", 3, 1, "偏移位"),
+            BitFieldDefinition("priority", 4, 1, "优先级位"),
+            BitFieldDefinition("reserved", 5, 3, "保留位"),
+            BitFieldDefinition("version", 8, 4, "版本号"),
+            BitFieldDefinition("reserved2", 12, 4, "保留位"),
+        ],
+    ),
     FieldDefinition("length", 2, 2, FieldType.UINT16, "报文总长度"),
     FieldDefinition("tunnel_id", 4, 2, FieldType.UINT16, "隧道 ID"),
     FieldDefinition("session_id", 6, 2, FieldType.UINT16, "会话 ID"),
@@ -282,7 +353,9 @@ L2TP_SCCRQ_FIELDS = [
     FieldDefinition("nr", 10, 2, FieldType.UINT16, "接收序列号"),
     FieldDefinition("offset_size", 12, 2, FieldType.UINT16, "偏移大小"),
     # AVP 字段从偏移 14 开始
-    FieldDefinition("avp_message_type", 14, 6, FieldType.ENUM, "消息类型 AVP", enum_values=L2TP_MESSAGE_TYPE),
+    FieldDefinition(
+        "avp_message_type", 14, 6, FieldType.ENUM, "消息类型 AVP", enum_values=L2TP_MESSAGE_TYPE
+    ),
     FieldDefinition("avp_protocol_version", 20, 6, FieldType.UINT16, "协议版本 AVP"),
     FieldDefinition("avp_framer_capabilities", 26, 6, FieldType.FLAGS, "帧能力 AVP"),
     FieldDefinition("avp_bearer_capabilities", 32, 6, FieldType.FLAGS, "承载能力 AVP"),
@@ -295,23 +368,32 @@ L2TP_SCCRQ_FIELDS = [
 
 # L2TP SCCRP 报文字段
 L2TP_SCCRP_FIELDS = [
-    FieldDefinition("flags", 0, 2, FieldType.FLAGS, "标志位", bit_fields=[
-        BitFieldDefinition("type", 0, 1, "类型 (0=数据, 1=控制)"),
-        BitFieldDefinition("length", 1, 1, "长度位"),
-        BitFieldDefinition("sequence", 2, 1, "序列号位"),
-        BitFieldDefinition("offset", 3, 1, "偏移位"),
-        BitFieldDefinition("priority", 4, 1, "优先级位"),
-        BitFieldDefinition("reserved", 5, 3, "保留位"),
-        BitFieldDefinition("version", 8, 4, "版本号"),
-        BitFieldDefinition("reserved2", 12, 4, "保留位"),
-    ]),
+    FieldDefinition(
+        "flags",
+        0,
+        2,
+        FieldType.FLAGS,
+        "标志位",
+        bit_fields=[
+            BitFieldDefinition("type", 0, 1, "类型 (0=数据, 1=控制)"),
+            BitFieldDefinition("length", 1, 1, "长度位"),
+            BitFieldDefinition("sequence", 2, 1, "序列号位"),
+            BitFieldDefinition("offset", 3, 1, "偏移位"),
+            BitFieldDefinition("priority", 4, 1, "优先级位"),
+            BitFieldDefinition("reserved", 5, 3, "保留位"),
+            BitFieldDefinition("version", 8, 4, "版本号"),
+            BitFieldDefinition("reserved2", 12, 4, "保留位"),
+        ],
+    ),
     FieldDefinition("length", 2, 2, FieldType.UINT16, "报文总长度"),
     FieldDefinition("tunnel_id", 4, 2, FieldType.UINT16, "隧道 ID"),
     FieldDefinition("session_id", 6, 2, FieldType.UINT16, "会话 ID"),
     FieldDefinition("ns", 8, 2, FieldType.UINT16, "发送序列号"),
     FieldDefinition("nr", 10, 2, FieldType.UINT16, "接收序列号"),
     FieldDefinition("offset_size", 12, 2, FieldType.UINT16, "偏移大小"),
-    FieldDefinition("avp_message_type", 14, 6, FieldType.ENUM, "消息类型 AVP", enum_values=L2TP_MESSAGE_TYPE),
+    FieldDefinition(
+        "avp_message_type", 14, 6, FieldType.ENUM, "消息类型 AVP", enum_values=L2TP_MESSAGE_TYPE
+    ),
     FieldDefinition("avp_protocol_version", 20, 6, FieldType.UINT16, "协议版本 AVP"),
     FieldDefinition("avp_framer_capabilities", 26, 6, FieldType.FLAGS, "帧能力 AVP"),
     FieldDefinition("avp_bearer_capabilities", 32, 6, FieldType.FLAGS, "承载能力 AVP"),
@@ -326,23 +408,32 @@ L2TP_SCCRP_FIELDS = [
 
 # L2TP ICRQ 报文字段
 L2TP_ICRQ_FIELDS = [
-    FieldDefinition("flags", 0, 2, FieldType.FLAGS, "标志位", bit_fields=[
-        BitFieldDefinition("type", 0, 1, "类型 (0=数据, 1=控制)"),
-        BitFieldDefinition("length", 1, 1, "长度位"),
-        BitFieldDefinition("sequence", 2, 1, "序列号位"),
-        BitFieldDefinition("offset", 3, 1, "偏移位"),
-        BitFieldDefinition("priority", 4, 1, "优先级位"),
-        BitFieldDefinition("reserved", 5, 3, "保留位"),
-        BitFieldDefinition("version", 8, 4, "版本号"),
-        BitFieldDefinition("reserved2", 12, 4, "保留位"),
-    ]),
+    FieldDefinition(
+        "flags",
+        0,
+        2,
+        FieldType.FLAGS,
+        "标志位",
+        bit_fields=[
+            BitFieldDefinition("type", 0, 1, "类型 (0=数据, 1=控制)"),
+            BitFieldDefinition("length", 1, 1, "长度位"),
+            BitFieldDefinition("sequence", 2, 1, "序列号位"),
+            BitFieldDefinition("offset", 3, 1, "偏移位"),
+            BitFieldDefinition("priority", 4, 1, "优先级位"),
+            BitFieldDefinition("reserved", 5, 3, "保留位"),
+            BitFieldDefinition("version", 8, 4, "版本号"),
+            BitFieldDefinition("reserved2", 12, 4, "保留位"),
+        ],
+    ),
     FieldDefinition("length", 2, 2, FieldType.UINT16, "报文总长度"),
     FieldDefinition("tunnel_id", 4, 2, FieldType.UINT16, "隧道 ID"),
     FieldDefinition("session_id", 6, 2, FieldType.UINT16, "会话 ID"),
     FieldDefinition("ns", 8, 2, FieldType.UINT16, "发送序列号"),
     FieldDefinition("nr", 10, 2, FieldType.UINT16, "接收序列号"),
     FieldDefinition("offset_size", 12, 2, FieldType.UINT16, "偏移大小"),
-    FieldDefinition("avp_message_type", 14, 6, FieldType.ENUM, "消息类型 AVP", enum_values=L2TP_MESSAGE_TYPE),
+    FieldDefinition(
+        "avp_message_type", 14, 6, FieldType.ENUM, "消息类型 AVP", enum_values=L2TP_MESSAGE_TYPE
+    ),
     FieldDefinition("avp_assigned_session_id", 20, 6, FieldType.UINT16, "分配会话 ID AVP"),
     FieldDefinition("avp_call_serial_number", 26, 6, FieldType.UINT16, "呼叫序列号 AVP"),
     FieldDefinition("avp_bearer_type", 32, 6, FieldType.FLAGS, "承载类型 AVP"),
@@ -416,18 +507,32 @@ IKEV2_IKE_SA_INIT_FIELDS = [
     FieldDefinition("responder_spi", 8, 8, FieldType.UINT64, "响应方 SPI"),
     FieldDefinition("next_payload", 16, 1, FieldType.UINT8, "下一个载荷类型"),
     FieldDefinition("version", 17, 1, FieldType.UINT8, "IKE 版本"),
-    FieldDefinition("exchange_type", 18, 1, FieldType.ENUM, "交换类型", enum_values={
-        34: "IKE_SA_INIT",
-        35: "IKE_AUTH",
-        36: "CREATE_CHILD_SA",
-        37: "INFORMATIONAL",
-    }),
-    FieldDefinition("flags", 19, 1, FieldType.FLAGS, "标志位", bit_fields=[
-        BitFieldDefinition("initiator", 3, 1, "发起方标志"),
-        BitFieldDefinition("version", 4, 1, "更高版本标志"),
-        BitFieldDefinition("response", 5, 1, "响应标志"),
-        BitFieldDefinition("reserved", 6, 2, "保留位"),
-    ]),
+    FieldDefinition(
+        "exchange_type",
+        18,
+        1,
+        FieldType.ENUM,
+        "交换类型",
+        enum_values={
+            34: "IKE_SA_INIT",
+            35: "IKE_AUTH",
+            36: "CREATE_CHILD_SA",
+            37: "INFORMATIONAL",
+        },
+    ),
+    FieldDefinition(
+        "flags",
+        19,
+        1,
+        FieldType.FLAGS,
+        "标志位",
+        bit_fields=[
+            BitFieldDefinition("initiator", 3, 1, "发起方标志"),
+            BitFieldDefinition("version", 4, 1, "更高版本标志"),
+            BitFieldDefinition("response", 5, 1, "响应标志"),
+            BitFieldDefinition("reserved", 6, 2, "保留位"),
+        ],
+    ),
     FieldDefinition("message_id", 20, 4, FieldType.UINT32, "消息 ID"),
     FieldDefinition("length", 24, 4, FieldType.UINT32, "报文总长度"),
     # 载荷从偏移 28 开始
@@ -442,18 +547,32 @@ IKEV2_IKE_AUTH_FIELDS = [
     FieldDefinition("responder_spi", 8, 8, FieldType.UINT64, "响应方 SPI"),
     FieldDefinition("next_payload", 16, 1, FieldType.UINT8, "下一个载荷类型"),
     FieldDefinition("version", 17, 1, FieldType.UINT8, "IKE 版本"),
-    FieldDefinition("exchange_type", 18, 1, FieldType.ENUM, "交换类型", enum_values={
-        34: "IKE_SA_INIT",
-        35: "IKE_AUTH",
-        36: "CREATE_CHILD_SA",
-        37: "INFORMATIONAL",
-    }),
-    FieldDefinition("flags", 19, 1, FieldType.FLAGS, "标志位", bit_fields=[
-        BitFieldDefinition("initiator", 3, 1, "发起方标志"),
-        BitFieldDefinition("version", 4, 1, "更高版本标志"),
-        BitFieldDefinition("response", 5, 1, "响应标志"),
-        BitFieldDefinition("reserved", 6, 2, "保留位"),
-    ]),
+    FieldDefinition(
+        "exchange_type",
+        18,
+        1,
+        FieldType.ENUM,
+        "交换类型",
+        enum_values={
+            34: "IKE_SA_INIT",
+            35: "IKE_AUTH",
+            36: "CREATE_CHILD_SA",
+            37: "INFORMATIONAL",
+        },
+    ),
+    FieldDefinition(
+        "flags",
+        19,
+        1,
+        FieldType.FLAGS,
+        "标志位",
+        bit_fields=[
+            BitFieldDefinition("initiator", 3, 1, "发起方标志"),
+            BitFieldDefinition("version", 4, 1, "更高版本标志"),
+            BitFieldDefinition("response", 5, 1, "响应标志"),
+            BitFieldDefinition("reserved", 6, 2, "保留位"),
+        ],
+    ),
     FieldDefinition("message_id", 20, 4, FieldType.UINT32, "消息 ID"),
     FieldDefinition("length", 24, 4, FieldType.UINT32, "报文总长度"),
     # 载荷从偏移 28 开始
@@ -471,13 +590,22 @@ IKEV1_MAIN_MODE_FIELDS = [
     FieldDefinition("responder_cookie", 8, 8, FieldType.UINT64, "响应方 Cookie"),
     FieldDefinition("next_payload", 16, 1, FieldType.UINT8, "下一个载荷类型"),
     FieldDefinition("version", 17, 1, FieldType.UINT8, "IKE 版本"),
-    FieldDefinition("exchange_type", 18, 1, FieldType.ENUM, "交换类型", enum_values=IKEV1_EXCHANGE_TYPE),
-    FieldDefinition("flags", 19, 1, FieldType.FLAGS, "标志位", bit_fields=[
-        BitFieldDefinition("encryption", 0, 1, "加密标志"),
-        BitFieldDefinition("commit", 1, 1, "提交标志"),
-        BitFieldDefinition("auth_only", 2, 1, "仅认证标志"),
-        BitFieldDefinition("reserved", 3, 5, "保留位"),
-    ]),
+    FieldDefinition(
+        "exchange_type", 18, 1, FieldType.ENUM, "交换类型", enum_values=IKEV1_EXCHANGE_TYPE
+    ),
+    FieldDefinition(
+        "flags",
+        19,
+        1,
+        FieldType.FLAGS,
+        "标志位",
+        bit_fields=[
+            BitFieldDefinition("encryption", 0, 1, "加密标志"),
+            BitFieldDefinition("commit", 1, 1, "提交标志"),
+            BitFieldDefinition("auth_only", 2, 1, "仅认证标志"),
+            BitFieldDefinition("reserved", 3, 5, "保留位"),
+        ],
+    ),
     FieldDefinition("message_id", 20, 4, FieldType.UINT32, "消息 ID"),
     FieldDefinition("length", 24, 4, FieldType.UINT32, "报文总长度"),
 ]
@@ -488,20 +616,36 @@ IKEV1_QUICK_MODE_FIELDS = [
     FieldDefinition("responder_cookie", 8, 8, FieldType.UINT64, "响应方 Cookie"),
     FieldDefinition("next_payload", 16, 1, FieldType.UINT8, "下一个载荷类型"),
     FieldDefinition("version", 17, 1, FieldType.UINT8, "IKE 版本"),
-    FieldDefinition("exchange_type", 18, 1, FieldType.ENUM, "交换类型", enum_values=IKEV1_EXCHANGE_TYPE),
-    FieldDefinition("flags", 19, 1, FieldType.FLAGS, "标志位", bit_fields=[
-        BitFieldDefinition("encryption", 0, 1, "加密标志"),
-        BitFieldDefinition("commit", 1, 1, "提交标志"),
-        BitFieldDefinition("auth_only", 2, 1, "仅认证标志"),
-        BitFieldDefinition("reserved", 3, 5, "保留位"),
-    ]),
+    FieldDefinition(
+        "exchange_type", 18, 1, FieldType.ENUM, "交换类型", enum_values=IKEV1_EXCHANGE_TYPE
+    ),
+    FieldDefinition(
+        "flags",
+        19,
+        1,
+        FieldType.FLAGS,
+        "标志位",
+        bit_fields=[
+            BitFieldDefinition("encryption", 0, 1, "加密标志"),
+            BitFieldDefinition("commit", 1, 1, "提交标志"),
+            BitFieldDefinition("auth_only", 2, 1, "仅认证标志"),
+            BitFieldDefinition("reserved", 3, 5, "保留位"),
+        ],
+    ),
     FieldDefinition("message_id", 20, 4, FieldType.UINT32, "消息 ID"),
     FieldDefinition("length", 24, 4, FieldType.UINT32, "报文总长度"),
-    FieldDefinition("flags_qm", 28, 4, FieldType.FLAGS, "Quick Mode 标志", bit_fields=[
-        BitFieldDefinition("nonce", 0, 1, "随机数标志"),
-        BitFieldDefinition("identity", 1, 1, "身份标志"),
-        BitFieldDefinition("reserved", 2, 30, "保留位"),
-    ]),
+    FieldDefinition(
+        "flags_qm",
+        28,
+        4,
+        FieldType.FLAGS,
+        "Quick Mode 标志",
+        bit_fields=[
+            BitFieldDefinition("nonce", 0, 1, "随机数标志"),
+            BitFieldDefinition("identity", 1, 1, "身份标志"),
+            BitFieldDefinition("reserved", 2, 30, "保留位"),
+        ],
+    ),
 ]
 
 # IPSec 报文字段映射
@@ -522,7 +666,7 @@ ALL_PROTOCOL_FIELDS = {
 }
 
 
-def get_field_definitions(protocol: str, message_type: str) -> Optional[list[FieldDefinition]]:
+def get_field_definitions(protocol: str, message_type: str) -> list[FieldDefinition] | None:
     """获取指定协议和消息类型的字段定义。
 
     Args:

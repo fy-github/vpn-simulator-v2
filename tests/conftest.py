@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import asyncio
+from collections.abc import Generator
 from pathlib import Path
-from typing import AsyncGenerator, Generator
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
-
 from vpn_simulator.core.config import Config, ConfigManager
 from vpn_simulator.core.events import Event, EventBus, EventTypes
 from vpn_simulator.domain.attack import AttackInfo, AttackManager, AttackType
@@ -17,7 +15,6 @@ from vpn_simulator.domain.fault import FaultInfo, FaultManager, FaultParams, Fau
 from vpn_simulator.domain.protocol import ProtocolStateMachine, State, StateTransition
 from vpn_simulator.plugins.context import PluginContext
 from vpn_simulator.plugins.registry import PluginMeta, PluginRegistry, PluginType
-
 
 # ── Event System Fixtures ──────────────────────────────────────────────────────
 
@@ -231,7 +228,6 @@ def sample_plugin_meta() -> PluginMeta:
 def api_client() -> Generator:
     """Create a test client for the FastAPI application."""
     from fastapi.testclient import TestClient
-
     from vpn_simulator.api.app import app
 
     with TestClient(app) as client:

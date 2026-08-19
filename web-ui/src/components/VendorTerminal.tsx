@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 interface CommandHistoryEntry {
   command: string;
@@ -23,19 +23,7 @@ const VendorTerminal: React.FC = () => {
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 加载支持的命令
-  useEffect(() => {
-    fetchCommands();
-  }, [vendor]);
-
-  // 自动滚动到底部
-  useEffect(() => {
-    if (terminalRef.current) {
-      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
-    }
-  }, [history]);
-
-  const fetchCommands = async () => {
+  const fetchCommands = useCallback(async () => {
     try {
       const response = await fetch(`/api/v1/vendor-cli/commands?vendor=${vendor}`);
       const data = await response.json();
@@ -43,7 +31,19 @@ const VendorTerminal: React.FC = () => {
     } catch (error) {
       console.error('Failed to fetch commands:', error);
     }
-  };
+  }, [vendor]);
+
+  // 加载支持的命令
+  useEffect(() => {
+    fetchCommands();
+  }, [vendor, fetchCommands]);
+
+  // 自动滚动到底部
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [history]);
 
   const executeCommand = async () => {
     if (!input.trim()) return;

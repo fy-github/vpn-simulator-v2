@@ -34,9 +34,9 @@ Example:
 from vpn_simulator.plugins.context import PluginContext
 from vpn_simulator.plugins.loader import (
     PluginInitError,
-    PluginLoadError,
     PluginLoader,
     PluginLoaderError,
+    PluginLoadError,
 )
 from vpn_simulator.plugins.registry import (
     Plugin,

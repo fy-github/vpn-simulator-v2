@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import StateMachineViewer, { type ProtocolStateData } from './StateMachineViewer'
 import { api } from '../api/client'
 import { CheckIcon, XIcon, RefreshCwIcon } from './Icons'
@@ -52,7 +52,7 @@ export default function ProtocolComparator() {
     fetchProtocols()
   }, [])
 
-  const handleCompare = async () => {
+  const handleCompare = useCallback(async () => {
     if (!selectedP1 || !selectedP2 || selectedP1 === selectedP2) return
     setLoading(true)
     setError(null)
@@ -65,13 +65,13 @@ export default function ProtocolComparator() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedP1, selectedP2])
 
   useEffect(() => {
     if (selectedP1 && selectedP2 && selectedP1 !== selectedP2) {
       handleCompare()
     }
-  }, [selectedP1, selectedP2])
+  }, [selectedP1, selectedP2, handleCompare])
 
   const swapProtocols = () => {
     setSelectedP1(selectedP2)

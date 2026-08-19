@@ -1,14 +1,9 @@
-import { useRef, useEffect } from 'react'
+import { useRef } from 'react'
 
 import ObfuscationTester from '../components/ObfuscationTester'
 
 const Obfuscation = () => {
   const headerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (headerRef.current) {
-    }
-  }, [])
 
   return (
     <div className="space-y-6">

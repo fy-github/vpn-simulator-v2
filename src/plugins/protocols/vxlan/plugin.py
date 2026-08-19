@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
+
 from plugins.protocols.vxlan.state_machine import VXLANStateMachine
 
 if TYPE_CHECKING:

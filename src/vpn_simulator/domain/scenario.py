@@ -20,7 +20,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 @dataclass
@@ -83,7 +83,7 @@ class ScenarioManager:
     def __init__(self) -> None:
         """初始化场景管理器。"""
         self._scenarios: dict[str, ScenarioPreset] = {}
-        self._active_scenario: Optional[str] = None
+        self._active_scenario: str | None = None
 
     def load_presets(self, presets: list[ScenarioPreset]) -> None:
         """加载预设场景列表。
@@ -94,7 +94,7 @@ class ScenarioManager:
         for preset in presets:
             self._scenarios[preset.id] = preset
 
-    def get_scenario(self, scenario_id: str) -> Optional[ScenarioPreset]:
+    def get_scenario(self, scenario_id: str) -> ScenarioPreset | None:
         """获取指定场景。
 
         Args:
@@ -105,7 +105,7 @@ class ScenarioManager:
         """
         return self._scenarios.get(scenario_id)
 
-    def list_scenarios(self, category: Optional[str] = None) -> list[ScenarioPreset]:
+    def list_scenarios(self, category: str | None = None) -> list[ScenarioPreset]:
         """列出场景。
 
         Args:
@@ -119,7 +119,7 @@ class ScenarioManager:
             scenarios = [s for s in scenarios if s.category == category]
         return scenarios
 
-    def get_active_scenario(self) -> Optional[str]:
+    def get_active_scenario(self) -> str | None:
         """获取当前激活的场景 ID。
 
         Returns:
@@ -127,7 +127,7 @@ class ScenarioManager:
         """
         return self._active_scenario
 
-    def set_active_scenario(self, scenario_id: Optional[str]) -> bool:
+    def set_active_scenario(self, scenario_id: str | None) -> bool:
         """设置激活场景。
 
         Args:
@@ -245,11 +245,11 @@ class StepExecution:
 
     step: ScenarioStep
     result: StepResult = StepResult.SKIPPED
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     duration: float = 0.0
-    actual_state: Optional[str] = None
-    error_message: Optional[str] = None
+    actual_state: str | None = None
+    error_message: str | None = None
     details: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -344,15 +344,15 @@ class ScenarioResult:
 
     scenario_name: str
     state: ScenarioState = ScenarioState.PENDING
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     duration: float = 0.0
     steps_passed: int = 0
     steps_failed: int = 0
     steps_error: int = 0
     steps_skipped: int = 0
     step_executions: list[StepExecution] = field(default_factory=list)
-    error_message: Optional[str] = None
+    error_message: str | None = None
     details: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -434,10 +434,12 @@ class ScenarioResult:
             report_lines.append("")
 
         if self.error_message:
-            report_lines.extend([
-                "错误信息:",
-                f"  {self.error_message}",
-            ])
+            report_lines.extend(
+                [
+                    "错误信息:",
+                    f"  {self.error_message}",
+                ]
+            )
 
         return "\n".join(report_lines)
 
@@ -459,9 +461,9 @@ class ScenarioExecution:
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     scenario_name: str = ""
     state: ScenarioState = ScenarioState.PENDING
-    result: Optional[ScenarioResult] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    result: ScenarioResult | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:

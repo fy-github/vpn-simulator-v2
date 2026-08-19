@@ -12,7 +12,7 @@ Example:
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -82,7 +82,7 @@ class AttackService:
     async def create_attack(
         self,
         attack_type: str,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         target: str = "",
     ) -> dict[str, Any]:
         """创建一个攻击实例。
@@ -138,7 +138,7 @@ class AttackService:
         )
         return attack.to_dict()
 
-    async def get_attack(self, attack_id: str) -> Optional[dict[str, Any]]:
+    async def get_attack(self, attack_id: str) -> dict[str, Any] | None:
         """获取指定攻击的详细信息。
 
         Args:
@@ -155,8 +155,8 @@ class AttackService:
 
     async def list_attacks(
         self,
-        attack_type: Optional[str] = None,
-        status: Optional[str] = None,
+        attack_type: str | None = None,
+        status: str | None = None,
     ) -> list[dict[str, Any]]:
         """列出攻击。
 
@@ -201,9 +201,7 @@ class AttackService:
             raise ValueError(f"Attack '{attack_id}' not found")
 
         if attack.status != AttackStatus.RUNNING:
-            raise ValueError(
-                f"Cannot start attack in state '{attack.status.value}'"
-            )
+            raise ValueError(f"Cannot start attack in state '{attack.status.value}'")
 
         # 更新数据库
         await self._update_attack_in_db(attack)
@@ -246,8 +244,8 @@ class AttackService:
         self,
         attack_id: str,
         success: bool,
-        data: Optional[dict[str, Any]] = None,
-        error: Optional[str] = None,
+        data: dict[str, Any] | None = None,
+        error: str | None = None,
         duration_seconds: float = 0.0,
         attempts: int = 0,
     ) -> dict[str, Any]:

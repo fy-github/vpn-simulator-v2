@@ -22,7 +22,7 @@ from pathlib import Path
 from types import ModuleType
 
 from vpn_simulator.plugins.context import PluginContext
-from vpn_simulator.plugins.registry import Plugin, PluginRegistry
+from vpn_simulator.plugins.registry import PluginRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ class PluginLoader:
             return []
 
         before_names = {m.name for m in PluginRegistry.list_all()}
-        module = self._load_module(path)
+        self._load_module(path)
         self._loaded_modules.add(path)
 
         after_names = {m.name for m in PluginRegistry.list_all()}
@@ -284,16 +284,11 @@ class PluginLoader:
 
             if not progress and pending:
                 unsatisfied = {
-                    name: next(
-                        m.dependencies
-                        for m in all_plugins
-                        if m.name == name
-                    )
+                    name: next(m.dependencies for m in all_plugins if m.name == name)
                     for name in pending
                 }
                 raise PluginInitError(
-                    list(pending)[0],
-                    f"Circular or missing dependencies: {unsatisfied}"
+                    list(pending)[0], f"Circular or missing dependencies: {unsatisfied}"
                 )
 
         return initialized

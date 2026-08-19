@@ -106,64 +106,92 @@ class IPSecStateMachine(ProtocolStateMachine):
         transitions = [
             # Phase 1 - Main Mode (消息 1-2: SA 协商)
             StateTransition(
-                "INITIAL", "PHASE1_SA_SENT", "SEND_PHASE1_SA",
+                "INITIAL",
+                "PHASE1_SA_SENT",
+                "SEND_PHASE1_SA",
                 description="发送 Phase1 SA 提议 (加密算法/DH组/认证方式)",
             ),
             StateTransition(
-                "PHASE1_SA_SENT", "PHASE1_SA_RECEIVED", "RECEIVE_PHASE1_SA",
+                "PHASE1_SA_SENT",
+                "PHASE1_SA_RECEIVED",
+                "RECEIVE_PHASE1_SA",
                 description="收到 Phase1 SA 选定",
             ),
             # Phase 1 - Main Mode (消息 3-4: Key Exchange)
             StateTransition(
-                "PHASE1_SA_RECEIVED", "PHASE1_KE_SENT", "SEND_PHASE1_KE",
+                "PHASE1_SA_RECEIVED",
+                "PHASE1_KE_SENT",
+                "SEND_PHASE1_KE",
                 description="发送 DH 公钥 + Nonce",
             ),
             StateTransition(
-                "PHASE1_KE_SENT", "PHASE1_KE_RECEIVED", "RECEIVE_PHASE1_KE",
+                "PHASE1_KE_SENT",
+                "PHASE1_KE_RECEIVED",
+                "RECEIVE_PHASE1_KE",
                 description="收到 DH 公钥 + Nonce，计算共享密钥",
             ),
             # Phase 1 - Main Mode (消息 5-6: 认证)
             StateTransition(
-                "PHASE1_KE_RECEIVED", "PHASE1_AUTH_SENT", "SEND_PHASE1_AUTH",
+                "PHASE1_KE_RECEIVED",
+                "PHASE1_AUTH_SENT",
+                "SEND_PHASE1_AUTH",
                 description="发送加密的 ID + 认证数据 (PSK/证书)",
             ),
             StateTransition(
-                "PHASE1_AUTH_SENT", "PHASE1_COMPLETE", "RECEIVE_PHASE1_AUTH",
+                "PHASE1_AUTH_SENT",
+                "PHASE1_COMPLETE",
+                "RECEIVE_PHASE1_AUTH",
                 description="收到加密的 ID + 认证数据，Phase 1 完成",
             ),
             # Phase 2 - Quick Mode (消息 1-3)
             StateTransition(
-                "PHASE1_COMPLETE", "PHASE2_HASH_SENT", "SEND_PHASE2_HASH",
+                "PHASE1_COMPLETE",
+                "PHASE2_HASH_SENT",
+                "SEND_PHASE2_HASH",
                 description="发送 Phase2 Hash + SA 提议 + Nonce",
             ),
             StateTransition(
-                "PHASE2_HASH_SENT", "PHASE2_HASH_RECEIVED", "RECEIVE_PHASE2_HASH",
+                "PHASE2_HASH_SENT",
+                "PHASE2_HASH_RECEIVED",
+                "RECEIVE_PHASE2_HASH",
                 description="收到 Phase2 Hash + SA 选定 + Nonce",
             ),
             StateTransition(
-                "PHASE2_HASH_RECEIVED", "PHASE2_COMPLETE", "SEND_PHASE2_ACK",
+                "PHASE2_HASH_RECEIVED",
+                "PHASE2_COMPLETE",
+                "SEND_PHASE2_ACK",
                 description="发送 Phase2 最终确认",
             ),
             # ESP 隧道
             StateTransition(
-                "PHASE2_COMPLETE", "ESP_TUNNEL", "ESP_SA_READY",
+                "PHASE2_COMPLETE",
+                "ESP_TUNNEL",
+                "ESP_SA_READY",
                 description="ESP SA 就绪，建立 ESP 隧道",
             ),
             StateTransition(
-                "ESP_TUNNEL", "CONNECTED", "TUNNEL_ESTABLISHED",
+                "ESP_TUNNEL",
+                "CONNECTED",
+                "TUNNEL_ESTABLISHED",
                 description="IPSec ESP 隧道建立完成",
             ),
             # 错误路径
             StateTransition(
-                "PHASE1_SA_SENT", "ERROR", "PHASE1_SA_FAILED",
+                "PHASE1_SA_SENT",
+                "ERROR",
+                "PHASE1_SA_FAILED",
                 description="Phase 1 SA 协商失败",
             ),
             StateTransition(
-                "PHASE1_AUTH_SENT", "ERROR", "PHASE1_AUTH_FAILED",
+                "PHASE1_AUTH_SENT",
+                "ERROR",
+                "PHASE1_AUTH_FAILED",
                 description="Phase 1 认证失败",
             ),
             StateTransition(
-                "PHASE2_HASH_SENT", "ERROR", "PHASE2_FAILED",
+                "PHASE2_HASH_SENT",
+                "ERROR",
+                "PHASE2_FAILED",
                 description="Phase 2 协商失败",
             ),
         ]

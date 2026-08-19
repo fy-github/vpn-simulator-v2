@@ -1,8 +1,7 @@
-import logging
-
 """Packet management routes for VPN Simulator v2."""
 
-from typing import Any, Optional
+import logging
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
@@ -42,9 +41,9 @@ class PacketInfo(BaseModel):
     raw_data_hex: str = Field("", description="Raw packet data in hex")
     fields: list[PacketFieldInfo] = Field(default_factory=list, description="Parsed fields")
     parsed: bool = Field(False, description="Whether packet is parsed")
-    parse_error: Optional[str] = Field(None, description="Parse error message")
-    connection_id: Optional[str] = Field(None, description="Associated connection ID")
-    session_id: Optional[str] = Field(None, description="Associated session ID")
+    parse_error: str | None = Field(None, description="Parse error message")
+    connection_id: str | None = Field(None, description="Associated connection ID")
+    session_id: str | None = Field(None, description="Associated session ID")
 
 
 class PacketListResponse(BaseModel):
@@ -110,11 +109,11 @@ def _convert_packet(packet: Any) -> dict[str, Any]:
     description="Retrieve all packets with optional filtering.",
 )
 async def list_packets(
-    protocol: Optional[str] = Query(None, description="Filter by protocol"),
-    direction: Optional[str] = Query(None, description="Filter by direction (incoming/outgoing)"),
-    packet_type: Optional[str] = Query(None, description="Filter by type (control/data/error)"),
-    connection_id: Optional[str] = Query(None, description="Filter by connection ID"),
-    session_id: Optional[str] = Query(None, description="Filter by session ID"),
+    protocol: str | None = Query(None, description="Filter by protocol"),
+    direction: str | None = Query(None, description="Filter by direction (incoming/outgoing)"),
+    packet_type: str | None = Query(None, description="Filter by type (control/data/error)"),
+    connection_id: str | None = Query(None, description="Filter by connection ID"),
+    session_id: str | None = Query(None, description="Filter by session ID"),
     limit: int = Query(100, ge=1, le=1000, description="Number of packets to return"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
 ) -> dict[str, Any]:
@@ -160,7 +159,7 @@ async def list_packets(
 )
 async def search_packets(
     query: str = Query(..., min_length=1, description="Search query"),
-    protocol: Optional[str] = Query(None, description="Filter by protocol"),
+    protocol: str | None = Query(None, description="Filter by protocol"),
     limit: int = Query(100, ge=1, le=1000, description="Number of results to return"),
 ) -> list[dict[str, Any]]:
     """Search packets by query string."""
@@ -204,10 +203,10 @@ async def get_protocols() -> dict[str, Any]:
     description="Export packets to PCAP format with optional filtering.",
 )
 async def export_pcap(
-    protocol: Optional[str] = Query(None, description="Filter by protocol"),
-    direction: Optional[str] = Query(None, description="Filter by direction"),
-    packet_type: Optional[str] = Query(None, description="Filter by type"),
-    connection_id: Optional[str] = Query(None, description="Filter by connection ID"),
+    protocol: str | None = Query(None, description="Filter by protocol"),
+    direction: str | None = Query(None, description="Filter by direction"),
+    packet_type: str | None = Query(None, description="Filter by type"),
+    connection_id: str | None = Query(None, description="Filter by connection ID"),
 ) -> Response:
     """Export packets to PCAP format."""
     # Convert string parameters to enums

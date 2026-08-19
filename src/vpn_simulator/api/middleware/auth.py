@@ -1,7 +1,5 @@
 """Authentication middleware for VPN Simulator v2."""
 
-from typing import Optional
-
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
@@ -13,7 +11,7 @@ PUBLIC_PATHS = {"/health", "/docs", "/openapi.json", "/redoc"}
 class AuthMiddleware(BaseHTTPMiddleware):
     """Middleware for API key authentication."""
 
-    def __init__(self, app: object, api_key: Optional[str] = None) -> None:
+    def __init__(self, app: object, api_key: str | None = None) -> None:
         super().__init__(app)  # type: ignore[arg-type]
         self._api_key = api_key
 

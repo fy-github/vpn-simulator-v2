@@ -12,9 +12,8 @@ Example:
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 import yaml
@@ -72,7 +71,7 @@ class LearningService:
             return
 
         try:
-            with open(rfc_file, "r", encoding="utf-8") as f:
+            with open(rfc_file, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
 
             if data and "protocols" in data:
@@ -89,7 +88,7 @@ class LearningService:
             return
 
         try:
-            with open(faq_file, "r", encoding="utf-8") as f:
+            with open(faq_file, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
 
             if data:
@@ -106,7 +105,7 @@ class LearningService:
             return
 
         try:
-            with open(paths_file, "r", encoding="utf-8") as f:
+            with open(paths_file, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
 
             if data and "paths" in data:
@@ -121,7 +120,7 @@ class LearningService:
         except Exception as e:
             logger.error("failed_to_load_learning_paths", error=str(e))
 
-    async def list_rfc_references(self, protocol: Optional[str] = None) -> list[dict[str, Any]]:
+    async def list_rfc_references(self, protocol: str | None = None) -> list[dict[str, Any]]:
         """获取 RFC 文档引用列表。
 
         Args:
@@ -140,30 +139,34 @@ class LearningService:
             references = protocol_data.get("references", [])
 
             for rfc in rfcs:
-                result.append({
-                    "protocol": protocol_id,
-                    "protocol_name": protocol_data.get("name", protocol_id),
-                    "number": rfc.get("number", ""),
-                    "title": rfc.get("title", ""),
-                    "url": rfc.get("url", ""),
-                    "description": rfc.get("description", ""),
-                    "published": rfc.get("published", ""),
-                    "status": rfc.get("status", ""),
-                    "type": "rfc",
-                })
+                result.append(
+                    {
+                        "protocol": protocol_id,
+                        "protocol_name": protocol_data.get("name", protocol_id),
+                        "number": rfc.get("number", ""),
+                        "title": rfc.get("title", ""),
+                        "url": rfc.get("url", ""),
+                        "description": rfc.get("description", ""),
+                        "published": rfc.get("published", ""),
+                        "status": rfc.get("status", ""),
+                        "type": "rfc",
+                    }
+                )
 
             for ref in references:
-                result.append({
-                    "protocol": protocol_id,
-                    "protocol_name": protocol_data.get("name", protocol_id),
-                    "number": "",
-                    "title": ref.get("title", ""),
-                    "url": ref.get("url", ""),
-                    "description": ref.get("description", ""),
-                    "published": "",
-                    "status": "",
-                    "type": "reference",
-                })
+                result.append(
+                    {
+                        "protocol": protocol_id,
+                        "protocol_name": protocol_data.get("name", protocol_id),
+                        "number": "",
+                        "title": ref.get("title", ""),
+                        "url": ref.get("url", ""),
+                        "description": ref.get("description", ""),
+                        "published": "",
+                        "status": "",
+                        "type": "reference",
+                    }
+                )
 
         return result
 
@@ -191,7 +194,7 @@ class LearningService:
             "references": protocol_data.get("references", []),
         }
 
-    async def list_faq(self, category: Optional[str] = None) -> list[dict[str, Any]]:
+    async def list_faq(self, category: str | None = None) -> list[dict[str, Any]]:
         """获取 FAQ 列表。
 
         Args:
@@ -209,15 +212,17 @@ class LearningService:
 
             questions = cat.get("questions", [])
             for q in questions:
-                result.append({
-                    "category_id": cat.get("id", ""),
-                    "category_name": cat.get("name", ""),
-                    "category_icon": cat.get("icon", ""),
-                    "id": q.get("id", ""),
-                    "question": q.get("question", ""),
-                    "answer": q.get("answer", ""),
-                    "tags": q.get("tags", []),
-                })
+                result.append(
+                    {
+                        "category_id": cat.get("id", ""),
+                        "category_name": cat.get("name", ""),
+                        "category_icon": cat.get("icon", ""),
+                        "id": q.get("id", ""),
+                        "question": q.get("question", ""),
+                        "answer": q.get("answer", ""),
+                        "tags": q.get("tags", []),
+                    }
+                )
 
         return result
 
@@ -238,7 +243,7 @@ class LearningService:
             for cat in categories
         ]
 
-    async def get_faq_item(self, question_id: str) -> Optional[dict[str, Any]]:
+    async def get_faq_item(self, question_id: str) -> dict[str, Any] | None:
         """获取单个 FAQ 项目。
 
         Args:
@@ -273,20 +278,22 @@ class LearningService:
         result = []
         for path_id, path_data in self._learning_paths.items():
             protocols = path_data.get("protocols", [])
-            result.append({
-                "id": path_id,
-                "name": path_data.get("name", ""),
-                "description": path_data.get("description", ""),
-                "icon": path_data.get("icon", ""),
-                "difficulty": path_data.get("difficulty", ""),
-                "estimated_hours": path_data.get("estimated_hours", 0),
-                "target_audience": path_data.get("target_audience", ""),
-                "protocol_count": len(protocols),
-            })
+            result.append(
+                {
+                    "id": path_id,
+                    "name": path_data.get("name", ""),
+                    "description": path_data.get("description", ""),
+                    "icon": path_data.get("icon", ""),
+                    "difficulty": path_data.get("difficulty", ""),
+                    "estimated_hours": path_data.get("estimated_hours", 0),
+                    "target_audience": path_data.get("target_audience", ""),
+                    "protocol_count": len(protocols),
+                }
+            )
 
         return result
 
-    async def get_learning_path(self, path_id: str) -> Optional[dict[str, Any]]:
+    async def get_learning_path(self, path_id: str) -> dict[str, Any] | None:
         """获取学习路径详情。
 
         Args:
@@ -321,11 +328,7 @@ class LearningService:
             里程碑列表。
         """
         milestones = getattr(self, "_milestones", [])
-        return [
-            milestone
-            for milestone in milestones
-            if milestone.get("path_id") == path_id
-        ]
+        return [milestone for milestone in milestones if milestone.get("path_id") == path_id]
 
     async def search_resources(self, query: str) -> dict[str, Any]:
         """搜索学习资源。
@@ -351,14 +354,16 @@ class LearningService:
                     or query_lower in rfc.get("description", "").lower()
                     or query_lower in rfc.get("number", "").lower()
                 ):
-                    result["rfc_references"].append({
-                        "protocol": protocol_id,
-                        "protocol_name": protocol_data.get("name", protocol_id),
-                        "number": rfc.get("number", ""),
-                        "title": rfc.get("title", ""),
-                        "url": rfc.get("url", ""),
-                        "description": rfc.get("description", ""),
-                    })
+                    result["rfc_references"].append(
+                        {
+                            "protocol": protocol_id,
+                            "protocol_name": protocol_data.get("name", protocol_id),
+                            "number": rfc.get("number", ""),
+                            "title": rfc.get("title", ""),
+                            "url": rfc.get("url", ""),
+                            "description": rfc.get("description", ""),
+                        }
+                    )
 
         # 搜索 FAQ
         for cat in self._faq.get("categories", []):
@@ -368,14 +373,16 @@ class LearningService:
                     or query_lower in q.get("answer", "").lower()
                     or any(query_lower in tag.lower() for tag in q.get("tags", []))
                 ):
-                    result["faq"].append({
-                        "category_id": cat.get("id", ""),
-                        "category_name": cat.get("name", ""),
-                        "id": q.get("id", ""),
-                        "question": q.get("question", ""),
-                        "answer": q.get("answer", ""),
-                        "tags": q.get("tags", []),
-                    })
+                    result["faq"].append(
+                        {
+                            "category_id": cat.get("id", ""),
+                            "category_name": cat.get("name", ""),
+                            "id": q.get("id", ""),
+                            "question": q.get("question", ""),
+                            "answer": q.get("answer", ""),
+                            "tags": q.get("tags", []),
+                        }
+                    )
 
         # 搜索学习路径
         for path_id, path_data in self._learning_paths.items():
@@ -384,11 +391,13 @@ class LearningService:
                 or query_lower in path_data.get("description", "").lower()
                 or query_lower in path_data.get("target_audience", "").lower()
             ):
-                result["learning_paths"].append({
-                    "id": path_id,
-                    "name": path_data.get("name", ""),
-                    "description": path_data.get("description", ""),
-                    "difficulty": path_data.get("difficulty", ""),
-                })
+                result["learning_paths"].append(
+                    {
+                        "id": path_id,
+                        "name": path_data.get("name", ""),
+                        "description": path_data.get("description", ""),
+                        "difficulty": path_data.get("difficulty", ""),
+                    }
+                )
 
         return result

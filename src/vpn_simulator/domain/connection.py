@@ -16,7 +16,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class ConnectionState(Enum):
@@ -88,8 +88,8 @@ class ConnectionInfo:
     remote_port: int = 0
 
     created_at: datetime = field(default_factory=datetime.now)
-    connected_at: Optional[datetime] = None
-    disconnected_at: Optional[datetime] = None
+    connected_at: datetime | None = None
+    disconnected_at: datetime | None = None
 
     bytes_sent: int = 0
     bytes_received: int = 0
@@ -98,8 +98,8 @@ class ConnectionInfo:
 
     protocol_data: dict[str, Any] = field(default_factory=dict)
 
-    error_message: Optional[str] = None
-    error_code: Optional[str] = None
+    error_message: str | None = None
+    error_code: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """将连接信息转换为字典。
@@ -121,9 +121,7 @@ class ConnectionInfo:
             "remote_port": self.remote_port,
             "created_at": self.created_at.isoformat(),
             "connected_at": self.connected_at.isoformat() if self.connected_at else None,
-            "disconnected_at": (
-                self.disconnected_at.isoformat() if self.disconnected_at else None
-            ),
+            "disconnected_at": (self.disconnected_at.isoformat() if self.disconnected_at else None),
             "bytes_sent": self.bytes_sent,
             "bytes_received": self.bytes_received,
             "packets_sent": self.packets_sent,
@@ -134,7 +132,7 @@ class ConnectionInfo:
         }
 
     @property
-    def duration(self) -> Optional[float]:
+    def duration(self) -> float | None:
         """连接持续时间（秒）。
 
         Returns:
@@ -174,9 +172,7 @@ class ConnectionManager:
         """初始化连接管理器。"""
         self._connections: dict[str, ConnectionInfo] = {}
 
-    async def create_connection(
-        self, protocol: str, **kwargs: Any
-    ) -> ConnectionInfo:
+    async def create_connection(self, protocol: str, **kwargs: Any) -> ConnectionInfo:
         """创建一个新连接。
 
         Args:
@@ -226,7 +222,7 @@ class ConnectionManager:
             timestamp=datetime.now().isoformat(),
         )
 
-    async def get_connection(self, conn_id: str) -> Optional[ConnectionInfo]:
+    async def get_connection(self, conn_id: str) -> ConnectionInfo | None:
         """获取指定连接。
 
         Args:
@@ -237,9 +233,7 @@ class ConnectionManager:
         """
         return self._connections.get(conn_id)
 
-    async def list_connections(
-        self, protocol: Optional[str] = None
-    ) -> list[ConnectionInfo]:
+    async def list_connections(self, protocol: str | None = None) -> list[ConnectionInfo]:
         """列出连接。
 
         Args:

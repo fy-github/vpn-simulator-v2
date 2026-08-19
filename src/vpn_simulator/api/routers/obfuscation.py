@@ -1,8 +1,7 @@
-import logging
-
 """流量混淆测试 API 路由。"""
 
-from typing import Any, Optional
+import logging
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -16,6 +15,7 @@ router = APIRouter(prefix="/obfuscation")
 
 class ObfuscationTestRequest(BaseModel):
     """混淆测试请求。"""
+
     technique: str = Field(..., description="混淆技术名称")
     packet_count: int = Field(1000, ge=100, le=10000, description="模拟数据包数量")
     duration_seconds: float = Field(10.0, ge=1.0, le=60.0, description="模拟测试时长（秒）")
@@ -23,6 +23,7 @@ class ObfuscationTestRequest(BaseModel):
 
 class TechniqueInfoResponse(BaseModel):
     """混淆技术信息响应。"""
+
     name: str
     technique: str
     description: str
@@ -35,6 +36,7 @@ class TechniqueInfoResponse(BaseModel):
 
 class TrafficFeaturesResponse(BaseModel):
     """流量特征响应。"""
+
     avg_packet_size: float
     packet_size_std: float
     avg_interval_ms: float
@@ -46,6 +48,7 @@ class TrafficFeaturesResponse(BaseModel):
 
 class ShannonEntropyResponse(BaseModel):
     """Shannon 熵响应。"""
+
     payload_entropy: float
     header_entropy: float
     overall_entropy: float
@@ -54,6 +57,7 @@ class ShannonEntropyResponse(BaseModel):
 
 class ObfuscationTestResultResponse(BaseModel):
     """混淆测试结果响应。"""
+
     id: str
     timestamp: str
     technique: str
@@ -70,6 +74,7 @@ class ObfuscationTestResultResponse(BaseModel):
 
 class ComparisonMetrics(BaseModel):
     """对比指标。"""
+
     avg_detection_rate: float
     avg_false_positive_rate: float
     avg_detection_score: float
@@ -79,6 +84,7 @@ class ComparisonMetrics(BaseModel):
 
 class RankingItem(BaseModel):
     """排名项。"""
+
     rank: int
     technique: str
     score: float
@@ -86,6 +92,7 @@ class RankingItem(BaseModel):
 
 class ComparisonResponse(BaseModel):
     """对比结果响应。"""
+
     techniques: list[str]
     metrics: dict[str, ComparisonMetrics]
     rankings: dict[str, list[RankingItem]]

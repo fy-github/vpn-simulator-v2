@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
+
 from plugins.protocols.wireguard.state_machine import WireGuardStateMachine
 
 if TYPE_CHECKING:
@@ -55,8 +56,8 @@ class WireGuardPlugin(Plugin):
             version="1.0.0",
             author="VPN Simulator",
             description="WireGuard 协议实现 - "
-                        "Noise_IKpsk2 握手 (Initiation 52B + Response 92B) + "
-                        "ChaCha20-Poly1305 数据通道",
+            "Noise_IKpsk2 握手 (Initiation 52B + Response 92B) + "
+            "ChaCha20-Poly1305 数据通道",
             plugin_type=PluginType.PROTOCOL,
             dependencies=[],
             config_schema={

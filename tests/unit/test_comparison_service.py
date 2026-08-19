@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from vpn_simulator.services.comparison import (
     ComparisonResult,
     ComparisonService,

@@ -14,9 +14,10 @@ Example:
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 import structlog
 import yaml
@@ -57,13 +58,13 @@ class Config:
     log_format: str = "json"
 
     # 协议配置
-    protocols: Dict[str, Any] = field(default_factory=dict)
+    protocols: dict[str, Any] = field(default_factory=dict)
 
     # 故障注入配置
-    faults: Dict[str, Any] = field(default_factory=dict)
+    faults: dict[str, Any] = field(default_factory=dict)
 
     # 攻击配置
-    attacks: Dict[str, Any] = field(default_factory=dict)
+    attacks: dict[str, Any] = field(default_factory=dict)
 
     # 国际化配置
     locale: str = "zh-CN"
@@ -91,7 +92,7 @@ class ConfigManager:
         >>> manager.save(config)
     """
 
-    def __init__(self, config_dir: Optional[Path] = None) -> None:
+    def __init__(self, config_dir: Path | None = None) -> None:
         """初始化配置管理器
 
         Args:
@@ -99,10 +100,10 @@ class ConfigManager:
         """
         self.config_dir = config_dir or Path.home() / ".vpn-simulator"
         self.config_file = self.config_dir / "config.yaml"
-        self._config: Optional[Config] = None
-        self._watchers: List[ConfigWatcher] = []
+        self._config: Config | None = None
+        self._watchers: list[ConfigWatcher] = []
 
-    def load(self, env_file: Optional[Path] = None) -> Config:
+    def load(self, env_file: Path | None = None) -> Config:
         """加载配置
 
         按照优先级加载配置：默认值 -> YAML 文件 -> 环境变量。
@@ -140,7 +141,7 @@ class ConfigManager:
         )
         return config
 
-    def save(self, config: Optional[Config] = None) -> None:
+    def save(self, config: Config | None = None) -> None:
         """保存配置到文件
 
         Args:
@@ -192,7 +193,7 @@ class ConfigManager:
         self._watchers.append(callback)
         logger.debug("config_watcher_registered", callback=callback.__name__)
 
-    def _merge_config(self, base: Config, override: Dict[str, Any]) -> Config:
+    def _merge_config(self, base: Config, override: dict[str, Any]) -> Config:
         """合并配置
 
         将覆盖配置深度合并到基础配置中。
@@ -226,7 +227,7 @@ class ConfigManager:
         Returns:
             加载环境变量后的配置
         """
-        env_mapping: Dict[str, tuple[str, type]] = {
+        env_mapping: dict[str, tuple[str, type]] = {
             "VPN_SIM_SERVER_HOST": ("server_host", str),
             "VPN_SIM_SERVER_PORT": ("server_port", int),
             "VPN_SIM_DATABASE_URL": ("database_url", str),
@@ -260,7 +261,7 @@ class ConfigManager:
 
         return config
 
-    def _config_to_dict(self, config: Config) -> Dict[str, Any]:
+    def _config_to_dict(self, config: Config) -> dict[str, Any]:
         """将配置转换为可序列化的字典
 
         Args:

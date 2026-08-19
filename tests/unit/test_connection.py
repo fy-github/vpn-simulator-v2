@@ -14,7 +14,6 @@ from __future__ import annotations
 from datetime import datetime
 
 import pytest
-
 from vpn_simulator.domain.connection import (
     ConnectionInfo,
     ConnectionManager,
@@ -177,9 +176,7 @@ class TestConnectionManager:
     async def test_update_state(self, connection_manager: ConnectionManager):
         """Verify connection state update."""
         conn = await connection_manager.create_connection("pptp")
-        event = await connection_manager.update_state(
-            conn.id, ConnectionState.CONNECTED
-        )
+        event = await connection_manager.update_state(conn.id, ConnectionState.CONNECTED)
 
         assert conn.state == ConnectionState.CONNECTED
         assert conn.connected_at is not None

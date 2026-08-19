@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from vpn_simulator.core.config import ConfigManager
 from vpn_simulator.core.database import DatabaseManager
 from vpn_simulator.core.events import EventBus
@@ -27,7 +27,9 @@ def mock_config_manager():
 def mock_db_manager():
     dm = MagicMock(spec=DatabaseManager)
     mock_session = AsyncMock()
-    mock_session.execute = AsyncMock(return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=None)))
+    mock_session.execute = AsyncMock(
+        return_value=MagicMock(scalar_one_or_none=MagicMock(return_value=None))
+    )
     mock_session.add = MagicMock()
     mock_session.commit = AsyncMock()
     dm.session.return_value.__aenter__ = AsyncMock(return_value=mock_session)

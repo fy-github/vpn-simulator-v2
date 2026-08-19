@@ -1,7 +1,6 @@
-import logging
-
 """Configuration management routes for VPN Simulator v2."""
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter

@@ -18,11 +18,11 @@ Example:
 
 from __future__ import annotations
 
-import asyncio
 from abc import ABC
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Optional
+from typing import Any
 
 
 @dataclass
@@ -42,8 +42,8 @@ class State:
     description: str
     is_initial: bool = False
     is_final: bool = False
-    on_enter: Optional[Callable[..., Any]] = None
-    on_exit: Optional[Callable[..., Any]] = None
+    on_enter: Callable[..., Any] | None = None
+    on_exit: Callable[..., Any] | None = None
 
 
 @dataclass
@@ -62,8 +62,8 @@ class StateTransition:
     from_state: str
     to_state: str
     event: str
-    guard: Optional[Callable[..., bool]] = None
-    action: Optional[Callable[..., Any]] = None
+    guard: Callable[..., bool] | None = None
+    action: Callable[..., Any] | None = None
     description: str = ""
 
 
@@ -83,7 +83,7 @@ class TransitionRecord:
     from_state: str
     to_state: str
     event: str
-    context: Optional[dict[str, Any]] = None
+    context: dict[str, Any] | None = None
 
 
 class ProtocolStateMachine(ABC):
@@ -109,7 +109,7 @@ class ProtocolStateMachine(ABC):
         self.protocol_name = protocol_name
         self.states: dict[str, State] = {}
         self.transitions: list[StateTransition] = []
-        self.current_state: Optional[str] = None
+        self.current_state: str | None = None
         self.history: list[TransitionRecord] = []
         self._listeners: list[Callable[..., Any]] = []
 
@@ -138,9 +138,7 @@ class ProtocolStateMachine(ABC):
         """
         self.transitions.append(transition)
 
-    async def trigger(
-        self, event: str, context: Optional[dict[str, Any]] = None
-    ) -> bool:
+    async def trigger(self, event: str, context: dict[str, Any] | None = None) -> bool:
         """触发一个事件，尝试执行状态转换。
 
         流程：查找转换 -> 检查守卫 -> 记录历史 -> 执行退出动作 ->
@@ -187,9 +185,7 @@ class ProtocolStateMachine(ABC):
 
         return True
 
-    def _find_transition(
-        self, from_state: Optional[str], event: str
-    ) -> Optional[StateTransition]:
+    def _find_transition(self, from_state: str | None, event: str) -> StateTransition | None:
         """查找匹配的转换规则。
 
         Args:
@@ -216,8 +212,8 @@ class ProtocolStateMachine(ABC):
 
     async def _notify_listeners(
         self,
-        from_state: Optional[str],
-        to_state: Optional[str],
+        from_state: str | None,
+        to_state: str | None,
         event: str,
     ) -> None:
         """通知所有监听器。

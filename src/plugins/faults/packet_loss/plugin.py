@@ -102,11 +102,14 @@ class PacketLossPlugin(Plugin):
             self._context.logger.info(
                 f"丢包故障已注入: rate={self._loss_rate}, burst={self._burst_mode}"
             )
-            self._context.emit_event("fault.injected", {
-                "fault_type": "packet_loss",
-                "loss_rate": self._loss_rate,
-                "burst_mode": self._burst_mode,
-            })
+            self._context.emit_event(
+                "fault.injected",
+                {
+                    "fault_type": "packet_loss",
+                    "loss_rate": self._loss_rate,
+                    "burst_mode": self._burst_mode,
+                },
+            )
 
     async def remove(self) -> None:
         """移除丢包故障。"""

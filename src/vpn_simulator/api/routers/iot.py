@@ -1,8 +1,7 @@
-import logging
-
 """IoT 设备模拟 API 路由。"""
 
-from typing import Any, Optional
+import logging
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -20,6 +19,7 @@ def get_iot_service():
     global _iot_service
     if _iot_service is None:
         from vpn_simulator.services.iot import IoTService
+
         _iot_service = IoTService()
         _iot_service.load_devices()
     return _iot_service
@@ -27,6 +27,7 @@ def get_iot_service():
 
 class DeviceInfo(BaseModel):
     """设备信息。"""
+
     id: str = Field(..., description="设备 ID")
     name: str = Field(..., description="设备名称")
     name_en: str = Field("", description="设备英文名称")
@@ -37,19 +38,21 @@ class DeviceInfo(BaseModel):
     traffic_pattern: str = Field("periodic", description="流量模式")
     default_params: dict[str, Any] = Field(default_factory=dict, description="默认参数")
     network_profile: dict[str, Any] = Field(default_factory=dict, description="网络流量配置")
-    instance_id: Optional[str] = Field(None, description="运行实例 ID")
+    instance_id: str | None = Field(None, description="运行实例 ID")
     state: str = Field("offline", description="设备状态")
 
 
 class DeviceStartRequest(BaseModel):
     """启动设备请求。"""
+
     device_id: str = Field(..., description="设备 ID")
-    params: Optional[dict[str, Any]] = Field(None, description="设备参数覆盖")
+    params: dict[str, Any] | None = Field(None, description="设备参数覆盖")
 
 
 class DeviceActionResponse(BaseModel):
     """设备操作响应。"""
-    instance_id: Optional[str] = Field(None, description="实例 ID")
+
+    instance_id: str | None = Field(None, description="实例 ID")
     device_id: str = Field(..., description="设备 ID")
     state: str = Field(..., description="设备状态")
     message: str = Field("", description="操作结果消息")
@@ -57,11 +60,12 @@ class DeviceActionResponse(BaseModel):
 
 class DeviceStatusResponse(BaseModel):
     """设备状态响应。"""
+
     instance_id: str = Field(..., description="实例 ID")
     device_id: str = Field(..., description="设备 ID")
     device_name: str = Field(..., description="设备名称")
     state: str = Field(..., description="设备状态")
-    started_at: Optional[float] = Field(None, description="启动时间戳")
+    started_at: float | None = Field(None, description="启动时间戳")
     uptime_seconds: float = Field(0, description="运行时长(秒)")
     params: dict[str, Any] = Field(default_factory=dict, description="设备参数")
     stats: dict[str, Any] = Field(default_factory=dict, description="流量统计")
@@ -71,6 +75,7 @@ class DeviceStatusResponse(BaseModel):
 
 class TrafficStatsResponse(BaseModel):
     """流量统计响应。"""
+
     total_devices: int = Field(0, description="总设备数")
     online_devices: int = Field(0, description="在线设备数")
     total_packets_sent: int = Field(0, description="总发送包数")
@@ -89,7 +94,7 @@ class TrafficStatsResponse(BaseModel):
     summary="列出所有 IoT 设备",
     description="获取所有可用的 IoT 设备配置和运行状态。",
 )
-async def list_devices(category: Optional[str] = None) -> list[dict[str, Any]]:
+async def list_devices(category: str | None = None) -> list[dict[str, Any]]:
     """列出所有 IoT 设备。
 
     Args:

@@ -10,12 +10,10 @@ Tests cover:
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import pytest
 import yaml
-
 from vpn_simulator.core.config import Config, ConfigManager
 
 
@@ -207,7 +205,9 @@ class TestConfigManager:
         assert config.log_level == "WARNING"
         assert config.server_host == "10.0.0.1"
 
-    def test_load_env_vars_invalid_int(self, config_manager: ConfigManager, monkeypatch: pytest.MonkeyPatch):
+    def test_load_env_vars_invalid_int(
+        self, config_manager: ConfigManager, monkeypatch: pytest.MonkeyPatch
+    ):
         """Verify invalid int env var is handled gracefully."""
         monkeypatch.setenv("VPN_SIM_SERVER_PORT", "not_a_number")
         config = config_manager.load()

@@ -3,11 +3,7 @@
 from __future__ import annotations
 
 import pytest
-
 from vpn_simulator.services.vendor_cli import (
-    CommandMapping,
-    CommandMode,
-    CommandResult,
     VendorCLIService,
     VendorType,
 )
@@ -60,7 +56,9 @@ class TestExecuteCommand:
     def test_cisco_show_interfaces_detail(self, service: VendorCLIService):
         result = service.execute_command(VendorType.CISCO, "show interfaces")
         assert result.success is True
-        assert "lo" in result.output or "eth0" in result.output or "GigabitEthernet" in result.output
+        assert (
+            "lo" in result.output or "eth0" in result.output or "GigabitEthernet" in result.output
+        )
 
     def test_cisco_show_running_config(self, service: VendorCLIService):
         result = service.execute_command(VendorType.CISCO, "show running-config")
@@ -78,9 +76,7 @@ class TestExecuteCommand:
         assert "saved" in result.output.lower()
 
     def test_cisco_ping(self, service: VendorCLIService):
-        result = service.execute_command(
-            VendorType.CISCO, "ping", params={"target": "10.0.0.1"}
-        )
+        result = service.execute_command(VendorType.CISCO, "ping", params={"target": "10.0.0.1"})
         assert result.success is True
         assert "10.0.0.1" in result.output
 
@@ -142,7 +138,7 @@ class TestGetHistory:
 
     def test_history_with_limit(self, service: VendorCLIService):
         for i in range(10):
-            service.execute_command(VendorType.CISCO, f"ping")
+            service.execute_command(VendorType.CISCO, "ping")
         history = service.get_history(limit=5)
         assert len(history) == 5
 
@@ -173,6 +169,7 @@ class TestEdgeCases:
 class TestGlobalInstance:
     def test_get_vendor_cli_service(self):
         from vpn_simulator.services.vendor_cli import get_vendor_cli_service
+
         service = get_vendor_cli_service()
         assert service is not None
         assert isinstance(service, VendorCLIService)

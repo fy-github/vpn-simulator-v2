@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react'
+import { useRef } from 'react'
 
 import VendorTerminal from '../components/VendorTerminal'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
@@ -7,13 +7,6 @@ import { Badge } from '../components/ui/Badge'
 const VendorCLI = () => {
   const headerRef = useRef<HTMLDivElement>(null)
   const commandsRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (headerRef.current) {
-    }
-    if (commandsRef.current) {
-    }
-  }, [])
 
   return (
     <div className="space-y-6">

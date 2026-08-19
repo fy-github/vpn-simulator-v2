@@ -5,12 +5,11 @@ from __future__ import annotations
 import subprocess
 import sys
 
-import pytest
-
 
 class TestCLIMain:
     def test_main_import(self):
         from vpn_simulator.cli.__main__ import main
+
         assert callable(main)
 
     def test_module_execution(self):

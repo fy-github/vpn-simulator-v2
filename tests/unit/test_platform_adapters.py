@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import socket
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-
 from vpn_simulator.core.platform import (
     LinuxAdapter,
     MacOSAdapter,
@@ -18,7 +17,9 @@ from vpn_simulator.core.platform import (
 
 class TestPlatformInfo:
     def test_fields(self):
-        info = PlatformInfo(os="linux", arch="x86_64", version="5.15", is_admin=False, python_version="3.12")
+        info = PlatformInfo(
+            os="linux", arch="x86_64", version="5.15", is_admin=False, python_version="3.12"
+        )
         assert info.os == "linux"
         assert info.arch == "x86_64"
         assert info.version == "5.15"
@@ -96,7 +97,9 @@ class TestWindowsAdapter:
 
     @pytest.mark.asyncio
     async def test_get_network_interfaces(self, adapter):
-        with patch("psutil.net_if_addrs", return_value={"eth0": [MagicMock(address="192.168.1.1")]}):
+        with patch(
+            "psutil.net_if_addrs", return_value={"eth0": [MagicMock(address="192.168.1.1")]}
+        ):
             interfaces = await adapter.get_network_interfaces()
             assert len(interfaces) == 1
             assert interfaces[0]["name"] == "eth0"
@@ -259,7 +262,9 @@ class TestLinuxAdapter:
 
     @pytest.mark.asyncio
     async def test_get_network_interfaces(self, adapter):
-        with patch("psutil.net_if_addrs", return_value={"eth0": [MagicMock(address="192.168.1.1")]}):
+        with patch(
+            "psutil.net_if_addrs", return_value={"eth0": [MagicMock(address="192.168.1.1")]}
+        ):
             interfaces = await adapter.get_network_interfaces()
             assert len(interfaces) == 1
 

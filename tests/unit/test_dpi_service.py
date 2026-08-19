@@ -3,15 +3,9 @@
 from __future__ import annotations
 
 import pytest
-
 from vpn_simulator.services.dpi import (
-    AnomalyDetection,
-    DPIResult,
     DPIService,
     ProtocolCategory,
-    ProtocolFingerprint,
-    ProtocolStatistics,
-    ThreatLevel,
 )
 
 

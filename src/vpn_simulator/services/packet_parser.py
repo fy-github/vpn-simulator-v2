@@ -14,7 +14,7 @@ from __future__ import annotations
 import struct
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from ..domain.packet import (
     PacketDirection,
@@ -24,7 +24,6 @@ from ..domain.packet import (
     export_packets_to_pcap,
 )
 from ..domain.packet_fields import (
-    ALL_PROTOCOL_FIELDS,
     FieldDefinition,
     FieldType,
     get_field_definitions,
@@ -56,8 +55,8 @@ class PacketParser:
         dst_ip: str = "",
         src_port: int = 0,
         dst_port: int = 0,
-        connection_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        connection_id: str | None = None,
+        session_id: str | None = None,
     ) -> PacketInfo:
         """解析报文。
 
@@ -119,11 +118,29 @@ class PacketParser:
         """
         # 控制报文关键字
         control_keywords = [
-            "SCCRQ", "SCCRP", "StopCCN", "OCRQ", "OCRP", "ICRQ", "ICRP", "ICCN",
-            "CCRQ", "CDN", "WEN", "SLI", "HELLO",
-            "P_CONTROL", "P_ACK", "P_HARD_RESET", "P_SOFT_RESET",
-            "IKE_SA_INIT", "IKE_AUTH", "CREATE_CHILD_SA", "INFORMATIONAL",
-            "MAIN_MODE", "QUICK_MODE",
+            "SCCRQ",
+            "SCCRP",
+            "StopCCN",
+            "OCRQ",
+            "OCRP",
+            "ICRQ",
+            "ICRP",
+            "ICCN",
+            "CCRQ",
+            "CDN",
+            "WEN",
+            "SLI",
+            "HELLO",
+            "P_CONTROL",
+            "P_ACK",
+            "P_HARD_RESET",
+            "P_SOFT_RESET",
+            "IKE_SA_INIT",
+            "IKE_AUTH",
+            "CREATE_CHILD_SA",
+            "INFORMATIONAL",
+            "MAIN_MODE",
+            "QUICK_MODE",
         ]
 
         # 数据报文关键字
@@ -200,9 +217,11 @@ class PacketParser:
 
         # 检查边界
         if offset + length > len(raw_data):
-            raise ValueError(f"Field extends beyond data: offset={offset}, length={length}, data_len={len(raw_data)}")
+            raise ValueError(
+                f"Field extends beyond data: offset={offset}, length={length}, data_len={len(raw_data)}"
+            )
 
-        data = raw_data[offset:offset + length]
+        data = raw_data[offset : offset + length]
 
         if field_def.field_type == FieldType.UINT8:
             return struct.unpack(">B", data)[0]
@@ -237,7 +256,7 @@ class PacketParser:
     def _parse_flags(
         self,
         value: int,
-        bit_fields: Optional[list[Any]],
+        bit_fields: list[Any] | None,
     ) -> dict[str, Any]:
         """解析标志位字段。
 
@@ -262,7 +281,7 @@ class PacketParser:
 
         return result
 
-    def get_packet(self, packet_id: str) -> Optional[PacketInfo]:
+    def get_packet(self, packet_id: str) -> PacketInfo | None:
         """获取报文详情。
 
         Args:
@@ -275,11 +294,11 @@ class PacketParser:
 
     def get_packets(
         self,
-        protocol: Optional[str] = None,
-        direction: Optional[PacketDirection] = None,
-        packet_type: Optional[PacketType] = None,
-        connection_id: Optional[str] = None,
-        session_id: Optional[str] = None,
+        protocol: str | None = None,
+        direction: PacketDirection | None = None,
+        packet_type: PacketType | None = None,
+        connection_id: str | None = None,
+        session_id: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[PacketInfo]:
@@ -315,12 +334,12 @@ class PacketParser:
         packets.sort(key=lambda p: p.timestamp, reverse=True)
 
         # 应用分页
-        return packets[offset:offset + limit]
+        return packets[offset : offset + limit]
 
     def search_packets(
         self,
         query: str,
-        protocol: Optional[str] = None,
+        protocol: str | None = None,
         limit: int = 100,
     ) -> list[PacketInfo]:
         """搜索报文。
@@ -386,10 +405,10 @@ class PacketParser:
 
     def export_to_pcap(
         self,
-        protocol: Optional[str] = None,
-        direction: Optional[PacketDirection] = None,
-        packet_type: Optional[PacketType] = None,
-        connection_id: Optional[str] = None,
+        protocol: str | None = None,
+        direction: PacketDirection | None = None,
+        packet_type: PacketType | None = None,
+        connection_id: str | None = None,
     ) -> bytes:
         """导出报文为 PCAP 格式。
 
@@ -471,102 +490,239 @@ class PacketParser:
         samples = []
 
         # PPTP SCCRQ 示例
-        pptp_sccrq_data = bytes([
-            0x00, 0x9C,  # length = 156
-            0x00, 0x01,  # message_type = 1 (SCCRQ)
-            0x1A, 0x2B, 0x3C, 0x4D,  # magic_cookie
-            0x00, 0x01,  # control_message_type = 1
-            0x00, 0x00,  # reserved
-            0x01, 0x00,  # protocol_version = 256
-            0x00, 0x00, 0x00, 0x03,  # framing_capabilities (async + sync)
-            0x00, 0x00, 0x00, 0x03,  # bearer_capabilities (analog + digital)
-            0x00, 0x01,  # max_channels = 1
-            0x01, 0x00,  # firmware_revision = 256
-        ] + [0x00] * 64 + [ord(c) for c in "Simulator"] + [0x00] * 55 +  # host_name
-        [0x00] * 64 + [ord(c) for c in "VPN Simulator v2"] + [0x00] * 48)  # vendor_name
+        pptp_sccrq_data = bytes(
+            [
+                0x00,
+                0x9C,  # length = 156
+                0x00,
+                0x01,  # message_type = 1 (SCCRQ)
+                0x1A,
+                0x2B,
+                0x3C,
+                0x4D,  # magic_cookie
+                0x00,
+                0x01,  # control_message_type = 1
+                0x00,
+                0x00,  # reserved
+                0x01,
+                0x00,  # protocol_version = 256
+                0x00,
+                0x00,
+                0x00,
+                0x03,  # framing_capabilities (async + sync)
+                0x00,
+                0x00,
+                0x00,
+                0x03,  # bearer_capabilities (analog + digital)
+                0x00,
+                0x01,  # max_channels = 1
+                0x01,
+                0x00,  # firmware_revision = 256
+            ]
+            + [0x00] * 64
+            + [ord(c) for c in "Simulator"]
+            + [0x00] * 55  # host_name
+            + [0x00] * 64
+            + [ord(c) for c in "VPN Simulator v2"]
+            + [0x00] * 48
+        )  # vendor_name
 
-        samples.append(self.parse_packet(
-            pptp_sccrq_data, "pptp", "SCCRQ",
-            direction=PacketDirection.INCOMING,
-            src_ip="192.168.1.100", dst_ip="192.168.1.1",
-            src_port=50000, dst_port=1723,
-        ))
+        samples.append(
+            self.parse_packet(
+                pptp_sccrq_data,
+                "pptp",
+                "SCCRQ",
+                direction=PacketDirection.INCOMING,
+                src_ip="192.168.1.100",
+                dst_ip="192.168.1.1",
+                src_port=50000,
+                dst_port=1723,
+            )
+        )
 
         # PPTP SCCRP 示例
-        pptp_sccrp_data = bytes([
-            0x00, 0x9C,  # length = 156
-            0x00, 0x02,  # message_type = 2 (SCCRP)
-            0x1A, 0x2B, 0x3C, 0x4D,  # magic_cookie
-            0x00, 0x02,  # control_message_type = 2
-            0x00, 0x00,  # reserved
-            0x01, 0x00,  # protocol_version = 256
-            0x00, 0x00, 0x00, 0x03,  # framing_capabilities
-            0x00, 0x00, 0x00, 0x03,  # bearer_capabilities
-            0x00, 0x01,  # max_channels = 1
-            0x01, 0x00,  # firmware_revision = 256
-        ] + [0x00] * 64 + [ord(c) for c in "VPNServer"] + [0x00] * 55 +  # host_name
-        [0x00] * 64 + [ord(c) for c in "VPN Simulator v2"] + [0x00] * 48)  # vendor_name
+        pptp_sccrp_data = bytes(
+            [
+                0x00,
+                0x9C,  # length = 156
+                0x00,
+                0x02,  # message_type = 2 (SCCRP)
+                0x1A,
+                0x2B,
+                0x3C,
+                0x4D,  # magic_cookie
+                0x00,
+                0x02,  # control_message_type = 2
+                0x00,
+                0x00,  # reserved
+                0x01,
+                0x00,  # protocol_version = 256
+                0x00,
+                0x00,
+                0x00,
+                0x03,  # framing_capabilities
+                0x00,
+                0x00,
+                0x00,
+                0x03,  # bearer_capabilities
+                0x00,
+                0x01,  # max_channels = 1
+                0x01,
+                0x00,  # firmware_revision = 256
+            ]
+            + [0x00] * 64
+            + [ord(c) for c in "VPNServer"]
+            + [0x00] * 55  # host_name
+            + [0x00] * 64
+            + [ord(c) for c in "VPN Simulator v2"]
+            + [0x00] * 48
+        )  # vendor_name
 
-        samples.append(self.parse_packet(
-            pptp_sccrp_data, "pptp", "SCCRP",
-            direction=PacketDirection.OUTGOING,
-            src_ip="192.168.1.1", dst_ip="192.168.1.100",
-            src_port=1723, dst_port=50000,
-        ))
+        samples.append(
+            self.parse_packet(
+                pptp_sccrp_data,
+                "pptp",
+                "SCCRP",
+                direction=PacketDirection.OUTGOING,
+                src_ip="192.168.1.1",
+                dst_ip="192.168.1.100",
+                src_port=1723,
+                dst_port=50000,
+            )
+        )
 
         # L2TP SCCRQ 示例
-        l2tp_sccrq_data = bytes([
-            0xC8, 0x02,  # flags (type=1, length=1, sequence=1, version=2)
-            0x00, 0x3C,  # length = 60
-            0x00, 0x01,  # tunnel_id = 1
-            0x00, 0x00,  # session_id = 0
-            0x00, 0x00,  # ns = 0
-            0x00, 0x00,  # nr = 0
-            0x00, 0x00,  # offset_size = 0
-        ] + [0x00] * 20)  # AVP 数据
+        l2tp_sccrq_data = bytes(
+            [
+                0xC8,
+                0x02,  # flags (type=1, length=1, sequence=1, version=2)
+                0x00,
+                0x3C,  # length = 60
+                0x00,
+                0x01,  # tunnel_id = 1
+                0x00,
+                0x00,  # session_id = 0
+                0x00,
+                0x00,  # ns = 0
+                0x00,
+                0x00,  # nr = 0
+                0x00,
+                0x00,  # offset_size = 0
+            ]
+            + [0x00] * 20
+        )  # AVP 数据
 
-        samples.append(self.parse_packet(
-            l2tp_sccrq_data, "l2tp", "SCCRQ",
-            direction=PacketDirection.INCOMING,
-            src_ip="192.168.1.100", dst_ip="192.168.1.1",
-            src_port=50001, dst_port=1701,
-        ))
+        samples.append(
+            self.parse_packet(
+                l2tp_sccrq_data,
+                "l2tp",
+                "SCCRQ",
+                direction=PacketDirection.INCOMING,
+                src_ip="192.168.1.100",
+                dst_ip="192.168.1.1",
+                src_port=50001,
+                dst_port=1701,
+            )
+        )
 
         # OpenVPN P_CONTROL 示例
-        openvpn_ctrl_data = bytes([
-            0x40,  # opcode = P_CONTROL_V1 (4), key_id = 0
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,  # session_id = 1
-            0x00, 0x00, 0x00, 0x01,  # message_id = 1
-            0x00,  # ack_length = 0
-            0x00, 0x10,  # payload_length = 16
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  # TLS payload
-        ])
+        openvpn_ctrl_data = bytes(
+            [
+                0x40,  # opcode = P_CONTROL_V1 (4), key_id = 0
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x01,  # session_id = 1
+                0x00,
+                0x00,
+                0x00,
+                0x01,  # message_id = 1
+                0x00,  # ack_length = 0
+                0x00,
+                0x10,  # payload_length = 16
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,  # TLS payload
+            ]
+        )
 
-        samples.append(self.parse_packet(
-            openvpn_ctrl_data, "openvpn", "P_CONTROL",
-            direction=PacketDirection.INCOMING,
-            src_ip="192.168.1.100", dst_ip="192.168.1.1",
-            src_port=50002, dst_port=1194,
-        ))
+        samples.append(
+            self.parse_packet(
+                openvpn_ctrl_data,
+                "openvpn",
+                "P_CONTROL",
+                direction=PacketDirection.INCOMING,
+                src_ip="192.168.1.100",
+                dst_ip="192.168.1.1",
+                src_port=50002,
+                dst_port=1194,
+            )
+        )
 
         # IPSec IKE_SA_INIT 示例
-        ike_sa_init_data = bytes([
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,  # initiator_spi = 1
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  # responder_spi = 0
-            0x21,  # next_payload = 33 (SA)
-            0x20,  # version = 2.0
-            0x22,  # exchange_type = 34 (IKE_SA_INIT)
-            0x08,  # flags (initiator=1)
-            0x00, 0x00, 0x00, 0x00,  # message_id = 0
-            0x00, 0x00, 0x00, 0x2C,  # length = 44
-        ] + [0x00] * 16)  # 载荷数据
+        ike_sa_init_data = bytes(
+            [
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x01,  # initiator_spi = 1
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,
+                0x00,  # responder_spi = 0
+                0x21,  # next_payload = 33 (SA)
+                0x20,  # version = 2.0
+                0x22,  # exchange_type = 34 (IKE_SA_INIT)
+                0x08,  # flags (initiator=1)
+                0x00,
+                0x00,
+                0x00,
+                0x00,  # message_id = 0
+                0x00,
+                0x00,
+                0x00,
+                0x2C,  # length = 44
+            ]
+            + [0x00] * 16
+        )  # 载荷数据
 
-        samples.append(self.parse_packet(
-            ike_sa_init_data, "ipsec", "IKE_SA_INIT",
-            direction=PacketDirection.INCOMING,
-            src_ip="192.168.1.100", dst_ip="192.168.1.1",
-            src_port=500, dst_port=500,
-        ))
+        samples.append(
+            self.parse_packet(
+                ike_sa_init_data,
+                "ipsec",
+                "IKE_SA_INIT",
+                direction=PacketDirection.INCOMING,
+                src_ip="192.168.1.100",
+                dst_ip="192.168.1.1",
+                src_port=500,
+                dst_port=500,
+            )
+        )
 
         return samples
 

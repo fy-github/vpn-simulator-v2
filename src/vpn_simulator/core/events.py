@@ -12,12 +12,12 @@ Example:
 
 from __future__ import annotations
 
-import asyncio
 import uuid
 from collections import defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
@@ -41,8 +41,8 @@ class Event:
     """
 
     name: str
-    data: Dict[str, Any]
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    data: dict[str, Any]
+    timestamp: datetime = field(default_factory=lambda: datetime.now(UTC))
     source: str = ""
     event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
@@ -73,9 +73,9 @@ class EventBus:
         Args:
             max_history: 最大历史记录数量，默认 1000
         """
-        self._handlers: Dict[str, List[SyncHandler]] = defaultdict(list)
-        self._async_handlers: Dict[str, List[AsyncHandler]] = defaultdict(list)
-        self._history: List[Event] = []
+        self._handlers: dict[str, list[SyncHandler]] = defaultdict(list)
+        self._async_handlers: dict[str, list[AsyncHandler]] = defaultdict(list)
+        self._history: list[Event] = []
         self._max_history = max_history
 
     def on(self, event_name: str, handler: SyncHandler) -> None:
@@ -114,7 +114,7 @@ class EventBus:
     async def emit(
         self,
         event_name: str,
-        data: Optional[Dict[str, Any]] = None,
+        data: dict[str, Any] | None = None,
         source: str = "",
     ) -> Event:
         """触发事件
@@ -175,9 +175,9 @@ class EventBus:
 
     def get_history(
         self,
-        event_name: Optional[str] = None,
+        event_name: str | None = None,
         limit: int = 100,
-    ) -> List[Event]:
+    ) -> list[Event]:
         """获取事件历史
 
         Args:
@@ -207,9 +207,7 @@ class EventBus:
         Returns:
             是否有处理器
         """
-        return bool(
-            self._handlers.get(event_name) or self._async_handlers.get(event_name)
-        )
+        return bool(self._handlers.get(event_name) or self._async_handlers.get(event_name))
 
 
 class EventTypes:

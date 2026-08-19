@@ -73,7 +73,9 @@ class PluginContext:
     config: Any = None
     """Configuration manager instance."""
 
-    logger: logging.Logger = field(default_factory=lambda: logging.getLogger("vpn_simulator.plugin"))
+    logger: logging.Logger = field(
+        default_factory=lambda: logging.getLogger("vpn_simulator.plugin")
+    )
     """Logger instance for structured logging."""
 
     database: Any = None

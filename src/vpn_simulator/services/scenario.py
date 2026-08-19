@@ -13,7 +13,7 @@ Example:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 import yaml
@@ -27,7 +27,9 @@ from vpn_simulator.services.fault import FaultService
 logger = structlog.get_logger(__name__)
 
 # 默认预设配置路径
-DEFAULT_PRESETS_PATH = Path(__file__).parent.parent.parent.parent / "config" / "scenarios" / "presets.yaml"
+DEFAULT_PRESETS_PATH = (
+    Path(__file__).parent.parent.parent.parent / "config" / "scenarios" / "presets.yaml"
+)
 
 
 class ScenarioService:
@@ -50,7 +52,7 @@ class ScenarioService:
         config_manager: ConfigManager,
         db_manager: DatabaseManager,
         fault_service: FaultService,
-        presets_path: Optional[Path] = None,
+        presets_path: Path | None = None,
     ) -> None:
         """初始化场景预设服务。
 
@@ -98,7 +100,7 @@ class ScenarioService:
 
     async def list_scenarios(
         self,
-        category: Optional[str] = None,
+        category: str | None = None,
     ) -> list[dict[str, Any]]:
         """列出所有预设场景。
 
@@ -124,7 +126,7 @@ class ScenarioService:
         )
         return result
 
-    async def get_scenario(self, scenario_id: str) -> Optional[dict[str, Any]]:
+    async def get_scenario(self, scenario_id: str) -> dict[str, Any] | None:
         """获取指定场景的详细信息。
 
         Args:
@@ -279,7 +281,7 @@ class ScenarioService:
             "message": f"Scenario '{scenario.name}' removed ({removed_count} faults cleared)",
         }
 
-    async def get_active_scenario(self) -> Optional[dict[str, Any]]:
+    async def get_active_scenario(self) -> dict[str, Any] | None:
         """获取当前激活的场景。
 
         Returns:

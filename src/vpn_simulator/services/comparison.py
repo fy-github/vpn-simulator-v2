@@ -184,21 +184,27 @@ def _create_state_machine(name: str) -> ProtocolStateMachine:
     """
     if name == "PPTP":
         from plugins.protocols.pptp.state_machine import PPTPStateMachine
+
         return PPTPStateMachine()
     elif name == "L2TP":
         from plugins.protocols.l2tp.state_machine import L2TPStateMachine
+
         return L2TPStateMachine()
     elif name == "OPENVPN":
         from plugins.protocols.openvpn.state_machine import OpenVPNStateMachine
+
         return OpenVPNStateMachine()
     elif name == "IPSEC":
         from plugins.protocols.ipsec.state_machine import IPSecStateMachine
+
         return IPSecStateMachine()
     elif name == "IKEV2":
         from plugins.protocols.ikev2.state_machine import IKEv2StateMachine
+
         return IKEv2StateMachine()
     elif name == "WIREGUARD":
         from plugins.protocols.wireguard.state_machine import WireGuardStateMachine
+
         return WireGuardStateMachine()
     else:
         raise ValueError(f"Unsupported protocol: {name}")
@@ -249,8 +255,16 @@ class ComparisonService:
         data1 = self._build_protocol_data(p1_key)
         data2 = self._build_protocol_data(p2_key)
 
-        phases1 = {s.phase for s in data1.states if s.phase not in (PhaseCategory.CONNECTED, PhaseCategory.ERROR)}
-        phases2 = {s.phase for s in data2.states if s.phase not in (PhaseCategory.CONNECTED, PhaseCategory.ERROR)}
+        phases1 = {
+            s.phase
+            for s in data1.states
+            if s.phase not in (PhaseCategory.CONNECTED, PhaseCategory.ERROR)
+        }
+        phases2 = {
+            s.phase
+            for s in data2.states
+            if s.phase not in (PhaseCategory.CONNECTED, PhaseCategory.ERROR)
+        }
 
         common = sorted(phases1 & phases2, key=lambda p: p.value)
         different = sorted(phases1 ^ phases2, key=lambda p: p.value)
@@ -287,24 +301,28 @@ class ComparisonService:
         states = []
         for state in sm.states.values():
             phase = phase_map.get(state.name, PhaseCategory.TUNNEL_SETUP)
-            states.append(StateInfo(
-                name=state.name,
-                description=state.description,
-                phase=phase,
-                is_initial=state.is_initial,
-                is_final=state.is_final,
-            ))
+            states.append(
+                StateInfo(
+                    name=state.name,
+                    description=state.description,
+                    phase=phase,
+                    is_initial=state.is_initial,
+                    is_final=state.is_final,
+                )
+            )
 
         transitions = []
         for t in sm.transitions:
             phase = phase_map.get(t.to_state, PhaseCategory.TUNNEL_SETUP)
-            transitions.append(TransitionInfo(
-                from_state=t.from_state,
-                to_state=t.to_state,
-                event=t.event,
-                description=t.description,
-                phase=phase,
-            ))
+            transitions.append(
+                TransitionInfo(
+                    from_state=t.from_state,
+                    to_state=t.to_state,
+                    event=t.event,
+                    description=t.description,
+                    phase=phase,
+                )
+            )
 
         return ProtocolStateData(
             name=name,

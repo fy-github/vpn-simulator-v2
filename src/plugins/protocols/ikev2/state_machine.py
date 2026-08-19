@@ -89,42 +89,60 @@ class IKEv2StateMachine(ProtocolStateMachine):
         transitions = [
             # IKE_SA_INIT Exchange
             StateTransition(
-                "INITIAL", "IKE_SA_INIT_SENT", "SEND_IKE_SA_INIT",
+                "INITIAL",
+                "IKE_SA_INIT_SENT",
+                "SEND_IKE_SA_INIT",
                 description="发送 IKE_SA_INIT: SA 提议 + DH 公钥 + Nonce Ni",
             ),
             StateTransition(
-                "IKE_SA_INIT_SENT", "IKE_SA_INIT_COMPLETE", "RECEIVE_IKE_SA_INIT",
+                "IKE_SA_INIT_SENT",
+                "IKE_SA_INIT_COMPLETE",
+                "RECEIVE_IKE_SA_INIT",
                 description="收到 IKE_SA_INIT 响应: SA 选定 + DH 公钥 + Nonce Nr",
             ),
             # IKE_AUTH Exchange
             StateTransition(
-                "IKE_SA_INIT_COMPLETE", "IKE_AUTH_SENT", "SEND_IKE_AUTH",
+                "IKE_SA_INIT_COMPLETE",
+                "IKE_AUTH_SENT",
+                "SEND_IKE_AUTH",
                 description="发送 IKE_AUTH: IDi + 认证 + TSi + TSr (加密)",
             ),
             StateTransition(
-                "IKE_AUTH_SENT", "IKE_AUTH_COMPLETE", "RECEIVE_IKE_AUTH",
+                "IKE_AUTH_SENT",
+                "IKE_AUTH_COMPLETE",
+                "RECEIVE_IKE_AUTH",
                 description="收到 IKE_AUTH 响应: IDr + 认证 + TSi + TSr (加密)",
             ),
             # Child SA
             StateTransition(
-                "IKE_AUTH_COMPLETE", "CHILD_SA_ESTABLISHED", "CHILD_SA_READY",
+                "IKE_AUTH_COMPLETE",
+                "CHILD_SA_ESTABLISHED",
+                "CHILD_SA_READY",
                 description="Child SA 建立，ESP SA 就绪",
             ),
             StateTransition(
-                "CHILD_SA_ESTABLISHED", "CONNECTED", "ESP_TUNNEL_READY",
+                "CHILD_SA_ESTABLISHED",
+                "CONNECTED",
+                "ESP_TUNNEL_READY",
                 description="ESP 隧道就绪，IKEv2 连接完成",
             ),
             # 错误路径
             StateTransition(
-                "IKE_SA_INIT_SENT", "ERROR", "IKE_SA_INIT_FAILED",
+                "IKE_SA_INIT_SENT",
+                "ERROR",
+                "IKE_SA_INIT_FAILED",
                 description="IKE_SA_INIT 失败 (不兼容的 SA 或 DH 组)",
             ),
             StateTransition(
-                "IKE_AUTH_SENT", "ERROR", "IKE_AUTH_FAILED",
+                "IKE_AUTH_SENT",
+                "ERROR",
+                "IKE_AUTH_FAILED",
                 description="IKE_AUTH 失败 (认证失败或不兼容的提议)",
             ),
             StateTransition(
-                "CHILD_SA_ESTABLISHED", "ERROR", "CHILD_SA_FAILED",
+                "CHILD_SA_ESTABLISHED",
+                "ERROR",
+                "CHILD_SA_FAILED",
                 description="Child SA 建立失败",
             ),
         ]

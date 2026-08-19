@@ -20,7 +20,7 @@ import struct
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class PacketDirection(Enum):
@@ -128,10 +128,10 @@ class PacketInfo:
     fields: list[PacketField] = field(default_factory=list)
 
     parsed: bool = False
-    parse_error: Optional[str] = None
+    parse_error: str | None = None
 
-    connection_id: Optional[str] = None
-    session_id: Optional[str] = None
+    connection_id: str | None = None
+    session_id: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """将报文信息转换为字典。
@@ -199,12 +199,12 @@ class PacketInfo:
         return struct.pack(
             "<IHHiIII",
             0xA1B2C3D4,  # magic_number
-            2,            # version_major
-            4,            # version_minor
-            0,            # thiszone
-            0,            # sigfigs
-            65535,        # snaplen
-            1,            # network (LINKTYPE_ETHERNET)
+            2,  # version_major
+            4,  # version_minor
+            0,  # thiszone
+            0,  # sigfigs
+            65535,  # snaplen
+            1,  # network (LINKTYPE_ETHERNET)
         )
 
     def to_pcap_file(self) -> bytes:

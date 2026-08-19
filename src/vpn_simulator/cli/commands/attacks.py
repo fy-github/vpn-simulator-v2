@@ -19,6 +19,7 @@ def _get_service():
     from vpn_simulator.core.database import DatabaseManager
     from vpn_simulator.core.events import EventBus
     from vpn_simulator.services.attack import AttackService
+
     return AttackService(EventBus(), ConfigManager(), DatabaseManager())
 
 

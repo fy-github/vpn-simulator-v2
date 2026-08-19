@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -26,6 +26,7 @@ def get_protocol_service():
         from vpn_simulator.core.database import DatabaseManager
         from vpn_simulator.core.events import EventBus
         from vpn_simulator.services.protocol import ProtocolService
+
         _protocol_service = ProtocolService(EventBus(), ConfigManager(), DatabaseManager())
     return _protocol_service
 
@@ -42,7 +43,7 @@ class ProtocolInfo(BaseModel):
 class StartProtocolRequest(BaseModel):
     """Request to start a protocol."""
 
-    port: Optional[int] = Field(None, description="Port to listen on")
+    port: int | None = Field(None, description="Port to listen on")
     config: dict[str, Any] = Field(default_factory=dict, description="Protocol-specific config")
 
 
@@ -85,10 +86,12 @@ async def list_protocols() -> list[dict[str, Any]]:
     summary="Start protocol",
     description="Start a VPN protocol server on the specified port.",
 )
-async def start_protocol(name: str, request: StartProtocolRequest = StartProtocolRequest()) -> dict[str, str]:
+async def start_protocol(
+    name: str, request: StartProtocolRequest = StartProtocolRequest()
+) -> dict[str, str]:
     try:
         service = get_protocol_service()
-        result = await service.start_protocol(
+        await service.start_protocol(
             name=name,
             port=request.port,
             config=request.config,
@@ -121,7 +124,17 @@ async def start_protocol(name: str, request: StartProtocolRequest = StartProtoco
 
 
 def _get_default_port(name: str) -> int:
-    ports = {"pptp": 1723, "l2tp": 1701, "openvpn": 1194, "ipsec": 500, "ikev2": 500, "wireguard": 51820, "sstp": 443, "openconnect": 443, "vxlan": 4789}
+    ports = {
+        "pptp": 1723,
+        "l2tp": 1701,
+        "openvpn": 1194,
+        "ipsec": 500,
+        "ikev2": 500,
+        "wireguard": 51820,
+        "sstp": 443,
+        "openconnect": 443,
+        "vxlan": 4789,
+    }
     return ports.get(name, 0)
 
 

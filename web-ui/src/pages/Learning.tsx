@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 import RFCReference from '../components/RFCReference'
@@ -72,8 +72,8 @@ interface LearningPath {
 const Learning = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('rfc')
-  const [_rfcReferences, setRfcReferences] = useState<RFCReferenceItem[]>([])
+  const [, setActiveTab] = useState('rfc')
+  const [, setRfcReferences] = useState<RFCReferenceItem[]>([])
   const [protocolRFCData, setProtocolRFCData] = useState<Record<string, ProtocolRFCData>>({})
   const [faqCategories, setFaqCategories] = useState<FAQCategory[]>([])
   const [faqItems, setFaqItems] = useState<FAQItem[]>([])
@@ -81,17 +81,11 @@ const Learning = () => {
   const [loading, setLoading] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const contentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 挂载时加载一次，selectedCategory 变化由下方独立 effect 处理
   }, [])
-
-  // GSAP animations
-  useEffect(() => {
-    if (!loading && contentRef.current) {
-    }
-  }, [loading, activeTab])
 
   const fetchData = async () => {
     try {
@@ -162,7 +156,7 @@ const Learning = () => {
     }
   }
 
-  const fetchFAQItems = async () => {
+  const fetchFAQItems = useCallback(async () => {
     try {
       const url = selectedCategory
         ? `/api/v1/learning/faq?category=${selectedCategory}`
@@ -175,7 +169,7 @@ const Learning = () => {
     } catch (error) {
       console.error('Failed to fetch FAQ items:', error)
     }
-  }
+  }, [selectedCategory])
 
   const fetchLearningPaths = async () => {
     try {
@@ -191,7 +185,7 @@ const Learning = () => {
 
   useEffect(() => {
     fetchFAQItems()
-  }, [selectedCategory])
+  }, [selectedCategory, fetchFAQItems])
 
   const filteredFAQ = faqItems.filter((item) => {
     if (!searchQuery) return true

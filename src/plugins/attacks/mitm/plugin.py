@@ -115,14 +115,16 @@ class MITMPlugin(Plugin):
 
         if self._context:
             self._context.logger.info(
-                f"中间人攻击已启动: proxy=:{self._proxy_port}, "
-                f"target={self._target_host}"
+                f"中间人攻击已启动: proxy=:{self._proxy_port}, " f"target={self._target_host}"
             )
-            self._context.emit_event("attack.started", {
-                "attack_type": "mitm",
-                "proxy_port": self._proxy_port,
-                "target_host": self._target_host,
-            })
+            self._context.emit_event(
+                "attack.started",
+                {
+                    "attack_type": "mitm",
+                    "proxy_port": self._proxy_port,
+                    "target_host": self._target_host,
+                },
+            )
 
     async def stop(self) -> None:
         """停止中间人攻击。"""
@@ -132,10 +134,13 @@ class MITMPlugin(Plugin):
             self._context.logger.info(
                 f"中间人攻击已停止，共拦截 {self._intercepted_packets} 个报文"
             )
-            self._context.emit_event("attack.completed", {
-                "attack_type": "mitm",
-                "intercepted_packets": self._intercepted_packets,
-            })
+            self._context.emit_event(
+                "attack.completed",
+                {
+                    "attack_type": "mitm",
+                    "intercepted_packets": self._intercepted_packets,
+                },
+            )
 
     @property
     def is_running(self) -> bool:

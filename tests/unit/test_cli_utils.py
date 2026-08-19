@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import json
 from unittest.mock import patch
 
-import pytest
-from click.testing import CliRunner
-
-from vpn_simulator.cli.utils import confirm_action, handle_error, handle_success, output_json, output_table
+from vpn_simulator.cli.utils import (
+    confirm_action,
+    handle_success,
+    output_table,
+)
 
 
 class TestOutputTable:
@@ -47,6 +47,3 @@ class TestConfirmAction:
         with patch("click.confirm", return_value=False):
             result = confirm_action("Continue?", abort=False)
             assert result is False
-
-
-import click

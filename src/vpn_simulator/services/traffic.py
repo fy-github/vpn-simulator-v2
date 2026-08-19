@@ -12,13 +12,14 @@ import socket
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class Protocol(str, Enum):
     """Supported network protocols."""
+
     TCP = "tcp"
     UDP = "udp"
     ICMP = "icmp"
@@ -28,6 +29,7 @@ class Protocol(str, Enum):
 @dataclass
 class Packet:
     """Simulated network packet."""
+
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: float = field(default_factory=time.time)
     protocol: Protocol = Protocol.TCP
@@ -44,7 +46,7 @@ class Packet:
         """Convert packet to dictionary."""
         return {
             "id": self.id,
-            "timestamp": datetime.fromtimestamp(self.timestamp, tz=timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(self.timestamp, tz=UTC).isoformat(),
             "protocol": self.protocol.value,
             "src_ip": self.src_ip,
             "dst_ip": self.dst_ip,
@@ -60,6 +62,7 @@ class Packet:
 @dataclass
 class TrafficStats:
     """Real-time traffic statistics."""
+
     packets_per_second: float = 0.0
     bytes_per_second: float = 0.0
     total_packets: int = 0
@@ -127,13 +130,13 @@ class TrafficService:
 
     def __init__(self) -> None:
         self._capturing = False
-        self._capture_start_time: Optional[float] = None
+        self._capture_start_time: float | None = None
         self._packets: list[Packet] = []
         self._stats = TrafficStats()
-        self._protocol_filter: Optional[set[Protocol]] = None
+        self._protocol_filter: set[Protocol] | None = None
         self._packet_buffer: asyncio.Queue[Packet] = asyncio.Queue(maxsize=1000)
-        self._generation_task: Optional[asyncio.Task] = None
-        self._stats_update_task: Optional[asyncio.Task] = None
+        self._generation_task: asyncio.Task | None = None
+        self._stats_update_task: asyncio.Task | None = None
         self._recent_packets: list[Packet] = []
         self._max_recent_packets = 100
 
@@ -173,7 +176,7 @@ class TrafficService:
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             payload = bytes(random.randint(0, 255) for _ in range(min(size, 1400)))
-            sock.sendto(payload, ('127.0.0.1', 9998))
+            sock.sendto(payload, ("127.0.0.1", 9998))
             sock.close()
         except Exception:
             pass
@@ -210,7 +213,7 @@ class TrafficService:
 
                     # Trim recent packets
                     if len(self._recent_packets) > self._max_recent_packets:
-                        self._recent_packets = self._recent_packets[-self._max_recent_packets:]
+                        self._recent_packets = self._recent_packets[-self._max_recent_packets :]
 
                     # Add to buffer for streaming
                     try:
@@ -262,7 +265,7 @@ class TrafficService:
         # Simulate active flows
         self._stats.active_flows = random.randint(5, 50)
 
-    async def start_capture(self, protocols: Optional[list[str]] = None) -> dict[str, Any]:
+    async def start_capture(self, protocols: list[str] | None = None) -> dict[str, Any]:
         """Start traffic capture.
 
         Args:
@@ -276,7 +279,9 @@ class TrafficService:
 
         # Set protocol filter
         if protocols:
-            self._protocol_filter = {Protocol(p.lower()) for p in protocols if p.lower() in [e.value for e in Protocol]}
+            self._protocol_filter = {
+                Protocol(p.lower()) for p in protocols if p.lower() in [e.value for e in Protocol]
+            }
         else:
             self._protocol_filter = None
 
@@ -294,7 +299,7 @@ class TrafficService:
             "status": "started",
             "message": "Traffic capture started",
             "protocols": list(self._protocol_filter) if self._protocol_filter else "all",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     async def stop_capture(self) -> dict[str, Any]:
@@ -323,7 +328,7 @@ class TrafficService:
             "status": "stopped",
             "message": "Traffic capture stopped",
             "statistics": self._stats.to_dict(),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def get_statistics(self) -> dict[str, Any]:
@@ -336,7 +341,7 @@ class TrafficService:
         return {
             "capturing": self._capturing,
             "statistics": self._stats.to_dict(),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def get_recent_packets(self, limit: int = 50) -> list[dict[str, Any]]:
@@ -363,7 +368,7 @@ class TrafficService:
                 yield packet.to_dict()
             except asyncio.TimeoutError:
                 # Send keepalive
-                yield {"type": "keepalive", "timestamp": datetime.now(timezone.utc).isoformat()}
+                yield {"type": "keepalive", "timestamp": datetime.now(UTC).isoformat()}
             except asyncio.CancelledError:
                 break
 
@@ -379,7 +384,7 @@ class TrafficService:
 
 
 # Global service instance
-_traffic_service: Optional[TrafficService] = None
+_traffic_service: TrafficService | None = None
 
 
 def get_traffic_service() -> TrafficService:

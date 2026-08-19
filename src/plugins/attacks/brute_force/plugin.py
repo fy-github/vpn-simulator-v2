@@ -129,12 +129,15 @@ class BruteForcePlugin(Plugin):
                 f"暴力破解已启动: target={self._target_host}:{self._target_port}, "
                 f"max_attempts={self._max_attempts}, concurrency={self._concurrency}"
             )
-            self._context.emit_event("attack.started", {
-                "attack_type": "brute_force",
-                "target_host": self._target_host,
-                "target_port": self._target_port,
-                "max_attempts": self._max_attempts,
-            })
+            self._context.emit_event(
+                "attack.started",
+                {
+                    "attack_type": "brute_force",
+                    "target_host": self._target_host,
+                    "target_port": self._target_port,
+                    "max_attempts": self._max_attempts,
+                },
+            )
 
     async def stop(self) -> None:
         """停止暴力破解攻击。"""
@@ -142,14 +145,16 @@ class BruteForcePlugin(Plugin):
 
         if self._context:
             self._context.logger.info(
-                f"暴力破解已停止: attempts={self._attempt_count}, "
-                f"success={self._success_count}"
+                f"暴力破解已停止: attempts={self._attempt_count}, " f"success={self._success_count}"
             )
-            self._context.emit_event("attack.completed", {
-                "attack_type": "brute_force",
-                "attempt_count": self._attempt_count,
-                "success_count": self._success_count,
-            })
+            self._context.emit_event(
+                "attack.completed",
+                {
+                    "attack_type": "brute_force",
+                    "attempt_count": self._attempt_count,
+                    "success_count": self._success_count,
+                },
+            )
 
     @property
     def is_running(self) -> bool:

@@ -1,16 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import { useRef, useEffect } from 'react'
+import { useRef } from 'react'
 
 import PerformanceCharts from '../components/PerformanceCharts'
 
 const Metrics = () => {
   const { t } = useTranslation()
   const headerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (headerRef.current) {
-    }
-  }, [])
 
   return (
     <div className="space-y-6">

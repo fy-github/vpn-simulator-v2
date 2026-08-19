@@ -104,11 +104,14 @@ class DuplicatePlugin(Plugin):
                 f"重复故障已注入: count={self._duplicate_count}, "
                 f"probability={self._duplicate_probability}"
             )
-            self._context.emit_event("fault.injected", {
-                "fault_type": "duplicate",
-                "duplicate_count": self._duplicate_count,
-                "duplicate_probability": self._duplicate_probability,
-            })
+            self._context.emit_event(
+                "fault.injected",
+                {
+                    "fault_type": "duplicate",
+                    "duplicate_count": self._duplicate_count,
+                    "duplicate_probability": self._duplicate_probability,
+                },
+            )
 
     async def remove(self) -> None:
         """移除重复故障。"""

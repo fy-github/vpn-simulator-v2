@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
-from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
 from vpn_simulator.core.config import ConfigManager
 from vpn_simulator.services.benchmark import BenchmarkService
 

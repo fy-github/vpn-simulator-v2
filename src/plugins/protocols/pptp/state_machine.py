@@ -85,52 +85,76 @@ class PPTPStateMachine(ProtocolStateMachine):
         transitions = [
             # 正常握手流程
             StateTransition(
-                "INITIAL", "WAIT_SCCRQ", "START",
+                "INITIAL",
+                "WAIT_SCCRQ",
+                "START",
                 description="开始监听 TCP 1723",
             ),
             StateTransition(
-                "WAIT_SCCRQ", "SCCRP_SENT", "RECEIVE_SCCRQ",
+                "WAIT_SCCRQ",
+                "SCCRP_SENT",
+                "RECEIVE_SCCRQ",
                 description="收到 SCCRQ，发送 SCCRP",
             ),
             StateTransition(
-                "SCCRP_SENT", "WAIT_OCRQ", "SCCRP_SENT_OK",
+                "SCCRP_SENT",
+                "WAIT_OCRQ",
+                "SCCRP_SENT_OK",
                 description="SCCRP 发送成功，等待 OCRQ",
             ),
             StateTransition(
-                "WAIT_OCRQ", "OCRP_SENT", "RECEIVE_OCRQ",
+                "WAIT_OCRQ",
+                "OCRP_SENT",
+                "RECEIVE_OCRQ",
                 description="收到 OCRQ，发送 OCRP",
             ),
             StateTransition(
-                "OCRP_SENT", "GRE_ESTABLISHED", "GRE_READY",
+                "OCRP_SENT",
+                "GRE_ESTABLISHED",
+                "GRE_READY",
                 description="GRE 隧道就绪",
             ),
             StateTransition(
-                "GRE_ESTABLISHED", "LCP_NEGOTIATION", "START_LCP",
+                "GRE_ESTABLISHED",
+                "LCP_NEGOTIATION",
+                "START_LCP",
                 description="开始 PPP LCP 协商",
             ),
             StateTransition(
-                "LCP_NEGOTIATION", "AUTHENTICATION", "LCP_COMPLETE",
+                "LCP_NEGOTIATION",
+                "AUTHENTICATION",
+                "LCP_COMPLETE",
                 description="LCP 协商完成，开始 MS-CHAPv2 认证",
             ),
             StateTransition(
-                "AUTHENTICATION", "IPCP_NEGOTIATION", "AUTH_SUCCESS",
+                "AUTHENTICATION",
+                "IPCP_NEGOTIATION",
+                "AUTH_SUCCESS",
                 description="认证成功，开始 IPCP 协商",
             ),
             StateTransition(
-                "IPCP_NEGOTIATION", "CONNECTED", "IPCP_COMPLETE",
+                "IPCP_NEGOTIATION",
+                "CONNECTED",
+                "IPCP_COMPLETE",
                 description="IPCP 协商完成，PPTP 隧道建立",
             ),
             # 错误路径
             StateTransition(
-                "AUTHENTICATION", "ERROR", "AUTH_FAILED",
+                "AUTHENTICATION",
+                "ERROR",
+                "AUTH_FAILED",
                 description="MS-CHAPv2 认证失败",
             ),
             StateTransition(
-                "LCP_NEGOTIATION", "ERROR", "LCP_FAILED",
+                "LCP_NEGOTIATION",
+                "ERROR",
+                "LCP_FAILED",
                 description="LCP 协商失败",
             ),
             StateTransition(
-                "IPCP_NEGOTIATION", "ERROR", "IPCP_FAILED",
+                "IPCP_NEGOTIATION",
+                "ERROR",
+                "IPCP_FAILED",
                 description="IPCP 协商失败",
             ),
         ]

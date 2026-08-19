@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 import pytest_asyncio
-
 from vpn_simulator.core.database import DatabaseManager
 
 
@@ -63,6 +62,7 @@ class TestClose:
     @pytest.mark.asyncio
     async def test_close_disposes_engine(self):
         import tempfile
+
         with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
             db_path = f.name
         manager = DatabaseManager(database_url=f"sqlite+aiosqlite:///{db_path}")

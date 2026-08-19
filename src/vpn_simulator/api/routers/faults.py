@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -22,6 +22,7 @@ def get_fault_service():
         from vpn_simulator.core.database import DatabaseManager
         from vpn_simulator.core.events import EventBus
         from vpn_simulator.services.fault import FaultService
+
         _fault_service = FaultService(EventBus(), ConfigManager(), DatabaseManager())
     return _fault_service
 
@@ -32,7 +33,7 @@ class FaultInfo(BaseModel):
     id: str = Field(..., description="Fault ID")
     type: str = Field(..., description="Fault type")
     params: dict[str, Any] = Field(default_factory=dict, description="Fault parameters")
-    target: Optional[str] = Field(None, description="Target connection or protocol")
+    target: str | None = Field(None, description="Target connection or protocol")
     active: bool = Field(True, description="Whether fault is active")
 
 
@@ -45,7 +46,7 @@ class CreateFaultRequest(BaseModel):
         pattern="^(latency|packet_loss|bandwidth|reorder|duplicate|corrupt)$",
     )
     params: dict[str, Any] = Field(default_factory=dict, description="Fault parameters")
-    target: Optional[str] = Field(None, description="Target connection or protocol")
+    target: str | None = Field(None, description="Target connection or protocol")
 
 
 class FaultActionResponse(BaseModel):

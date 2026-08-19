@@ -29,16 +29,6 @@ const Scenarios = () => {
     fetchScenarios()
   }, [])
 
-  // GSAP animations
-  useEffect(() => {
-    if (!loading) {
-      if (gridRef.current) {
-      }
-      if (tableRef.current) {
-      }
-    }
-  }, [loading])
-
   const fetchScenarios = async () => {
     try {
       setLoading(true)

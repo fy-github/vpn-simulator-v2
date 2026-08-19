@@ -78,42 +78,60 @@ class L2TPStateMachine(ProtocolStateMachine):
         transitions = [
             # 控制连接建立
             StateTransition(
-                "INITIAL", "WAIT_SCCRQ", "START",
+                "INITIAL",
+                "WAIT_SCCRQ",
+                "START",
                 description="开始监听 UDP 1701",
             ),
             StateTransition(
-                "WAIT_SCCRQ", "SCCRP_SENT", "RECEIVE_SCCRQ",
+                "WAIT_SCCRQ",
+                "SCCRP_SENT",
+                "RECEIVE_SCCRQ",
                 description="收到 SCCRQ，发送 SCCRP",
             ),
             StateTransition(
-                "SCCRP_SENT", "SCCCN_RECEIVED", "RECEIVE_SCCCN",
+                "SCCRP_SENT",
+                "SCCCN_RECEIVED",
+                "RECEIVE_SCCCN",
                 description="收到 SCCCN，控制连接建立",
             ),
             # 会话建立
             StateTransition(
-                "SCCCN_RECEIVED", "ICRP_SENT", "RECEIVE_ICRQ",
+                "SCCCN_RECEIVED",
+                "ICRP_SENT",
+                "RECEIVE_ICRQ",
                 description="收到 ICRQ，发送 ICRP",
             ),
             StateTransition(
-                "ICRP_SENT", "ICCN_RECEIVED", "RECEIVE_ICCN",
+                "ICRP_SENT",
+                "ICCN_RECEIVED",
+                "RECEIVE_ICCN",
                 description="收到 ICCN，会话建立",
             ),
             # PPP 协商
             StateTransition(
-                "ICCN_RECEIVED", "PPP_NEGOTIATION", "START_PPP",
+                "ICCN_RECEIVED",
+                "PPP_NEGOTIATION",
+                "START_PPP",
                 description="开始 PPP over L2TP 协商",
             ),
             StateTransition(
-                "PPP_NEGOTIATION", "CONNECTED", "PPP_COMPLETE",
+                "PPP_NEGOTIATION",
+                "CONNECTED",
+                "PPP_COMPLETE",
                 description="PPP 协商完成，L2TP 隧道建立",
             ),
             # 错误路径
             StateTransition(
-                "PPP_NEGOTIATION", "ERROR", "PPP_FAILED",
+                "PPP_NEGOTIATION",
+                "ERROR",
+                "PPP_FAILED",
                 description="PPP 协商失败",
             ),
             StateTransition(
-                "SCCRP_SENT", "ERROR", "SCCCN_TIMEOUT",
+                "SCCRP_SENT",
+                "ERROR",
+                "SCCCN_TIMEOUT",
                 description="SCCN 接收超时",
             ),
         ]

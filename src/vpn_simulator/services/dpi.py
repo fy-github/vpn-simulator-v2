@@ -14,11 +14,10 @@ from __future__ import annotations
 
 import random
 import uuid
-from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class ProtocolCategory(str, Enum):
@@ -407,15 +406,17 @@ class DPIService:
         """
         protocols = []
         for fp in self._fingerprints.values():
-            protocols.append({
-                "name": fp.name,
-                "category": fp.category.value,
-                "default_ports": fp.default_ports,
-                "description": fp.description,
-                "threat_level": fp.threat_level.value,
-                "is_encrypted": fp.is_encrypted,
-                "common_domains": fp.common_domains,
-            })
+            protocols.append(
+                {
+                    "name": fp.name,
+                    "category": fp.category.value,
+                    "default_ports": fp.default_ports,
+                    "description": fp.description,
+                    "threat_level": fp.threat_level.value,
+                    "is_encrypted": fp.is_encrypted,
+                    "common_domains": fp.common_domains,
+                }
+            )
         return protocols
 
     def analyze_packet(
@@ -440,7 +441,7 @@ class DPIService:
         Returns:
             DPI 分析结果。
         """
-        best_match: Optional[ProtocolFingerprint] = None
+        best_match: ProtocolFingerprint | None = None
         best_confidence = 0.0
         matched_rules: list[str] = []
 
@@ -553,9 +554,7 @@ class DPIService:
 
         # 平均置信度
         self._confidence_sum += result.confidence
-        self._statistics.avg_confidence = (
-            self._confidence_sum / self._statistics.total_packets
-        )
+        self._statistics.avg_confidence = self._confidence_sum / self._statistics.total_packets
 
     def _check_anomalies(self, result: DPIResult) -> None:
         """检查异常。"""
@@ -639,14 +638,18 @@ class DPIService:
         result_list = []
         for cat_data in classifications.values():
             count = cat_data["packet_count"]
-            result_list.append({
-                "category": cat_data["category"],
-                "protocols": sorted(cat_data["protocols"]),
-                "packet_count": count,
-                "byte_count": cat_data["byte_count"],
-                "percentage": round(count / total * 100, 2),
-                "avg_confidence": round(cat_data["confidence_sum"] / count, 4) if count > 0 else 0,
-            })
+            result_list.append(
+                {
+                    "category": cat_data["category"],
+                    "protocols": sorted(cat_data["protocols"]),
+                    "packet_count": count,
+                    "byte_count": cat_data["byte_count"],
+                    "percentage": round(count / total * 100, 2),
+                    "avg_confidence": (
+                        round(cat_data["confidence_sum"] / count, 4) if count > 0 else 0
+                    ),
+                }
+            )
 
         result_list.sort(key=lambda x: x["packet_count"], reverse=True)
         return result_list
@@ -706,12 +709,13 @@ class DPIService:
 
     def generate_sample_traffic(self, count: int = 50) -> list[dict[str, Any]]:
         import socket
+
         results = []
         for _ in range(count):
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 payload = bytes(random.randint(0, 255) for _ in range(random.randint(32, 256)))
-                sock.sendto(payload, ('127.0.0.1', 9997))
+                sock.sendto(payload, ("127.0.0.1", 9997))
                 sock.close()
                 result = self.analyze_packet(
                     payload=payload,

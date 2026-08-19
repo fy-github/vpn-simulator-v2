@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import pytest
+import asyncio
 
+import pytest
 from vpn_simulator.services.traffic import (
     Packet,
     Protocol,
     TrafficService,
-    TrafficStats,
 )
 
 
@@ -200,6 +200,3 @@ class TestEdgeCases:
         assert d["protocol"] == "tcp"
         assert d["src_ip"] == "192.168.1.1"
         assert d["size"] == 128
-
-
-import asyncio

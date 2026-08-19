@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
+
 from plugins.protocols.pptp.state_machine import PPTPStateMachine
 
 if TYPE_CHECKING:
@@ -53,7 +54,7 @@ class PPTPPlugin(Plugin):
             version="1.0.0",
             author="VPN Simulator",
             description="PPTP (Point-to-Point Tunneling Protocol) 协议实现 - "
-                        "使用 TCP 1723 控制通道 + GRE 隧道封装 PPP",
+            "使用 TCP 1723 控制通道 + GRE 隧道封装 PPP",
             plugin_type=PluginType.PROTOCOL,
             dependencies=[],
             config_schema={

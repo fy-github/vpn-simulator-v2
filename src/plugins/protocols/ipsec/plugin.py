@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
+
 from plugins.protocols.ipsec.state_machine import IPSecStateMachine
 
 if TYPE_CHECKING:
@@ -54,7 +55,7 @@ class IPSecPlugin(Plugin):
             version="1.0.0",
             author="VPN Simulator",
             description="IPSec (IKEv1) 协议实现 - "
-                        "Phase1 Main Mode (6步) + Phase2 Quick Mode (3步) + ESP 隧道",
+            "Phase1 Main Mode (6步) + Phase2 Quick Mode (3步) + ESP 隧道",
             plugin_type=PluginType.PROTOCOL,
             dependencies=[],
             config_schema={

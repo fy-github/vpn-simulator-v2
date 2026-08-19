@@ -20,6 +20,14 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+const apiErrorMessage = (err: unknown, fallback: string): string => {
+  if (axios.isAxiosError(err)) {
+    const detail = err.response?.data?.detail
+    if (typeof detail === 'string') return detail
+  }
+  return fallback
+}
+
 interface NetworkProfile {
   upload_kbps: number
   download_kbps: number
@@ -167,9 +175,8 @@ const IoTSimulator = () => {
       await apiClient.post('/devices/start', { device_id: deviceId })
       await fetchDevices()
       await fetchTrafficStats()
-    } catch (err: any) {
-      const message = err.response?.data?.detail || 'Failed to start device'
-      setError(message)
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err, 'Failed to start device'))
     } finally {
       setStartingDevice(null)
     }
@@ -182,9 +189,8 @@ const IoTSimulator = () => {
       await apiClient.post(`/devices/${instanceId}/stop`)
       await fetchDevices()
       await fetchTrafficStats()
-    } catch (err: any) {
-      const message = err.response?.data?.detail || 'Failed to stop device'
-      setError(message)
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err, 'Failed to stop device'))
     } finally {
       setStoppingDevice(null)
     }
@@ -197,9 +203,8 @@ const IoTSimulator = () => {
       await apiClient.post('/devices/stop-all')
       await fetchDevices()
       await fetchTrafficStats()
-    } catch (err: any) {
-      const message = err.response?.data?.detail || 'Failed to stop all devices'
-      setError(message)
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err, 'Failed to stop all devices'))
     } finally {
       setLoading(false)
     }

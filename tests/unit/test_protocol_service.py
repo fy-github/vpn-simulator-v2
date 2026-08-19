@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from vpn_simulator.core.config import ConfigManager
 from vpn_simulator.core.database import DatabaseManager
 from vpn_simulator.core.events import EventBus
@@ -34,7 +34,11 @@ def mock_config_manager():
 def mock_db_manager():
     dm = MagicMock(spec=DatabaseManager)
     mock_session = AsyncMock()
-    mock_session.execute = AsyncMock(return_value=MagicMock(scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))))
+    mock_session.execute = AsyncMock(
+        return_value=MagicMock(
+            scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[])))
+        )
+    )
     mock_session.add = MagicMock()
     dm.session.return_value.__aenter__ = AsyncMock(return_value=mock_session)
     dm.session.return_value.__aexit__ = AsyncMock(return_value=None)
@@ -78,14 +82,14 @@ class TestStartProtocol:
 
     @pytest.mark.asyncio
     async def test_start_protocol_emits_event(self, service: ProtocolService, mock_event_bus):
-        with patch('vpn_simulator.services.protocol.PluginRegistry') as mock_registry:
+        with patch("vpn_simulator.services.protocol.PluginRegistry") as mock_registry:
             mock_plugin = MagicMock()
             mock_meta = MagicMock()
             mock_meta.plugin_type = PluginType.PROTOCOL
             mock_plugin.meta.return_value = mock_meta
             mock_registry.get.return_value = mock_plugin
             mock_registry.get_by_type.return_value = []
-            
+
             result = await service.start_protocol("pptp", port=1723)
             assert result["protocol"] == "pptp"
             assert result["status"] == "started"
@@ -124,14 +128,14 @@ class TestGetStateHistory:
 class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_start_already_active(self, service: ProtocolService, mock_event_bus):
-        with patch('vpn_simulator.services.protocol.PluginRegistry') as mock_registry:
+        with patch("vpn_simulator.services.protocol.PluginRegistry") as mock_registry:
             mock_plugin = MagicMock()
             mock_meta = MagicMock()
             mock_meta.plugin_type = PluginType.PROTOCOL
             mock_plugin.meta.return_value = mock_meta
             mock_registry.get.return_value = mock_plugin
             mock_registry.get_by_type.return_value = []
-            
+
             await service.start_protocol("pptp", port=1723)
             service._active_state_machines["pptp"] = MagicMock()
             result = await service.start_protocol("pptp", port=1723)

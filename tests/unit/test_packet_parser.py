@@ -1,9 +1,7 @@
 """Tests for packet parser service."""
 
-import pytest
 from vpn_simulator.domain.packet import PacketDirection, PacketType
 from vpn_simulator.domain.packet_fields import (
-    FieldDefinition,
     FieldType,
     get_field_definitions,
     get_message_types,
@@ -22,18 +20,37 @@ def test_parse_pptp_sccrq():
     """Test parsing PPTP SCCRQ packet."""
     parser = PacketParser()
 
-    raw_data = bytes([
-        0x00, 0x9C,  # length = 156
-        0x00, 0x01,  # message_type = 1 (SCCRQ)
-        0x1A, 0x2B, 0x3C, 0x4D,  # magic_cookie
-        0x00, 0x01,  # control_message_type = 1
-        0x00, 0x00,  # reserved
-        0x01, 0x00,  # protocol_version = 256
-        0x00, 0x00, 0x00, 0x03,  # framing_capabilities
-        0x00, 0x00, 0x00, 0x03,  # bearer_capabilities
-        0x00, 0x01,  # max_channels = 1
-        0x01, 0x00,  # firmware_revision = 256
-    ] + [0x00] * 136)  # padding
+    raw_data = bytes(
+        [
+            0x00,
+            0x9C,  # length = 156
+            0x00,
+            0x01,  # message_type = 1 (SCCRQ)
+            0x1A,
+            0x2B,
+            0x3C,
+            0x4D,  # magic_cookie
+            0x00,
+            0x01,  # control_message_type = 1
+            0x00,
+            0x00,  # reserved
+            0x01,
+            0x00,  # protocol_version = 256
+            0x00,
+            0x00,
+            0x00,
+            0x03,  # framing_capabilities
+            0x00,
+            0x00,
+            0x00,
+            0x03,  # bearer_capabilities
+            0x00,
+            0x01,  # max_channels = 1
+            0x01,
+            0x00,  # firmware_revision = 256
+        ]
+        + [0x00] * 136
+    )  # padding
 
     packet = parser.parse_packet(
         raw_data,
@@ -59,15 +76,25 @@ def test_parse_l2tp_sccrq():
     """Test parsing L2TP SCCRQ packet."""
     parser = PacketParser()
 
-    raw_data = bytes([
-        0xC8, 0x02,  # flags
-        0x00, 0x3C,  # length = 60
-        0x00, 0x01,  # tunnel_id = 1
-        0x00, 0x00,  # session_id = 0
-        0x00, 0x00,  # ns = 0
-        0x00, 0x00,  # nr = 0
-        0x00, 0x00,  # offset_size = 0
-    ] + [0x00] * 20)
+    raw_data = bytes(
+        [
+            0xC8,
+            0x02,  # flags
+            0x00,
+            0x3C,  # length = 60
+            0x00,
+            0x01,  # tunnel_id = 1
+            0x00,
+            0x00,  # session_id = 0
+            0x00,
+            0x00,  # ns = 0
+            0x00,
+            0x00,  # nr = 0
+            0x00,
+            0x00,  # offset_size = 0
+        ]
+        + [0x00] * 20
+    )
 
     packet = parser.parse_packet(
         raw_data,
@@ -84,13 +111,27 @@ def test_parse_openvpn_p_control():
     """Test parsing OpenVPN P_CONTROL packet."""
     parser = PacketParser()
 
-    raw_data = bytes([
-        0x40,  # opcode = P_CONTROL_V1
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,  # session_id
-        0x00, 0x00, 0x00, 0x01,  # message_id
-        0x00,  # ack_length
-        0x00, 0x10,  # payload_length
-    ] + [0x00] * 16)
+    raw_data = bytes(
+        [
+            0x40,  # opcode = P_CONTROL_V1
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x01,  # session_id
+            0x00,
+            0x00,
+            0x00,
+            0x01,  # message_id
+            0x00,  # ack_length
+            0x00,
+            0x10,  # payload_length
+        ]
+        + [0x00] * 16
+    )
 
     packet = parser.parse_packet(
         raw_data,
@@ -107,16 +148,39 @@ def test_parse_ipsec_ike_sa_init():
     """Test parsing IPSec IKE_SA_INIT packet."""
     parser = PacketParser()
 
-    raw_data = bytes([
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,  # initiator_spi
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  # responder_spi
-        0x21,  # next_payload
-        0x20,  # version
-        0x22,  # exchange_type = IKE_SA_INIT
-        0x08,  # flags
-        0x00, 0x00, 0x00, 0x00,  # message_id
-        0x00, 0x00, 0x00, 0x2C,  # length
-    ] + [0x00] * 16)
+    raw_data = bytes(
+        [
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x01,  # initiator_spi
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,  # responder_spi
+            0x21,  # next_payload
+            0x20,  # version
+            0x22,  # exchange_type = IKE_SA_INIT
+            0x08,  # flags
+            0x00,
+            0x00,
+            0x00,
+            0x00,  # message_id
+            0x00,
+            0x00,
+            0x00,
+            0x2C,  # length
+        ]
+        + [0x00] * 16
+    )
 
     packet = parser.parse_packet(
         raw_data,
@@ -178,7 +242,7 @@ def test_export_to_pcap():
 
     # Check PCAP header
     assert len(pcap_data) > 0
-    assert pcap_data[:4] == b'\xd4\xc3\xb2\xa1'  # PCAP magic number
+    assert pcap_data[:4] == b"\xd4\xc3\xb2\xa1"  # PCAP magic number
 
 
 def test_get_statistics():
@@ -252,18 +316,37 @@ def test_packet_field_to_dict():
     """Test PacketField to_dict conversion."""
     parser = PacketParser()
 
-    raw_data = bytes([
-        0x00, 0x9C,  # length = 156
-        0x00, 0x01,  # message_type = 1 (SCCRQ)
-        0x1A, 0x2B, 0x3C, 0x4D,  # magic_cookie
-        0x00, 0x01,  # control_message_type = 1
-        0x00, 0x00,  # reserved
-        0x01, 0x00,  # protocol_version = 256
-        0x00, 0x00, 0x00, 0x03,  # framing_capabilities
-        0x00, 0x00, 0x00, 0x03,  # bearer_capabilities
-        0x00, 0x01,  # max_channels = 1
-        0x01, 0x00,  # firmware_revision = 256
-    ] + [0x00] * 136)
+    raw_data = bytes(
+        [
+            0x00,
+            0x9C,  # length = 156
+            0x00,
+            0x01,  # message_type = 1 (SCCRQ)
+            0x1A,
+            0x2B,
+            0x3C,
+            0x4D,  # magic_cookie
+            0x00,
+            0x01,  # control_message_type = 1
+            0x00,
+            0x00,  # reserved
+            0x01,
+            0x00,  # protocol_version = 256
+            0x00,
+            0x00,
+            0x00,
+            0x03,  # framing_capabilities
+            0x00,
+            0x00,
+            0x00,
+            0x03,  # bearer_capabilities
+            0x00,
+            0x01,  # max_channels = 1
+            0x01,
+            0x00,  # firmware_revision = 256
+        ]
+        + [0x00] * 136
+    )
 
     packet = parser.parse_packet(raw_data, "pptp", "SCCRQ")
 
@@ -283,18 +366,37 @@ def test_packet_info_to_dict():
     """Test PacketInfo to_dict conversion."""
     parser = PacketParser()
 
-    raw_data = bytes([
-        0x00, 0x9C,  # length = 156
-        0x00, 0x01,  # message_type = 1 (SCCRQ)
-        0x1A, 0x2B, 0x3C, 0x4D,  # magic_cookie
-        0x00, 0x01,  # control_message_type = 1
-        0x00, 0x00,  # reserved
-        0x01, 0x00,  # protocol_version = 256
-        0x00, 0x00, 0x00, 0x03,  # framing_capabilities
-        0x00, 0x00, 0x00, 0x03,  # bearer_capabilities
-        0x00, 0x01,  # max_channels = 1
-        0x01, 0x00,  # firmware_revision = 256
-    ] + [0x00] * 136)
+    raw_data = bytes(
+        [
+            0x00,
+            0x9C,  # length = 156
+            0x00,
+            0x01,  # message_type = 1 (SCCRQ)
+            0x1A,
+            0x2B,
+            0x3C,
+            0x4D,  # magic_cookie
+            0x00,
+            0x01,  # control_message_type = 1
+            0x00,
+            0x00,  # reserved
+            0x01,
+            0x00,  # protocol_version = 256
+            0x00,
+            0x00,
+            0x00,
+            0x03,  # framing_capabilities
+            0x00,
+            0x00,
+            0x00,
+            0x03,  # bearer_capabilities
+            0x00,
+            0x01,  # max_channels = 1
+            0x01,
+            0x00,  # firmware_revision = 256
+        ]
+        + [0x00] * 136
+    )
 
     packet = parser.parse_packet(raw_data, "pptp", "SCCRQ")
     packet_dict = packet.to_dict()

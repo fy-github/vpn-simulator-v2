@@ -12,7 +12,6 @@ Tests cover:
 from __future__ import annotations
 
 from click.testing import CliRunner
-
 from vpn_simulator.cli import cli
 
 
@@ -79,6 +78,7 @@ class TestServerCommands:
         result = cli_runner.invoke(cli, ["--json", "server", "status"])
         assert result.exit_code == 0
         import json
+
         data = json.loads(result.output)
         assert "state" in data
         assert "host" in data
@@ -104,6 +104,7 @@ class TestProtocolCommands:
         result = cli_runner.invoke(cli, ["--json", "protocol", "list"])
         assert result.exit_code == 0
         import json
+
         data = json.loads(result.output)
         assert isinstance(data, list)
         assert len(data) > 0

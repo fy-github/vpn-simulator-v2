@@ -12,8 +12,7 @@ Example:
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -22,7 +21,6 @@ from vpn_simulator.core.config import ConfigManager
 from vpn_simulator.core.database import ConnectionRecord, DatabaseManager
 from vpn_simulator.core.events import EventBus, EventTypes
 from vpn_simulator.domain.connection import (
-    ConnectionInfo,
     ConnectionManager,
     ConnectionState,
     ConnectionType,
@@ -70,7 +68,7 @@ class ConnectionService:
         local_port: int = 0,
         remote_address: str = "",
         remote_port: int = 0,
-        protocol_data: Optional[dict[str, Any]] = None,
+        protocol_data: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """创建一个新的 VPN 连接。
 
@@ -130,7 +128,7 @@ class ConnectionService:
         )
         return conn.to_dict()
 
-    async def get_connection(self, connection_id: str) -> Optional[dict[str, Any]]:
+    async def get_connection(self, connection_id: str) -> dict[str, Any] | None:
         """获取指定连接的详细信息。
 
         Args:
@@ -147,8 +145,8 @@ class ConnectionService:
 
     async def list_connections(
         self,
-        protocol: Optional[str] = None,
-        state: Optional[str] = None,
+        protocol: str | None = None,
+        state: str | None = None,
     ) -> list[dict[str, Any]]:
         """列出连接。
 

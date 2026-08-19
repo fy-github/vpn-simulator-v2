@@ -105,11 +105,14 @@ class CorruptPlugin(Plugin):
                 f"数据损坏故障已注入: probability={self._corrupt_probability}, "
                 f"bytes={self._corrupt_bytes}"
             )
-            self._context.emit_event("fault.injected", {
-                "fault_type": "corrupt",
-                "corrupt_probability": self._corrupt_probability,
-                "corrupt_bytes": self._corrupt_bytes,
-            })
+            self._context.emit_event(
+                "fault.injected",
+                {
+                    "fault_type": "corrupt",
+                    "corrupt_probability": self._corrupt_probability,
+                    "corrupt_bytes": self._corrupt_bytes,
+                },
+            )
 
     async def remove(self) -> None:
         """移除数据损坏故障。"""

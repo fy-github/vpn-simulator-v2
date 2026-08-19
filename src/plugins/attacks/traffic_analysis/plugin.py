@@ -120,11 +120,14 @@ class TrafficAnalysisPlugin(Plugin):
                 f"流量分析已启动: duration={self._capture_duration_sec}s, "
                 f"patterns={self._analyze_patterns}"
             )
-            self._context.emit_event("attack.started", {
-                "attack_type": "traffic_analysis",
-                "capture_duration_sec": self._capture_duration_sec,
-                "analyze_patterns": self._analyze_patterns,
-            })
+            self._context.emit_event(
+                "attack.started",
+                {
+                    "attack_type": "traffic_analysis",
+                    "capture_duration_sec": self._capture_duration_sec,
+                    "analyze_patterns": self._analyze_patterns,
+                },
+            )
 
     async def stop(self) -> None:
         """停止流量分析。"""
@@ -134,11 +137,14 @@ class TrafficAnalysisPlugin(Plugin):
             self._context.logger.info(
                 f"流量分析已停止: packets={self._packet_count}, flows={self._flow_count}"
             )
-            self._context.emit_event("attack.completed", {
-                "attack_type": "traffic_analysis",
-                "packet_count": self._packet_count,
-                "flow_count": self._flow_count,
-            })
+            self._context.emit_event(
+                "attack.completed",
+                {
+                    "attack_type": "traffic_analysis",
+                    "packet_count": self._packet_count,
+                    "flow_count": self._flow_count,
+                },
+            )
 
     @property
     def is_running(self) -> bool:

@@ -1,8 +1,7 @@
-import logging
-
 """Automation routes for VPN Simulator v2."""
 
-from typing import Any, Optional
+import logging
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -25,7 +24,7 @@ class AutomationScenarioInfo(BaseModel):
 class AutomationRunRequest(BaseModel):
     """Request to run an automation scenario."""
 
-    connection_id: Optional[str] = Field(None, description="Optional connection ID")
+    connection_id: str | None = Field(None, description="Optional connection ID")
 
 
 class AutomationRunResponse(BaseModel):
@@ -43,8 +42,8 @@ class AutomationStatusResponse(BaseModel):
     execution_id: str = Field(..., description="Execution ID")
     scenario_name: str = Field(..., description="Scenario name")
     state: str = Field(..., description="Execution state")
-    started_at: Optional[str] = Field(None, description="Start timestamp")
-    completed_at: Optional[str] = Field(None, description="Completion timestamp")
+    started_at: str | None = Field(None, description="Start timestamp")
+    completed_at: str | None = Field(None, description="Completion timestamp")
     duration: float = Field(0.0, description="Execution duration in seconds")
 
 
@@ -118,7 +117,7 @@ async def run_automation_scenario(
 )
 async def get_automation_scenario_status(
     scenario_id: str,
-    execution_id: Optional[str] = None,
+    execution_id: str | None = None,
 ) -> dict[str, Any]:
     """Get automation scenario status."""
     if scenario_id not in ["pptp_basic", "l2tp_basic"]:
@@ -145,7 +144,7 @@ async def get_automation_scenario_status(
 )
 async def get_automation_scenario_report(
     scenario_id: str,
-    execution_id: Optional[str] = None,
+    execution_id: str | None = None,
 ) -> dict[str, Any]:
     """Get automation scenario report."""
     if scenario_id not in ["pptp_basic", "l2tp_basic"]:

@@ -13,14 +13,15 @@ Example:
 
 from __future__ import annotations
 
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import Any, AsyncGenerator, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, Text, event
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 logger = structlog.get_logger(__name__)
 
@@ -44,7 +45,7 @@ class ConnectionRecord(Base):
     local_port = Column(Integer)
     remote_address = Column(String(45))
     remote_port = Column(Integer)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     connected_at = Column(DateTime)
     disconnected_at = Column(DateTime)
     bytes_sent = Column(Integer, default=0)
@@ -62,7 +63,7 @@ class PacketRecord(Base):
     __tablename__ = "packets"
 
     id = Column(String(36), primary_key=True)
-    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    timestamp = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
     direction = Column(String(10), nullable=False)
     packet_type = Column(String(20), nullable=False)
     protocol = Column(String(50), nullable=False)
@@ -87,7 +88,7 @@ class StateTransitionRecord(Base):
     from_state = Column(String(50), nullable=False)
     to_state = Column(String(50), nullable=False)
     event = Column(String(100), nullable=False)
-    timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    timestamp = Column(DateTime, default=lambda: datetime.now(UTC))
     context = Column(JSON, default=dict)
 
 
@@ -101,7 +102,7 @@ class FaultRecord(Base):
     params = Column(JSON, nullable=False)
     target = Column(String(100))
     active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     updated_at = Column(DateTime)
 
 
@@ -115,7 +116,7 @@ class AttackRecord(Base):
     target = Column(String(100), nullable=False)
     status = Column(String(20), nullable=False)
     params = Column(JSON, default=dict)
-    started_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    started_at = Column(DateTime, default=lambda: datetime.now(UTC))
     completed_at = Column(DateTime)
     result = Column(JSON)
 
@@ -127,7 +128,7 @@ class ConfigHistoryRecord(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     config = Column(JSON, nullable=False)
-    applied_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    applied_at = Column(DateTime, default=lambda: datetime.now(UTC))
     applied_by = Column(String(100))
 
 
@@ -140,7 +141,7 @@ class TopologyRecord(Base):
     name = Column(String(100), nullable=False)
     description = Column(Text)
     topology = Column(JSON, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     updated_at = Column(DateTime)
 
 
@@ -172,8 +173,8 @@ class DatabaseManager:
             database_url: 数据库连接 URL，默认使用 SQLite
         """
         self.database_url = database_url
-        self._engine: Optional[AsyncEngine] = None
-        self._session_factory: Optional[sessionmaker] = None
+        self._engine: AsyncEngine | None = None
+        self._session_factory: sessionmaker | None = None
 
     async def initialize(self) -> None:
         """初始化数据库
@@ -190,6 +191,7 @@ class DatabaseManager:
 
         # SQLite 特殊配置
         if "sqlite" in self.database_url:
+
             @event.listens_for(self._engine.sync_engine, "connect")
             def set_sqlite_pragma(dbapi_conn: Any, connection_record: Any) -> None:
                 cursor = dbapi_conn.cursor()
@@ -267,6 +269,7 @@ class DatabaseManager:
         try:
             async with self.session() as session:
                 from sqlalchemy import text
+
                 await session.execute(text("SELECT 1"))
             return True
         except Exception as e:

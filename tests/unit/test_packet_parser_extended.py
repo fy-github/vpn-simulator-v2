@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from vpn_simulator.domain.packet import PacketDirection, PacketType
 from vpn_simulator.services.packet_parser import PacketParser
 
@@ -53,7 +52,9 @@ class TestGetPackets:
         assert len(packets) == 1
 
     def test_get_packets_with_direction(self, parser: PacketParser):
-        parser.parse_packet(b"\x00" * 10, protocol="pptp", message_type="SCCRQ", direction="incoming")
+        parser.parse_packet(
+            b"\x00" * 10, protocol="pptp", message_type="SCCRQ", direction="incoming"
+        )
         packets = parser.get_packets(direction=PacketDirection.INCOMING)
         assert len(packets) >= 0
 
@@ -112,8 +113,8 @@ class TestGenerateSamplePackets:
     def test_sample_structure(self, parser: PacketParser):
         samples = parser.generate_sample_packets()
         sample = samples[0]
-        assert hasattr(sample, 'protocol')
-        assert hasattr(sample, 'packet_type')
+        assert hasattr(sample, "protocol")
+        assert hasattr(sample, "packet_type")
 
 
 class TestEdgeCases:

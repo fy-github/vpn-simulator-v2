@@ -34,7 +34,9 @@ def scenario_list(ctx: click.Context, category: str | None) -> None:
         resp.raise_for_status()
         scenarios = resp.json()
     except httpx.HTTPStatusError as e:
-        handle_error(f"API error: {e.response.status_code} - {e.response.text}", json_output=json_output)
+        handle_error(
+            f"API error: {e.response.status_code} - {e.response.text}", json_output=json_output
+        )
         return
     except httpx.RequestError:
         # Fallback to static data if API is not available
@@ -60,7 +62,9 @@ def scenario_list(ctx: click.Context, category: str | None) -> None:
                 s.get("category", ""),
                 f"{s.get('faults', {}).get('latency', {}).get('delay_ms', '-')}ms",
                 f"{s.get('faults', {}).get('packet_loss', {}).get('loss_rate', 0) * 100:.1f}%",
-                _format_bandwidth(s.get('faults', {}).get('bandwidth', {}).get('bandwidth_kbps', 0)),
+                _format_bandwidth(
+                    s.get("faults", {}).get("bandwidth", {}).get("bandwidth_kbps", 0)
+                ),
                 "Yes" if s.get("active") else "No",
             ]
             for s in scenarios
@@ -106,11 +110,15 @@ def scenario_show(ctx: click.Context, scenario_id: str) -> None:
 
     faults = scenario.get("faults", {})
     if "latency" in faults:
-        console.print(f"    Latency:      {faults['latency'].get('delay_ms', 0)}ms (jitter: {faults['latency'].get('jitter_ms', 0)}ms)")
+        console.print(
+            f"    Latency:      {faults['latency'].get('delay_ms', 0)}ms (jitter: {faults['latency'].get('jitter_ms', 0)}ms)"
+        )
     if "packet_loss" in faults:
         console.print(f"    Packet Loss:  {faults['packet_loss'].get('loss_rate', 0) * 100:.1f}%")
     if "bandwidth" in faults:
-        console.print(f"    Bandwidth:    {_format_bandwidth(faults['bandwidth'].get('bandwidth_kbps', 0))}")
+        console.print(
+            f"    Bandwidth:    {_format_bandwidth(faults['bandwidth'].get('bandwidth_kbps', 0))}"
+        )
     console.print()
 
 
@@ -129,13 +137,17 @@ def scenario_apply(ctx: click.Context, scenario_id: str) -> None:
         if e.response.status_code == 404:
             handle_error(f"Scenario '{scenario_id}' not found", json_output=json_output)
         else:
-            handle_error(f"API error: {e.response.status_code} - {e.response.text}", json_output=json_output)
+            handle_error(
+                f"API error: {e.response.status_code} - {e.response.text}", json_output=json_output
+            )
         return
     except httpx.RequestError:
         handle_error("API server not available. Start the server first.", json_output=json_output)
         return
 
-    handle_success(result.get("message", f"Scenario '{scenario_id}' applied"), json_output=json_output)
+    handle_success(
+        result.get("message", f"Scenario '{scenario_id}' applied"), json_output=json_output
+    )
 
 
 @scenario_group.command("remove")
@@ -153,15 +165,21 @@ def scenario_remove(ctx: click.Context, scenario_id: str) -> None:
         if e.response.status_code == 404:
             handle_error(f"Scenario '{scenario_id}' not found", json_output=json_output)
         elif e.response.status_code == 400:
-            handle_error(f"Scenario '{scenario_id}' is not currently active", json_output=json_output)
+            handle_error(
+                f"Scenario '{scenario_id}' is not currently active", json_output=json_output
+            )
         else:
-            handle_error(f"API error: {e.response.status_code} - {e.response.text}", json_output=json_output)
+            handle_error(
+                f"API error: {e.response.status_code} - {e.response.text}", json_output=json_output
+            )
         return
     except httpx.RequestError:
         handle_error("API server not available. Start the server first.", json_output=json_output)
         return
 
-    handle_success(result.get("message", f"Scenario '{scenario_id}' removed"), json_output=json_output)
+    handle_success(
+        result.get("message", f"Scenario '{scenario_id}' removed"), json_output=json_output
+    )
 
 
 def _format_bandwidth(kbps: int) -> str:

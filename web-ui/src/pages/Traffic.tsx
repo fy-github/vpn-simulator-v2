@@ -1,16 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import { useRef, useEffect } from 'react'
+import { useRef } from 'react'
 
 import TrafficVisualizer from '../components/TrafficVisualizer'
 
 const Traffic = () => {
   const { t } = useTranslation()
   const headerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (headerRef.current) {
-    }
-  }, [])
 
   return (
     <div className="h-full">

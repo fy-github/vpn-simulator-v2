@@ -61,12 +61,6 @@ const Tutorial = () => {
     fetchTutorials()
   }, [])
 
-  // GSAP animations
-  useEffect(() => {
-    if (!loading && gridRef.current) {
-    }
-  }, [loading])
-
   const fetchTutorials = async () => {
     try {
       const response = await fetch('/api/v1/tutorials')

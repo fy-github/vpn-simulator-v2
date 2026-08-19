@@ -16,6 +16,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
+
 from plugins.protocols.sstp.state_machine import SSTPStateMachine
 
 if TYPE_CHECKING:

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
+import pytest
 from vpn_simulator.core.config import ConfigManager
 from vpn_simulator.core.database import DatabaseManager
 from vpn_simulator.core.events import EventBus
@@ -33,7 +33,9 @@ def mock_db_manager():
 @pytest.fixture
 def mock_fault_service():
     service = MagicMock(spec=FaultService)
-    service.create_fault = AsyncMock(return_value={"id": "fault-001", "type": "latency", "active": False})
+    service.create_fault = AsyncMock(
+        return_value={"id": "fault-001", "type": "latency", "active": False}
+    )
     service.activate_fault = AsyncMock(return_value={"id": "fault-001", "active": True})
     service.remove_fault = AsyncMock(return_value=True)
     return service
@@ -42,6 +44,7 @@ def mock_fault_service():
 @pytest.fixture
 def temp_presets_file(tmp_path: Path) -> Path:
     import yaml
+
     presets_data = {
         "scenarios": {
             "3g": {
@@ -208,7 +211,9 @@ class TestApplyScenario:
             await service.apply_scenario("nonexistent")
 
     @pytest.mark.asyncio
-    async def test_apply_scenario_removes_previous(self, service: ScenarioService, mock_fault_service):
+    async def test_apply_scenario_removes_previous(
+        self, service: ScenarioService, mock_fault_service
+    ):
         service.load_presets()
         await service.apply_scenario("3g")
         result = await service.apply_scenario("satellite")
@@ -310,7 +315,7 @@ class TestEdgeCases:
         service.load_presets()
         scenarios = await service.list_scenarios()
         assert all(not s["active"] for s in scenarios)
-        
+
         await service.apply_scenario("3g")
         scenarios = await service.list_scenarios()
         active_scenario = next(s for s in scenarios if s["id"] == "3g")

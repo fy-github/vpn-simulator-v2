@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
-import pytest_asyncio
-import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
+import pytest
 from vpn_simulator.services.learning import LearningService
 
 
@@ -15,7 +12,7 @@ from vpn_simulator.services.learning import LearningService
 def temp_config_dir(tmp_path: Path) -> Path:
     config_dir = tmp_path / "learning"
     config_dir.mkdir()
-    
+
     rfc_data = {
         "protocols": {
             "pptp": {
@@ -56,7 +53,7 @@ def temp_config_dir(tmp_path: Path) -> Path:
             },
         }
     }
-    
+
     faq_data = {
         "categories": [
             {
@@ -93,7 +90,7 @@ def temp_config_dir(tmp_path: Path) -> Path:
             },
         ]
     }
-    
+
     paths_data = {
         "paths": [
             {
@@ -125,16 +122,21 @@ def temp_config_dir(tmp_path: Path) -> Path:
             },
         ],
         "milestones": [
-            {"path_id": "beginner", "title": "First Connection", "description": "Complete first VPN connection"},
+            {
+                "path_id": "beginner",
+                "title": "First Connection",
+                "description": "Complete first VPN connection",
+            },
             {"path_id": "advanced", "title": "Security Expert", "description": "Master IPSec"},
         ],
     }
-    
+
     import yaml
+
     (config_dir / "rfc_references.yaml").write_text(yaml.dump(rfc_data, allow_unicode=True))
     (config_dir / "faq.yaml").write_text(yaml.dump(faq_data, allow_unicode=True))
     (config_dir / "learning_paths.yaml").write_text(yaml.dump(paths_data, allow_unicode=True))
-    
+
     return config_dir
 
 

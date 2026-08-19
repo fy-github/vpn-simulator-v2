@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import logging
-
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -18,13 +17,15 @@ router = APIRouter(prefix="/vendor-cli", tags=["vendor-cli"])
 
 class ExecuteCommandRequest(BaseModel):
     """执行命令请求。"""
+
     vendor: str
     command: str
-    params: Optional[dict[str, Any]] = None
+    params: dict[str, Any] | None = None
 
 
 class ExecuteCommandResponse(BaseModel):
     """执行命令响应。"""
+
     command: str
     output: str
     success: bool
@@ -49,11 +50,7 @@ async def get_supported_commands(vendor: str = "cisco") -> dict[str, Any]:
     service = get_vendor_cli_service()
     commands = service.get_supported_commands(vendor_type)
 
-    return {
-        "vendor": vendor,
-        "commands": commands,
-        "total": len(commands)
-    }
+    return {"vendor": vendor, "commands": commands, "total": len(commands)}
 
 
 @router.post("/execute")
@@ -78,7 +75,7 @@ async def execute_command(request: ExecuteCommandRequest) -> ExecuteCommandRespo
         command=result.command,
         output=result.output,
         success=result.success,
-        timestamp=result.timestamp.isoformat()
+        timestamp=result.timestamp.isoformat(),
     )
 
 
@@ -95,10 +92,7 @@ async def get_command_history(limit: int = 50) -> dict[str, Any]:
     service = get_vendor_cli_service()
     history = service.get_history(limit)
 
-    return {
-        "history": history,
-        "total": len(history)
-    }
+    return {"history": history, "total": len(history)}
 
 
 @router.get("/vendors")
@@ -113,12 +107,8 @@ async def get_supported_vendors() -> dict[str, Any]:
             {
                 "id": "cisco",
                 "name": "Cisco IOS",
-                "description": "Cisco Internetwork Operating System"
+                "description": "Cisco Internetwork Operating System",
             },
-            {
-                "id": "huawei",
-                "name": "华为 VRP",
-                "description": "华为通用路由平台"
-            }
+            {"id": "huawei", "name": "华为 VRP", "description": "华为通用路由平台"},
         ]
     }

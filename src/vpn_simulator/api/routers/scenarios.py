@@ -1,8 +1,7 @@
-import logging
-
 """Scenario presets routes for VPN Simulator v2."""
 
-from typing import Any, Optional
+import logging
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -20,7 +19,9 @@ class ScenarioInfo(BaseModel):
     description: str = Field("", description="Scenario description")
     icon: str = Field("network_check", description="Scenario icon name")
     category: str = Field("other", description="Scenario category")
-    faults: dict[str, dict[str, Any]] = Field(default_factory=dict, description="Fault configurations")
+    faults: dict[str, dict[str, Any]] = Field(
+        default_factory=dict, description="Fault configurations"
+    )
     active: bool = Field(False, description="Whether scenario is currently active")
 
 
@@ -110,7 +111,7 @@ SCENARIO_PRESETS: dict[str, dict[str, Any]] = {
 }
 
 # 追踪激活的场景
-_active_scenario: Optional[str] = None
+_active_scenario: str | None = None
 
 
 @router.get(
@@ -119,7 +120,7 @@ _active_scenario: Optional[str] = None
     summary="List all scenarios",
     description="Retrieve all predefined network scenario presets.",
 )
-async def list_scenarios(category: Optional[str] = None) -> list[dict[str, Any]]:
+async def list_scenarios(category: str | None = None) -> list[dict[str, Any]]:
     """List all scenario presets.
 
     Args:

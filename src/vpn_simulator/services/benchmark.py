@@ -13,9 +13,9 @@ from __future__ import annotations
 
 import json
 import random
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 
@@ -82,7 +82,7 @@ class BenchmarkService:
         self,
         test_type: str,
         protocol: str,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         try:
             bt = BenchmarkType(test_type)
@@ -94,12 +94,12 @@ class BenchmarkService:
 
         valid_protocols = ["pptp", "l2tp", "openvpn", "ipsec", "ikev2", "wireguard"]
         if protocol.lower() not in valid_protocols:
-            raise ValueError(
-                f"Invalid protocol '{protocol}'. Valid protocols: {valid_protocols}"
-            )
+            raise ValueError(f"Invalid protocol '{protocol}'. Valid protocols: {valid_protocols}")
 
         benchmark = await self._benchmark_manager.create_benchmark(
-            test_type=bt, protocol=protocol.lower(), params=params or {},
+            test_type=bt,
+            protocol=protocol.lower(),
+            params=params or {},
         )
         await self._benchmark_manager.start_benchmark(benchmark.id)
 
@@ -115,7 +115,7 @@ class BenchmarkService:
         )
         return benchmark.to_dict()
 
-    async def get_benchmark(self, benchmark_id: str) -> Optional[dict[str, Any]]:
+    async def get_benchmark(self, benchmark_id: str) -> dict[str, Any] | None:
         benchmark = await self._benchmark_manager.get_benchmark(benchmark_id)
         if benchmark is None:
             return None
@@ -123,14 +123,16 @@ class BenchmarkService:
 
     async def list_benchmarks(
         self,
-        test_type: Optional[str] = None,
-        protocol: Optional[str] = None,
-        status: Optional[str] = None,
+        test_type: str | None = None,
+        protocol: str | None = None,
+        status: str | None = None,
     ) -> list[dict[str, Any]]:
         bt = BenchmarkType(test_type) if test_type else None
         bs = BenchmarkStatus(status) if status else None
         benchmarks = await self._benchmark_manager.list_benchmarks(
-            test_type=bt, protocol=protocol, status=bs,
+            test_type=bt,
+            protocol=protocol,
+            status=bs,
         )
         return [b.to_dict() for b in benchmarks]
 
@@ -147,7 +149,9 @@ class BenchmarkService:
         return results
 
     async def compare_results(
-        self, baseline_id: str, current_id: str,
+        self,
+        baseline_id: str,
+        current_id: str,
     ) -> dict[str, Any]:
         baseline_data = self._load_result_from_file(baseline_id)
         current_data = self._load_result_from_file(current_id)
@@ -199,7 +203,7 @@ class BenchmarkService:
             },
         }
 
-    def _load_result_from_file(self, benchmark_id: str) -> Optional[dict[str, Any]]:
+    def _load_result_from_file(self, benchmark_id: str) -> dict[str, Any] | None:
         for filepath in self._results_dir.glob("*.json"):
             if filepath.stem.startswith(benchmark_id):
                 try:
@@ -209,7 +213,9 @@ class BenchmarkService:
         return None
 
     def _generate_simulated_result(
-        self, test_type: str, protocol: str,
+        self,
+        test_type: str,
+        protocol: str,
     ) -> BenchmarkResult:
         data = _SIMULATED_DATA.get(test_type, {}).get(protocol, {})
         if not data:
@@ -242,13 +248,14 @@ class BenchmarkService:
             details={
                 "test_type": test_type,
                 "protocol": protocol,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
         )
 
     def _get_real_cpu(self) -> float:
         try:
             import psutil
+
             return round(psutil.cpu_percent(interval=0.1), 1)
         except (ImportError, Exception):
             return 0.0
@@ -256,6 +263,7 @@ class BenchmarkService:
     def _get_real_memory(self) -> float:
         try:
             import psutil
+
             return round(psutil.Process().memory_info().rss / (1024 * 1024), 1)
         except (ImportError, Exception):
             return 0.0

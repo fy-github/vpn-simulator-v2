@@ -10,12 +10,10 @@ Tests cover:
 
 from __future__ import annotations
 
-import asyncio
-from datetime import datetime, timezone
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
-
 from vpn_simulator.core.events import Event, EventBus, EventTypes
 
 
@@ -63,13 +61,17 @@ class TestEventBus:
     @patch("vpn_simulator.core.events.logger")
     def test_register_sync_handler(self, mock_logger, event_bus: EventBus):
         """Verify sync handler registration."""
-        handler = lambda e: None
+
+        def handler(e) -> None:
+            return None
+
         event_bus.on("test.event", handler)
         assert event_bus.has_handlers("test.event")
 
     @patch("vpn_simulator.core.events.logger")
     def test_register_async_handler(self, mock_logger, event_bus: EventBus):
         """Verify async handler registration."""
+
         async def handler(event):
             pass
 
@@ -79,7 +81,10 @@ class TestEventBus:
     @patch("vpn_simulator.core.events.logger")
     def test_unregister_handler(self, mock_logger, event_bus: EventBus):
         """Verify handler removal."""
-        handler = lambda e: None
+
+        def handler(e) -> None:
+            return None
+
         event_bus.on("test.event", handler)
         assert event_bus.has_handlers("test.event")
 
@@ -91,7 +96,10 @@ class TestEventBus:
     async def test_emit_triggers_sync_handler(self, mock_logger, event_bus: EventBus):
         """Verify sync handler is called when event is emitted."""
         received_events: list[Event] = []
-        handler = lambda e: received_events.append(e)
+
+        def handler(e) -> None:
+            received_events.append(e)
+
         event_bus.on("test.event", handler)
 
         await event_bus.emit("test.event", {"key": "value"})

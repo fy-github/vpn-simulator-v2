@@ -9,12 +9,12 @@
 - corrupt: 数据损坏
 """
 
+from plugins.faults.bandwidth.plugin import BandwidthPlugin
+from plugins.faults.corrupt.plugin import CorruptPlugin
+from plugins.faults.duplicate.plugin import DuplicatePlugin
 from plugins.faults.latency.plugin import LatencyPlugin
 from plugins.faults.packet_loss.plugin import PacketLossPlugin
-from plugins.faults.bandwidth.plugin import BandwidthPlugin
 from plugins.faults.reorder.plugin import ReorderPlugin
-from plugins.faults.duplicate.plugin import DuplicatePlugin
-from plugins.faults.corrupt.plugin import CorruptPlugin
 
 __all__ = [
     "LatencyPlugin",

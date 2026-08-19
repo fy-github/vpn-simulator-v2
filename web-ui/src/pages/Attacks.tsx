@@ -74,14 +74,6 @@ const Attacks = () => {
     fetchAttacks()
   }, [fetchAttacks])
 
-  // GSAP animations
-  useEffect(() => {
-    if (typesRef.current) {
-    }
-    if (listRef.current) {
-    }
-  }, [])
-
   const handleCreateAttack = async () => {
     try {
       await api.startAttack({
@@ -90,7 +82,8 @@ const Attacks = () => {
         params: {},
       })
       fetchAttacks()
-    } catch {
+    } catch (err) {
+      console.error('Failed to start attack:', err)
     }
     setShowCreateModal(false)
     setNewAttack({ name: '', description: '', type: 'dos', target: '' })

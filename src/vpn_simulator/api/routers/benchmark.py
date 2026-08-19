@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import logging
-
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -61,9 +60,9 @@ class BenchmarkInfoResponse(BaseModel):
     protocol: str = Field(..., description="Protocol name")
     status: str = Field(..., description="Test status")
     params: dict[str, Any] = Field(default_factory=dict, description="Test parameters")
-    started_at: Optional[str] = Field(None, description="Start timestamp")
-    completed_at: Optional[str] = Field(None, description="Completion timestamp")
-    result: Optional[BenchmarkResultResponse] = Field(None, description="Test result")
+    started_at: str | None = Field(None, description="Start timestamp")
+    completed_at: str | None = Field(None, description="Completion timestamp")
+    result: BenchmarkResultResponse | None = Field(None, description="Test result")
 
 
 class CompareRequest(BaseModel):

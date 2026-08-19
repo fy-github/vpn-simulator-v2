@@ -1,7 +1,6 @@
-import logging
-
 """Topology management routes for VPN Simulator v2."""
 
+import logging
 from typing import Any
 
 from fastapi import APIRouter
@@ -58,4 +57,7 @@ async def get_topology() -> dict[str, list[Any]]:
 )
 async def update_topology(topology: Topology) -> dict[str, list[Any]]:
     """Update the topology."""
-    return {"nodes": [n.model_dump() for n in topology.nodes], "edges": [e.model_dump() for e in topology.edges]}
+    return {
+        "nodes": [n.model_dump() for n in topology.nodes],
+        "edges": [e.model_dump() for e in topology.edges],
+    }

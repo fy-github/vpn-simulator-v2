@@ -12,6 +12,7 @@ console = Console()
 
 def _get_config_manager():
     from vpn_simulator.core.config import ConfigManager
+
     return ConfigManager()
 
 

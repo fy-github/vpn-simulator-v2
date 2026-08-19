@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
 
+import pytest
 from vpn_simulator.services.tutorial import TutorialService
 
 
@@ -12,7 +12,7 @@ from vpn_simulator.services.tutorial import TutorialService
 def temp_config_dir(tmp_path: Path) -> Path:
     config_dir = tmp_path / "tutorials"
     config_dir.mkdir()
-    
+
     tutorial_data = {
         "name": "PPTP Basics",
         "protocol": "pptp",
@@ -46,10 +46,11 @@ def temp_config_dir(tmp_path: Path) -> Path:
             },
         ],
     }
-    
+
     import yaml
+
     (config_dir / "pptp_basics.yaml").write_text(yaml.dump(tutorial_data, allow_unicode=True))
-    
+
     return config_dir
 
 
@@ -142,7 +143,7 @@ class TestStartTutorial:
         await service.start_tutorial("pptp_basics")
         session = service._sessions["pptp_basics"]
         session.complete()
-        
+
         result = await service.start_tutorial("pptp_basics")
         assert result["is_completed"] is False
         assert result["current_step"] == 0
@@ -171,7 +172,7 @@ class TestNextStep:
         await service.next_step("pptp_basics")
         await service.next_step("pptp_basics")
         await service.next_step("pptp_basics")
-        
+
         result = await service.next_step("pptp_basics")
         assert result["is_completed"] is True
         assert "completed" in result["message"].lower()
@@ -219,7 +220,7 @@ class TestResetTutorial:
         await service.start_tutorial("pptp_basics")
         await service.next_step("pptp_basics")
         await service.next_step("pptp_basics")
-        
+
         result = await service.reset_tutorial("pptp_basics")
         assert result["current_step"] == 0
         assert result["is_completed"] is False
@@ -255,7 +256,7 @@ class TestGetTutorialSession:
     async def test_get_tutorial_session_after_steps(self, service: TutorialService):
         await service.start_tutorial("pptp_basics")
         await service.next_step("pptp_basics")
-        
+
         session = await service.get_tutorial_session("pptp_basics")
         assert session["current_step"] == 1
 
@@ -270,12 +271,20 @@ class TestEdgeCases:
             "difficulty": "intermediate",
             "estimated_time": 20,
             "steps": [
-                {"title": "Step 1", "description": "Init", "packet_info": "", "rfc_reference": "", "expected_state": "", "hint": ""},
+                {
+                    "title": "Step 1",
+                    "description": "Init",
+                    "packet_info": "",
+                    "rfc_reference": "",
+                    "expected_state": "",
+                    "hint": "",
+                },
             ],
         }
         import yaml
+
         (temp_config_dir / "l2tp_basics.yaml").write_text(yaml.dump(tutorial2))
-        
+
         service = TutorialService(config_path=str(temp_config_dir))
         tutorials = await service.list_tutorials()
         assert len(tutorials) == 2
@@ -283,16 +292,16 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_full_workflow(self, service: TutorialService):
         await service.start_tutorial("pptp_basics")
-        
+
         result = await service.next_step("pptp_basics")
         assert result["current_step"] == 1
-        
+
         result = await service.next_step("pptp_basics")
         assert result["current_step"] == 2
-        
+
         result = await service.next_step("pptp_basics")
         assert result["is_completed"] is True
-        
+
         await service.reset_tutorial("pptp_basics")
         session = await service.get_tutorial_session("pptp_basics")
         assert session["current_step"] == 0

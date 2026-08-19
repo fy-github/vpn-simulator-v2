@@ -17,6 +17,7 @@ def _get_service():
     from vpn_simulator.core.database import DatabaseManager
     from vpn_simulator.core.events import EventBus
     from vpn_simulator.services.protocol import ProtocolService
+
     return ProtocolService(EventBus(), ConfigManager(), DatabaseManager())
 
 

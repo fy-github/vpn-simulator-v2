@@ -104,11 +104,14 @@ class LatencyPlugin(Plugin):
             self._context.logger.info(
                 f"延迟故障已注入: delay={self._delay_ms}ms, jitter={self._jitter_ms}ms"
             )
-            self._context.emit_event("fault.injected", {
-                "fault_type": "latency",
-                "delay_ms": self._delay_ms,
-                "jitter_ms": self._jitter_ms,
-            })
+            self._context.emit_event(
+                "fault.injected",
+                {
+                    "fault_type": "latency",
+                    "delay_ms": self._delay_ms,
+                    "jitter_ms": self._jitter_ms,
+                },
+            )
 
     async def remove(self) -> None:
         """移除延迟故障。"""

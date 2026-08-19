@@ -12,7 +12,7 @@ Example:
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -70,18 +70,20 @@ class ProtocolService:
         protocols = []
         for plugin in plugins:
             meta = plugin.meta()
-            protocols.append({
-                "name": meta.name,
-                "version": meta.version,
-                "author": meta.author,
-                "description": meta.description,
-                "dependencies": meta.dependencies,
-                "config_schema": meta.config_schema,
-            })
+            protocols.append(
+                {
+                    "name": meta.name,
+                    "version": meta.version,
+                    "author": meta.author,
+                    "description": meta.description,
+                    "dependencies": meta.dependencies,
+                    "config_schema": meta.config_schema,
+                }
+            )
         logger.info("protocols_listed", count=len(protocols))
         return protocols
 
-    async def get_protocol(self, name: str) -> Optional[dict[str, Any]]:
+    async def get_protocol(self, name: str) -> dict[str, Any] | None:
         """获取指定协议的详细信息。
 
         Args:
@@ -117,8 +119,8 @@ class ProtocolService:
     async def start_protocol(
         self,
         name: str,
-        port: Optional[int] = None,
-        config: Optional[dict[str, Any]] = None,
+        port: int | None = None,
+        config: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """启动指定协议。
 
@@ -205,7 +207,7 @@ class ProtocolService:
         logger.info("protocol_stopped", name=name)
         return {"protocol": name, "status": "stopped"}
 
-    async def get_protocol_state(self, name: str) -> Optional[dict[str, Any]]:
+    async def get_protocol_state(self, name: str) -> dict[str, Any] | None:
         """获取协议当前状态。
 
         Args:
@@ -223,7 +225,7 @@ class ProtocolService:
         self,
         name: str,
         event: str,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> bool:
         """触发协议状态机事件。
 
@@ -313,7 +315,7 @@ class ProtocolService:
         from_state: str,
         to_state: str,
         event: str,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> None:
         """将状态转换记录持久化到数据库。
 

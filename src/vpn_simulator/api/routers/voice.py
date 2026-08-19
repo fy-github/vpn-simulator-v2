@@ -7,10 +7,9 @@ and real-time monitoring.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
-from typing import Any, Optional
-
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -20,36 +19,46 @@ router = APIRouter(prefix="/voice")
 
 class StartCallRequest(BaseModel):
     """Request model for starting a voice call."""
+
     codec: str = Field("g711", description="Voice codec (g711, g729, opus)")
     caller_ip: str = Field("192.168.1.100", description="Caller IP address")
     callee_ip: str = Field("10.0.0.50", description="Callee IP address")
     latency_ms: float = Field(50.0, ge=0, le=5000, description="Network latency in ms")
     jitter_ms: float = Field(10.0, ge=0, le=1000, description="Network jitter in ms")
     packet_loss_percent: float = Field(0.0, ge=0, le=100, description="Packet loss percentage")
-    bandwidth_kbps: float = Field(1000.0, ge=1, le=100000, description="Available bandwidth in kbps")
+    bandwidth_kbps: float = Field(
+        1000.0, ge=1, le=100000, description="Available bandwidth in kbps"
+    )
 
 
 class UpdateConditionsRequest(BaseModel):
     """Request model for updating network conditions."""
-    latency_ms: Optional[float] = Field(None, ge=0, le=5000, description="Network latency in ms")
-    jitter_ms: Optional[float] = Field(None, ge=0, le=1000, description="Network jitter in ms")
-    packet_loss_percent: Optional[float] = Field(None, ge=0, le=100, description="Packet loss percentage")
-    bandwidth_kbps: Optional[float] = Field(None, ge=1, le=100000, description="Available bandwidth in kbps")
+
+    latency_ms: float | None = Field(None, ge=0, le=5000, description="Network latency in ms")
+    jitter_ms: float | None = Field(None, ge=0, le=1000, description="Network jitter in ms")
+    packet_loss_percent: float | None = Field(
+        None, ge=0, le=100, description="Packet loss percentage"
+    )
+    bandwidth_kbps: float | None = Field(
+        None, ge=1, le=100000, description="Available bandwidth in kbps"
+    )
 
 
 class CallResponse(BaseModel):
     """Response model for call operations."""
-    call_id: Optional[str] = None
-    codec: Optional[str] = None
-    caller_ip: Optional[str] = None
-    callee_ip: Optional[str] = None
-    state: Optional[str] = None
-    message: Optional[str] = None
-    timestamp: Optional[str] = None
+
+    call_id: str | None = None
+    codec: str | None = None
+    caller_ip: str | None = None
+    callee_ip: str | None = None
+    state: str | None = None
+    message: str | None = None
+    timestamp: str | None = None
 
 
 def _get_service():
     from vpn_simulator.services.voice import get_voice_service
+
     return get_voice_service()
 
 
@@ -138,7 +147,9 @@ async def get_call_quality(call_id: str) -> dict[str, Any]:
     summary="Update network conditions",
     description="Update network conditions for an active call.",
 )
-async def update_network_conditions(call_id: str, request: UpdateConditionsRequest) -> dict[str, Any]:
+async def update_network_conditions(
+    call_id: str, request: UpdateConditionsRequest
+) -> dict[str, Any]:
     """Update network conditions for a call."""
     service = _get_service()
     try:

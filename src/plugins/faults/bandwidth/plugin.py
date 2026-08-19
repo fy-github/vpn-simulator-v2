@@ -103,11 +103,14 @@ class BandwidthPlugin(Plugin):
             self._context.logger.info(
                 f"带宽限制已注入: {self._bandwidth_kbps}Kbps, direction={self._direction}"
             )
-            self._context.emit_event("fault.injected", {
-                "fault_type": "bandwidth",
-                "bandwidth_kbps": self._bandwidth_kbps,
-                "direction": self._direction,
-            })
+            self._context.emit_event(
+                "fault.injected",
+                {
+                    "fault_type": "bandwidth",
+                    "bandwidth_kbps": self._bandwidth_kbps,
+                    "direction": self._direction,
+                },
+            )
 
     async def remove(self) -> None:
         """移除带宽限制故障。"""

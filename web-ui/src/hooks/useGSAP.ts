@@ -23,6 +23,7 @@ export function useGSAP(
     return () => {
       context.revert()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 泛用 hook：依赖项由调用方经 options.dependencies 动态传入
   }, dependencies)
 
   return contextRef

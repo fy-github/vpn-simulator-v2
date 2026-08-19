@@ -1,8 +1,7 @@
-import logging
-
 """深度包检测 (DPI) API 路由。"""
 
-from typing import Any, Optional
+import logging
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field

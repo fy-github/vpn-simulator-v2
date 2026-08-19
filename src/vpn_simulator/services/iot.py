@@ -20,14 +20,16 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 import yaml
 
 logger = structlog.get_logger(__name__)
 
-DEFAULT_DEVICES_PATH = Path(__file__).parent.parent.parent.parent / "config" / "iot" / "devices.yaml"
+DEFAULT_DEVICES_PATH = (
+    Path(__file__).parent.parent.parent.parent / "config" / "iot" / "devices.yaml"
+)
 
 _MQTT_CONNECT = 0x10
 _MQTT_PUBLISH = 0x30
@@ -38,6 +40,7 @@ _COAP_POST = 2
 
 class TrafficPattern(str, Enum):
     """流量模式枚举。"""
+
     CONTINUOUS = "continuous"
     PERIODIC = "periodic"
     BURST = "burst"
@@ -46,6 +49,7 @@ class TrafficPattern(str, Enum):
 
 class DeviceState(str, Enum):
     """设备状态枚举。"""
+
     OFFLINE = "offline"
     STARTING = "starting"
     ONLINE = "online"
@@ -55,6 +59,7 @@ class DeviceState(str, Enum):
 @dataclass
 class NetworkProfile:
     """网络流量配置。"""
+
     upload_kbps: float = 0.0
     download_kbps: float = 0.0
     packet_size_bytes: int = 64
@@ -64,6 +69,7 @@ class NetworkProfile:
 @dataclass
 class DeviceConfig:
     """IoT 设备配置。"""
+
     id: str
     name: str
     name_en: str
@@ -79,14 +85,15 @@ class DeviceConfig:
 @dataclass
 class DeviceInstance:
     """运行中的设备实例。"""
+
     instance_id: str
     device_id: str
     config: DeviceConfig
     state: DeviceState = DeviceState.OFFLINE
-    started_at: Optional[float] = None
+    started_at: float | None = None
     params: dict[str, Any] = field(default_factory=dict)
     stats: dict[str, Any] = field(default_factory=dict)
-    _task: Optional[asyncio.Task] = field(default=None, repr=False)
+    _task: asyncio.Task | None = field(default=None, repr=False)
 
 
 class IoTService:
@@ -100,7 +107,7 @@ class IoTService:
         _instances: 运行中的设备实例字典。
     """
 
-    def __init__(self, devices_path: Optional[Path] = None) -> None:
+    def __init__(self, devices_path: Path | None = None) -> None:
         """初始化 IoT 服务。
 
         Args:
@@ -127,7 +134,9 @@ class IoTService:
                 network_profile = NetworkProfile(
                     upload_kbps=device_data.get("network_profile", {}).get("upload_kbps", 0),
                     download_kbps=device_data.get("network_profile", {}).get("download_kbps", 0),
-                    packet_size_bytes=device_data.get("network_profile", {}).get("packet_size_bytes", 64),
+                    packet_size_bytes=device_data.get("network_profile", {}).get(
+                        "packet_size_bytes", 64
+                    ),
                     interval_ms=device_data.get("network_profile", {}).get("interval_ms", 1000),
                 )
 
@@ -159,7 +168,7 @@ class IoTService:
         except Exception as e:
             logger.error("iot_devices_load_error", path=str(self._devices_path), error=str(e))
 
-    def list_devices(self, category: Optional[str] = None) -> list[dict[str, Any]]:
+    def list_devices(self, category: str | None = None) -> list[dict[str, Any]]:
         """列出所有可用设备配置。
 
         Args:
@@ -175,29 +184,31 @@ class IoTService:
         result = []
         for device in devices:
             instance = self._find_instance_by_device_id(device.id)
-            result.append({
-                "id": device.id,
-                "name": device.name,
-                "name_en": device.name_en,
-                "description": device.description,
-                "icon": device.icon,
-                "category": device.category,
-                "protocols": device.protocols,
-                "traffic_pattern": device.traffic_pattern.value,
-                "default_params": device.default_params,
-                "network_profile": {
-                    "upload_kbps": device.network_profile.upload_kbps,
-                    "download_kbps": device.network_profile.download_kbps,
-                    "packet_size_bytes": device.network_profile.packet_size_bytes,
-                    "interval_ms": device.network_profile.interval_ms,
-                },
-                "instance_id": instance.instance_id if instance else None,
-                "state": instance.state.value if instance else DeviceState.OFFLINE.value,
-            })
+            result.append(
+                {
+                    "id": device.id,
+                    "name": device.name,
+                    "name_en": device.name_en,
+                    "description": device.description,
+                    "icon": device.icon,
+                    "category": device.category,
+                    "protocols": device.protocols,
+                    "traffic_pattern": device.traffic_pattern.value,
+                    "default_params": device.default_params,
+                    "network_profile": {
+                        "upload_kbps": device.network_profile.upload_kbps,
+                        "download_kbps": device.network_profile.download_kbps,
+                        "packet_size_bytes": device.network_profile.packet_size_bytes,
+                        "interval_ms": device.network_profile.interval_ms,
+                    },
+                    "instance_id": instance.instance_id if instance else None,
+                    "state": instance.state.value if instance else DeviceState.OFFLINE.value,
+                }
+            )
 
         return result
 
-    def get_device(self, device_id: str) -> Optional[dict[str, Any]]:
+    def get_device(self, device_id: str) -> dict[str, Any] | None:
         """获取指定设备的详细信息。
 
         Args:
@@ -236,7 +247,7 @@ class IoTService:
     async def start_device(
         self,
         device_id: str,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """启动设备模拟。
 
@@ -339,7 +350,7 @@ class IoTService:
             "message": f"Device '{instance.config.name}' stopped successfully",
         }
 
-    async def get_device_status(self, instance_id: str) -> Optional[dict[str, Any]]:
+    async def get_device_status(self, instance_id: str) -> dict[str, Any] | None:
         """获取设备实例状态。
 
         Args:
@@ -411,7 +422,9 @@ class IoTService:
                 }
             total_stats["by_pattern"][pattern]["count"] += 1
             total_stats["by_pattern"][pattern]["bytes_sent"] += instance.stats.get("bytes_sent", 0)
-            total_stats["by_pattern"][pattern]["bytes_received"] += instance.stats.get("bytes_received", 0)
+            total_stats["by_pattern"][pattern]["bytes_received"] += instance.stats.get(
+                "bytes_received", 0
+            )
 
             # 按分类统计
             category = instance.config.category
@@ -422,19 +435,25 @@ class IoTService:
                     "bytes_received": 0,
                 }
             total_stats["by_category"][category]["count"] += 1
-            total_stats["by_category"][category]["bytes_sent"] += instance.stats.get("bytes_sent", 0)
-            total_stats["by_category"][category]["bytes_received"] += instance.stats.get("bytes_received", 0)
+            total_stats["by_category"][category]["bytes_sent"] += instance.stats.get(
+                "bytes_sent", 0
+            )
+            total_stats["by_category"][category]["bytes_received"] += instance.stats.get(
+                "bytes_received", 0
+            )
 
             # 设备详情
-            total_stats["devices"].append({
-                "instance_id": instance.instance_id,
-                "device_id": instance.device_id,
-                "device_name": instance.config.name,
-                "state": instance.state.value,
-                "traffic_pattern": pattern,
-                "category": category,
-                "stats": instance.stats,
-            })
+            total_stats["devices"].append(
+                {
+                    "instance_id": instance.instance_id,
+                    "device_id": instance.device_id,
+                    "device_name": instance.config.name,
+                    "state": instance.state.value,
+                    "traffic_pattern": pattern,
+                    "category": category,
+                    "stats": instance.stats,
+                }
+            )
 
         return total_stats
 
@@ -473,10 +492,13 @@ class IoTService:
         """
         return self._categories
 
-    def _find_instance_by_device_id(self, device_id: str) -> Optional[DeviceInstance]:
+    def _find_instance_by_device_id(self, device_id: str) -> DeviceInstance | None:
         """根据设备 ID 查找运行中的实例。"""
         for instance in self._instances.values():
-            if instance.device_id == device_id and instance.state in (DeviceState.ONLINE, DeviceState.STARTING):
+            if instance.device_id == device_id and instance.state in (
+                DeviceState.ONLINE,
+                DeviceState.STARTING,
+            ):
                 return instance
         return None
 
@@ -561,7 +583,7 @@ class IoTService:
     def _send_udp_packet(self, payload: bytes) -> int:
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            sock.sendto(payload, ('127.0.0.1', 9999))
+            sock.sendto(payload, ("127.0.0.1", 9999))
             sock.close()
             return len(payload)
         except Exception:
@@ -569,8 +591,10 @@ class IoTService:
 
     def _generate_mqtt_publish(self, instance: DeviceInstance, size: int) -> bytes:
         topic = f"devices/{instance.device_id}/data"
-        topic_bytes = topic.encode('utf-8')
-        payload_data = bytes(random.randint(0, 255) for _ in range(max(0, size - len(topic_bytes) - 4)))
+        topic_bytes = topic.encode("utf-8")
+        payload_data = bytes(
+            random.randint(0, 255) for _ in range(max(0, size - len(topic_bytes) - 4))
+        )
         remaining = len(topic_bytes) + 2 + len(payload_data)
         packet = bytearray()
         packet.append(_MQTT_PUBLISH)
@@ -578,7 +602,7 @@ class IoTService:
             packet.append((remaining & 0x7F) | 0x80)
             remaining >>= 7
         packet.append(remaining)
-        packet.extend(struct.pack('!H', len(topic_bytes)))
+        packet.extend(struct.pack("!H", len(topic_bytes)))
         packet.extend(topic_bytes)
         packet.extend(payload_data)
         return bytes(packet)
@@ -591,7 +615,7 @@ class IoTService:
         msg_id = random.randint(0, 65535)
         token = bytes(random.randint(0, 255) for _ in range(token_len))
         payload_data = bytes(random.randint(0, 255) for _ in range(max(0, size - 8 - token_len)))
-        header = struct.pack('!BBH', (ver << 6) | (type_val << 4) | token_len, code, msg_id)
+        header = struct.pack("!BBH", (ver << 6) | (type_val << 4) | token_len, code, msg_id)
         return header + token + payload_data
 
     def _generate_mqtt_pingreq(self) -> bytes:

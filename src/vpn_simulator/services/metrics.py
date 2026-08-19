@@ -8,9 +8,8 @@ from __future__ import annotations
 
 import random
 import time
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
-
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 # Protocol baseline parameters for realistic simulation
 _PROTOCOL_PROFILES: dict[str, dict[str, Any]] = {
@@ -100,6 +99,7 @@ class MetricsService:
         self._start_time = time.time()
         try:
             import psutil
+
             counters = psutil.net_io_counters()
             self._last_net_bytes = (counters.bytes_sent, counters.bytes_recv)
         except (ImportError, Exception):
@@ -110,6 +110,7 @@ class MetricsService:
         """Get real network throughput in Mbps using psutil."""
         try:
             import psutil
+
             counters = psutil.net_io_counters()
             now = time.time()
             elapsed = now - self._last_net_time
@@ -130,6 +131,7 @@ class MetricsService:
         """Get packet loss based on real network errors."""
         try:
             import psutil
+
             counters = psutil.net_io_counters()
             total = counters.packets_sent + counters.packets_recv
             errors = counters.errin + counters.errout
@@ -143,6 +145,7 @@ class MetricsService:
         """Get simulated latency based on system load."""
         try:
             import psutil
+
             cpu = psutil.cpu_percent(interval=0)
             base_latency = 5.0
             load_factor = cpu / 100.0
@@ -153,13 +156,13 @@ class MetricsService:
     def get_throughput_data(
         self,
         time_range: str = "5m",
-        protocol: Optional[str] = None,
+        protocol: str | None = None,
     ) -> dict[str, Any]:
         """Get throughput time series data using real network I/O."""
         duration = _TIME_RANGES.get(time_range, 300)
         interval = _INTERVALS.get(time_range, 5)
         num_points = duration // interval
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         timestamps = []
         values = []
@@ -179,7 +182,11 @@ class MetricsService:
                 value = max(0, base * time_factor * scale + noise)
             else:
                 time_factor = 1.0 + 0.3 * (i % 60) / 60.0
-                noise = random.gauss(0, real_throughput * 0.1) if real_throughput > 0 else random.gauss(0, 5)
+                noise = (
+                    random.gauss(0, real_throughput * 0.1)
+                    if real_throughput > 0
+                    else random.gauss(0, 5)
+                )
                 value = max(0, real_throughput * time_factor + noise)
             values.append(round(value, 2))
 
@@ -194,7 +201,7 @@ class MetricsService:
     def get_latency_data(
         self,
         time_range: str = "5m",
-        protocol: Optional[str] = None,
+        protocol: str | None = None,
     ) -> dict[str, Any]:
         """Get latency time series data.
 
@@ -208,7 +215,7 @@ class MetricsService:
         duration = _TIME_RANGES.get(time_range, 300)
         interval = _INTERVALS.get(time_range, 5)
         num_points = duration // interval
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         timestamps = []
         values = []
@@ -249,7 +256,7 @@ class MetricsService:
     def get_packet_loss_data(
         self,
         time_range: str = "5m",
-        protocol: Optional[str] = None,
+        protocol: str | None = None,
     ) -> dict[str, Any]:
         """Get packet loss time series data.
 
@@ -263,7 +270,7 @@ class MetricsService:
         duration = _TIME_RANGES.get(time_range, 300)
         interval = _INTERVALS.get(time_range, 5)
         num_points = duration // interval
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         timestamps = []
         values = []
@@ -310,7 +317,7 @@ class MetricsService:
         duration = _TIME_RANGES.get(time_range, 300)
         interval = _INTERVALS.get(time_range, 5)
         num_points = duration // interval
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         timestamps = []
         protocols_data: dict[str, list[int]] = {p: [] for p in _PROTOCOLS}
@@ -372,7 +379,7 @@ class MetricsService:
     def get_statistics(
         self,
         time_range: str = "5m",
-        protocol: Optional[str] = None,
+        protocol: str | None = None,
     ) -> dict[str, Any]:
         """Get aggregated statistics for the given time range.
 
@@ -419,9 +426,11 @@ class MetricsService:
                 "current": connections["total"][-1] if connections["total"] else 0,
                 "peak": max(connections["total"]) if connections["total"] else 0,
                 "average": round(
-                    sum(connections["total"]) / len(connections["total"])
-                    if connections["total"]
-                    else 0,
+                    (
+                        sum(connections["total"]) / len(connections["total"])
+                        if connections["total"]
+                        else 0
+                    ),
                     1,
                 ),
             },

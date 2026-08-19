@@ -5,8 +5,7 @@ from __future__ import annotations
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-
-from vpn_simulator.api.middleware.auth import AuthMiddleware, PUBLIC_PATHS
+from vpn_simulator.api.middleware.auth import PUBLIC_PATHS, AuthMiddleware
 
 
 @pytest.fixture

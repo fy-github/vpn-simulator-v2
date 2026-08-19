@@ -18,15 +18,17 @@ logging.basicConfig(
     level=logging.WARNING,
 )
 
-from vpn_simulator.cli.commands.attacks import attacks_group
-from vpn_simulator.cli.commands.automation import automation_group
-from vpn_simulator.cli.commands.benchmark import benchmark_group
-from vpn_simulator.cli.commands.config import config_group
-from vpn_simulator.cli.commands.connections import connections_group
-from vpn_simulator.cli.commands.faults import faults_group
-from vpn_simulator.cli.commands.protocols import protocols_group
-from vpn_simulator.cli.commands.scenario import scenario_group
-from vpn_simulator.cli.commands.server import server_group
+# 子命令模块在 import 时即绑定 structlog logger，
+# 因此必须在 configure() 之后才导入（故使用 noqa: E402 抑制顺序告警）。
+from vpn_simulator.cli.commands.attacks import attacks_group  # noqa: E402
+from vpn_simulator.cli.commands.automation import automation_group  # noqa: E402
+from vpn_simulator.cli.commands.benchmark import benchmark_group  # noqa: E402
+from vpn_simulator.cli.commands.config import config_group  # noqa: E402
+from vpn_simulator.cli.commands.connections import connections_group  # noqa: E402
+from vpn_simulator.cli.commands.faults import faults_group  # noqa: E402
+from vpn_simulator.cli.commands.protocols import protocols_group  # noqa: E402
+from vpn_simulator.cli.commands.scenario import scenario_group  # noqa: E402
+from vpn_simulator.cli.commands.server import server_group  # noqa: E402
 
 console = Console()
 

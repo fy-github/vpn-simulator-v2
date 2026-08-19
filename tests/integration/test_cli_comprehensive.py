@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 from click.testing import CliRunner
-
 from vpn_simulator.cli import cli
 
 
@@ -35,6 +34,7 @@ class TestServerCommands:
         result = runner.invoke(cli, ["--json", "server", "status"])
         assert result.exit_code == 0
         import json
+
         data = json.loads(result.output)
         assert "state" in data
 
@@ -48,6 +48,7 @@ class TestProtocolCommands:
         result = runner.invoke(cli, ["--json", "protocol", "list"])
         assert result.exit_code == 0
         import json
+
         data = json.loads(result.output)
         assert isinstance(data, list)
         assert len(data) > 0
@@ -74,6 +75,7 @@ class TestConnectionCommands:
         result = runner.invoke(cli, ["--json", "connection", "list"])
         assert result.exit_code == 0
         import json
+
         data = json.loads(result.output)
         assert isinstance(data, list)
 
@@ -91,15 +93,20 @@ class TestFaultCommands:
         result = runner.invoke(cli, ["--json", "fault", "list"])
         assert result.exit_code == 0
         import json
+
         data = json.loads(result.output)
         assert isinstance(data, list)
 
     def test_fault_add(self, runner: CliRunner):
-        result = runner.invoke(cli, ["fault", "add", "latency", "--target", "pptp", "-p", "delay_ms=100"])
+        result = runner.invoke(
+            cli, ["fault", "add", "latency", "--target", "pptp", "-p", "delay_ms=100"]
+        )
         assert result.exit_code == 0
 
     def test_fault_add_invalid_param(self, runner: CliRunner):
-        result = runner.invoke(cli, ["fault", "add", "latency", "--target", "pptp", "-p", "invalid"])
+        result = runner.invoke(
+            cli, ["fault", "add", "latency", "--target", "pptp", "-p", "invalid"]
+        )
         assert result.exit_code == 0
 
     def test_fault_remove(self, runner: CliRunner):
@@ -116,6 +123,7 @@ class TestAttackCommands:
         result = runner.invoke(cli, ["--json", "attack", "list"])
         assert result.exit_code == 0
         import json
+
         data = json.loads(result.output)
         assert isinstance(data, list)
 
@@ -124,7 +132,9 @@ class TestAttackCommands:
         assert result.exit_code == 0
 
     def test_attack_start_with_params(self, runner: CliRunner):
-        result = runner.invoke(cli, ["attack", "start", "mitm", "--target", "pptp", "-p", "port=8080"])
+        result = runner.invoke(
+            cli, ["attack", "start", "mitm", "--target", "pptp", "-p", "port=8080"]
+        )
         assert result.exit_code == 0
 
     def test_attack_stop(self, runner: CliRunner):
@@ -181,6 +191,7 @@ class TestCLIGlobalOptions:
         result = runner.invoke(cli, ["--json", "protocol", "list"])
         assert result.exit_code == 0
         import json
+
         data = json.loads(result.output)
         assert isinstance(data, list)
 

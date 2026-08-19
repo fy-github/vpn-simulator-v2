@@ -79,34 +79,46 @@ class WireGuardStateMachine(ProtocolStateMachine):
         transitions = [
             # Noise_IKpsk2 握手
             StateTransition(
-                "INITIAL", "INITIATION_SENT", "SEND_INITIATION",
+                "INITIAL",
+                "INITIATION_SENT",
+                "SEND_INITIATION",
                 description="发送 Handshake Initiation (52B): "
-                            "msg_type=1 + sender_index + unencrypted_ephemeral + "
-                            "encrypted_static + encrypted_timestamp",
+                "msg_type=1 + sender_index + unencrypted_ephemeral + "
+                "encrypted_static + encrypted_timestamp",
             ),
             StateTransition(
-                "INITIATION_SENT", "RESPONSE_RECEIVED", "RECEIVE_RESPONSE",
+                "INITIATION_SENT",
+                "RESPONSE_RECEIVED",
+                "RECEIVE_RESPONSE",
                 description="收到 Handshake Response (92B): "
-                            "msg_type=2 + sender_index + receiver_index + "
-                            "unencrypted_ephemeral + encrypted_nothing",
+                "msg_type=2 + sender_index + receiver_index + "
+                "unencrypted_ephemeral + encrypted_nothing",
             ),
             # 会话密钥派生
             StateTransition(
-                "RESPONSE_RECEIVED", "TRANSPORT_READY", "DERIVE_KEYS",
+                "RESPONSE_RECEIVED",
+                "TRANSPORT_READY",
+                "DERIVE_KEYS",
                 description="使用 Noise_IKpsk2 派生 ChaCha20-Poly1305 会话密钥",
             ),
             # 数据通道
             StateTransition(
-                "TRANSPORT_READY", "CONNECTED", "DATA_CHANNEL_READY",
+                "TRANSPORT_READY",
+                "CONNECTED",
+                "DATA_CHANNEL_READY",
                 description="数据通道就绪，可传输加密数据",
             ),
             # 错误路径
             StateTransition(
-                "INITIATION_SENT", "ERROR", "RESPONSE_TIMEOUT",
+                "INITIATION_SENT",
+                "ERROR",
+                "RESPONSE_TIMEOUT",
                 description="Handshake Response 接收超时",
             ),
             StateTransition(
-                "RESPONSE_RECEIVED", "ERROR", "KEY_DERIVATION_FAILED",
+                "RESPONSE_RECEIVED",
+                "ERROR",
+                "KEY_DERIVATION_FAILED",
                 description="会话密钥派生失败",
             ),
         ]

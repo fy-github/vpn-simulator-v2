@@ -7,7 +7,7 @@ import asyncio
 import click
 from rich.console import Console
 
-from vpn_simulator.cli.utils import handle_error, handle_success, output_json, output_table
+from vpn_simulator.cli.utils import handle_success, output_json, output_table
 
 console = Console()
 
@@ -17,6 +17,7 @@ def _get_protocol_service():
     from vpn_simulator.core.database import DatabaseManager
     from vpn_simulator.core.events import EventBus
     from vpn_simulator.services.protocol import ProtocolService
+
     return ProtocolService(EventBus(), ConfigManager(), DatabaseManager())
 
 
@@ -25,6 +26,7 @@ def _get_connection_service():
     from vpn_simulator.core.database import DatabaseManager
     from vpn_simulator.core.events import EventBus
     from vpn_simulator.services.connection import ConnectionService
+
     return ConnectionService(EventBus(), ConfigManager(), DatabaseManager())
 
 

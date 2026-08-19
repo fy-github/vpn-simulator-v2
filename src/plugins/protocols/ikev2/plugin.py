@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
+
 from plugins.protocols.ikev2.state_machine import IKEv2StateMachine
 
 if TYPE_CHECKING:
@@ -53,7 +54,7 @@ class IKEv2Plugin(Plugin):
             version="1.0.0",
             author="VPN Simulator",
             description="IKEv2/IPSec 协议实现 - "
-                        "IKE_SA_INIT (2步) + IKE_AUTH (2步) + Child SA + ESP 隧道",
+            "IKE_SA_INIT (2步) + IKE_AUTH (2步) + Child SA + ESP 隧道",
             plugin_type=PluginType.PROTOCOL,
             dependencies=[],
             config_schema={

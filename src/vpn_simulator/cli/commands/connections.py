@@ -17,6 +17,7 @@ def _get_service():
     from vpn_simulator.core.database import DatabaseManager
     from vpn_simulator.core.events import EventBus
     from vpn_simulator.services.connection import ConnectionService
+
     return ConnectionService(EventBus(), ConfigManager(), DatabaseManager())
 
 
@@ -67,9 +68,7 @@ def connection_list(ctx: click.Context, protocol: str | None, state: str | None)
 @click.argument("connection_id")
 @click.option("--force", "-f", is_flag=True, help="Force disconnect without confirmation.")
 @click.pass_context
-def connection_disconnect(
-    ctx: click.Context, connection_id: str, force: bool
-) -> None:
+def connection_disconnect(ctx: click.Context, connection_id: str, force: bool) -> None:
     """Disconnect a specific connection."""
     json_output: bool = ctx.obj["json_output"]
 
@@ -82,4 +81,6 @@ def connection_disconnect(
         asyncio.run(service.disconnect_connection(connection_id))
         handle_success(f"Connection {connection_id} disconnected", json_output=json_output)
     except Exception as e:
-        handle_error(f"Failed to disconnect connection {connection_id}: {e}", json_output=json_output)
+        handle_error(
+            f"Failed to disconnect connection {connection_id}: {e}", json_output=json_output
+        )

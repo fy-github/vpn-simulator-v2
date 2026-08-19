@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import logging
-
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from vpn_simulator.services.comparison import ComparisonService, PhaseCategory
+from vpn_simulator.services.comparison import ComparisonService
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +45,9 @@ class ProtocolStateDataResponse(BaseModel):
     name: str = Field(..., description="Protocol name")
     description: str = Field("", description="Protocol description")
     states: list[StateInfoResponse] = Field(default_factory=list, description="States list")
-    transitions: list[TransitionInfoResponse] = Field(default_factory=list, description="Transitions list")
+    transitions: list[TransitionInfoResponse] = Field(
+        default_factory=list, description="Transitions list"
+    )
 
 
 class ComparisonResponse(BaseModel):
@@ -55,7 +56,9 @@ class ComparisonResponse(BaseModel):
     protocol1: ProtocolStateDataResponse = Field(..., description="First protocol data")
     protocol2: ProtocolStateDataResponse = Field(..., description="Second protocol data")
     common_phases: list[str] = Field(default_factory=list, description="Common phase categories")
-    different_phases: list[str] = Field(default_factory=list, description="Different phase categories")
+    different_phases: list[str] = Field(
+        default_factory=list, description="Different phase categories"
+    )
 
 
 class ProtocolOption(BaseModel):

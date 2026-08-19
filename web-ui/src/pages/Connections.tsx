@@ -60,16 +60,6 @@ const Connections = () => {
     fetchConnections()
   }, [fetchConnections])
 
-  // GSAP animations
-  useEffect(() => {
-    if (!loading) {
-      if (statsRef.current) {
-      }
-      if (tableRef.current) {
-      }
-    }
-  }, [loading])
-
   const handleDisconnect = async (id: string) => {
     try {
       await api.disconnectConnection(id)

@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import logging
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
 from vpn_simulator.core.events import EventBus
 from vpn_simulator.plugins.context import PluginContext
 
@@ -71,6 +70,7 @@ class TestGetConfig:
                     else:
                         return default
                 return value
+
         ctx = PluginContext(event_bus=mock_event_bus, config=NestedConfig())
         result = ctx.get_config("a.b", default="fallback")
         assert result == "c"
@@ -93,6 +93,7 @@ class TestEmitEvent:
         mock_event_bus.emit = AsyncMock()
         ctx = PluginContext(event_bus=mock_event_bus)
         import asyncio
+
         loop = asyncio.new_event_loop()
         try:
             loop.run_until_complete(ctx.event_bus.emit("test.event", {"data": 1}))

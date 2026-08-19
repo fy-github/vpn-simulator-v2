@@ -13,13 +13,14 @@ import struct
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class VoiceCodec(str, Enum):
     """Supported voice codecs."""
+
     G711 = "g711"
     G729 = "g729"
     OPUS = "opus"
@@ -27,6 +28,7 @@ class VoiceCodec(str, Enum):
 
 class CallState(str, Enum):
     """Call state enumeration."""
+
     INITIATING = "initiating"
     RINGING = "ringing"
     ACTIVE = "active"
@@ -37,6 +39,7 @@ class CallState(str, Enum):
 @dataclass
 class CodecConfig:
     """Voice codec configuration."""
+
     id: str
     name: str
     description: str
@@ -50,6 +53,7 @@ class CodecConfig:
 @dataclass
 class NetworkConditions:
     """Network condition parameters for simulation."""
+
     latency_ms: float = 50.0
     jitter_ms: float = 10.0
     packet_loss_percent: float = 0.0
@@ -59,6 +63,7 @@ class NetworkConditions:
 @dataclass
 class QualityMetrics:
     """Voice quality metrics."""
+
     mos: float = 4.5
     r_factor: float = 93.2
     jitter_ms: float = 0.0
@@ -89,16 +94,17 @@ class QualityMetrics:
 @dataclass
 class VoiceCall:
     """Voice call instance."""
+
     call_id: str
     codec: VoiceCodec
     caller_ip: str
     callee_ip: str
     state: CallState = CallState.INITIATING
-    started_at: Optional[float] = None
-    ended_at: Optional[float] = None
+    started_at: float | None = None
+    ended_at: float | None = None
     network_conditions: NetworkConditions = field(default_factory=NetworkConditions)
     quality_metrics: QualityMetrics = field(default_factory=QualityMetrics)
-    _task: Optional[asyncio.Task] = field(default=None, repr=False)
+    _task: asyncio.Task | None = field(default=None, repr=False)
     _quality_history: list[dict[str, Any]] = field(default_factory=list, repr=False)
 
 
@@ -159,19 +165,21 @@ class VoiceService:
         """
         result = []
         for codec_enum, config in CODEC_CONFIGS.items():
-            result.append({
-                "id": config.id,
-                "name": config.name,
-                "description": config.description,
-                "bitrate_kbps": config.bitrate_kbps,
-                "sample_rate_hz": config.sample_rate_hz,
-                "frame_size_ms": config.frame_size_ms,
-                "packet_size_bytes": config.packet_size_bytes,
-                "bandwidth_range": {
-                    "min_kbps": config.bandwidth_range[0],
-                    "max_kbps": config.bandwidth_range[1],
-                },
-            })
+            result.append(
+                {
+                    "id": config.id,
+                    "name": config.name,
+                    "description": config.description,
+                    "bitrate_kbps": config.bitrate_kbps,
+                    "sample_rate_hz": config.sample_rate_hz,
+                    "frame_size_ms": config.frame_size_ms,
+                    "packet_size_bytes": config.packet_size_bytes,
+                    "bandwidth_range": {
+                        "min_kbps": config.bandwidth_range[0],
+                        "max_kbps": config.bandwidth_range[1],
+                    },
+                }
+            )
         return result
 
     async def start_call(
@@ -242,7 +250,7 @@ class VoiceService:
             "callee_ip": callee_ip,
             "state": call.state.value,
             "message": f"Call started with {codec_config.name} codec",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     async def stop_call(self, call_id: str) -> dict[str, Any]:
@@ -279,10 +287,10 @@ class VoiceService:
             "duration_seconds": round(call.ended_at - call.started_at, 1) if call.started_at else 0,
             "final_metrics": call.quality_metrics.to_dict(),
             "message": "Call ended successfully",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
-    async def get_call_status(self, call_id: str) -> Optional[dict[str, Any]]:
+    async def get_call_status(self, call_id: str) -> dict[str, Any] | None:
         """Get call status.
 
         Args:
@@ -315,7 +323,7 @@ class VoiceService:
             "quality_metrics": call.quality_metrics.to_dict(),
         }
 
-    async def get_call_quality(self, call_id: str) -> Optional[dict[str, Any]]:
+    async def get_call_quality(self, call_id: str) -> dict[str, Any] | None:
         """Get real-time quality metrics for a call.
 
         Args:
@@ -333,7 +341,7 @@ class VoiceService:
             "codec": call.codec.value,
             "quality_metrics": call.quality_metrics.to_dict(),
             "quality_history": call._quality_history[-60:],  # Last 60 data points
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     async def get_statistics(self) -> dict[str, Any]:
@@ -345,28 +353,32 @@ class VoiceService:
         active_calls = []
         for call in self._calls.values():
             if call.state == CallState.ACTIVE:
-                active_calls.append({
-                    "call_id": call.call_id,
-                    "codec": call.codec.value,
-                    "uptime_seconds": round(time.time() - call.started_at, 1) if call.started_at else 0,
-                    "mos": call.quality_metrics.mos,
-                })
+                active_calls.append(
+                    {
+                        "call_id": call.call_id,
+                        "codec": call.codec.value,
+                        "uptime_seconds": (
+                            round(time.time() - call.started_at, 1) if call.started_at else 0
+                        ),
+                        "mos": call.quality_metrics.mos,
+                    }
+                )
 
         return {
             "active_calls": self._active_calls,
             "total_calls": self._total_calls,
             "active_call_list": active_calls,
             "supported_codecs": [c.value for c in VoiceCodec],
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def update_network_conditions(
         self,
         call_id: str,
-        latency_ms: Optional[float] = None,
-        jitter_ms: Optional[float] = None,
-        packet_loss_percent: Optional[float] = None,
-        bandwidth_kbps: Optional[float] = None,
+        latency_ms: float | None = None,
+        jitter_ms: float | None = None,
+        packet_loss_percent: float | None = None,
+        bandwidth_kbps: float | None = None,
     ) -> dict[str, Any]:
         """Update network conditions for a call.
 
@@ -445,7 +457,9 @@ class VoiceService:
         # Packet loss impairment
         loss = conditions.packet_loss_percent
         burst_factor = 1.0  # Assume random loss
-        ie_loss = ie_codec + (95 - ie_codec) * (loss / (loss + burst_factor * 15)) if loss > 0 else 0.0
+        ie_loss = (
+            ie_codec + (95 - ie_codec) * (loss / (loss + burst_factor * 15)) if loss > 0 else 0.0
+        )
 
         # Jitter impairment
         jitter_impairment = conditions.jitter_ms * 0.02 if conditions.jitter_ms > 20 else 0.0
@@ -502,19 +516,21 @@ class VoiceService:
                 conditions = call.network_conditions
                 packet_size = codec_config.packet_size_bytes
 
-                rtp_header = struct.pack('!BBHII',
+                rtp_header = struct.pack(
+                    "!BBHII",
                     0x80,
                     0x00,
                     rtp_seq & 0xFFFF,
                     rtp_timestamp,
                     rtp_ssrc,
                 )
-                audio_payload = bytes(random.randint(0, 255) for _ in range(max(0, packet_size - 12)))
+                audio_payload = bytes(
+                    random.randint(0, 255) for _ in range(max(0, packet_size - 12))
+                )
                 rtp_packet = rtp_header + audio_payload
 
-                send_time = time.monotonic()
                 try:
-                    sock.sendto(rtp_packet, ('127.0.0.1', 10000 + (hash(call.call_id) % 1000)))
+                    sock.sendto(rtp_packet, ("127.0.0.1", 10000 + (hash(call.call_id) % 1000)))
                     call.quality_metrics.packets_sent += 1
                     call.quality_metrics.bytes_sent += len(rtp_packet)
                 except Exception:
@@ -541,14 +557,16 @@ class VoiceService:
                 call.quality_metrics.r_factor = r_factor
                 call.quality_metrics.mos = self._calculate_mos(r_factor)
 
-                call._quality_history.append({
-                    "timestamp": time.time(),
-                    "mos": call.quality_metrics.mos,
-                    "r_factor": r_factor,
-                    "jitter_ms": call.quality_metrics.jitter_ms,
-                    "packet_loss_percent": call.quality_metrics.packet_loss_percent,
-                    "latency_ms": call.quality_metrics.latency_ms,
-                })
+                call._quality_history.append(
+                    {
+                        "timestamp": time.time(),
+                        "mos": call.quality_metrics.mos,
+                        "r_factor": r_factor,
+                        "jitter_ms": call.quality_metrics.jitter_ms,
+                        "packet_loss_percent": call.quality_metrics.packet_loss_percent,
+                        "latency_ms": call.quality_metrics.latency_ms,
+                    }
+                )
 
                 if len(call._quality_history) > 300:
                     call._quality_history = call._quality_history[-300:]
@@ -567,7 +585,7 @@ class VoiceService:
 
 
 # Global service instance
-_voice_service: Optional[VoiceService] = None
+_voice_service: VoiceService | None = None
 
 
 def get_voice_service() -> VoiceService:

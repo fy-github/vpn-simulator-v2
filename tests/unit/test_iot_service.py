@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from vpn_simulator.services.iot import (
-    DeviceConfig,
-    DeviceInstance,
     DeviceState,
     IoTService,
-    NetworkProfile,
     TrafficPattern,
 )
 
@@ -19,6 +15,7 @@ from vpn_simulator.services.iot import (
 @pytest.fixture
 def temp_devices_file(tmp_path: Path) -> Path:
     import yaml
+
     devices_data = {
         "devices": {
             "ip_camera": {
@@ -336,7 +333,7 @@ class TestEdgeCases:
     async def test_device_state_transitions(self, service: IoTService):
         result = await service.start_device("ip_camera")
         assert result["state"] == "online"
-        
+
         instances = list(service._instances.values())
         await service.stop_device(instances[0].instance_id)
         assert instances[0].state == DeviceState.OFFLINE

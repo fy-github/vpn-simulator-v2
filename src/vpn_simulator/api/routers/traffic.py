@@ -7,8 +7,7 @@ and real-time packet streaming via WebSocket.
 from __future__ import annotations
 
 import logging
-
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
@@ -22,24 +21,27 @@ _VALID_PROTOCOLS = ["tcp", "udp", "icmp", "arp"]
 
 class CaptureRequest(BaseModel):
     """Request model for starting capture."""
-    protocols: Optional[list[str]] = None
+
+    protocols: list[str] | None = None
 
 
 class CaptureResponse(BaseModel):
     """Response model for capture operations."""
+
     status: str
     message: str
-    protocols: Optional[list[str] | str] = None
-    statistics: Optional[dict[str, Any]] = None
-    timestamp: Optional[str] = None
+    protocols: list[str] | str | None = None
+    statistics: dict[str, Any] | None = None
+    timestamp: str | None = None
 
 
 def _get_service():
     from vpn_simulator.services.traffic import get_traffic_service
+
     return get_traffic_service()
 
 
-def _validate_protocols(protocols: Optional[list[str]]) -> Optional[list[str]]:
+def _validate_protocols(protocols: list[str] | None) -> list[str] | None:
     if protocols is None:
         return None
     validated = []

@@ -7,8 +7,7 @@ throughput, latency, packet loss, and connection statistics.
 from __future__ import annotations
 
 import logging
-
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -22,15 +21,17 @@ _VALID_TIME_RANGES = ["1m", "5m", "15m", "1h"]
 
 _metrics_service = None
 
+
 def _get_service():
     global _metrics_service
     if _metrics_service is None:
         from vpn_simulator.services.metrics import MetricsService
+
         _metrics_service = MetricsService()
     return _metrics_service
 
 
-def _validate_protocol(protocol: Optional[str]) -> Optional[str]:
+def _validate_protocol(protocol: str | None) -> str | None:
     if protocol is None:
         return None
     if protocol.lower() not in _VALID_PROTOCOLS:
@@ -57,7 +58,7 @@ def _validate_time_range(time_range: str) -> str:
 )
 async def get_throughput(
     time_range: str = Query("5m", description="Time range (1m, 5m, 15m, 1h)"),
-    protocol: Optional[str] = Query(None, description="Protocol filter"),
+    protocol: str | None = Query(None, description="Protocol filter"),
 ) -> dict[str, Any]:
     """Get throughput time series data."""
     _validate_time_range(time_range)
@@ -73,7 +74,7 @@ async def get_throughput(
 )
 async def get_latency(
     time_range: str = Query("5m", description="Time range (1m, 5m, 15m, 1h)"),
-    protocol: Optional[str] = Query(None, description="Protocol filter"),
+    protocol: str | None = Query(None, description="Protocol filter"),
 ) -> dict[str, Any]:
     """Get latency time series data."""
     _validate_time_range(time_range)
@@ -89,7 +90,7 @@ async def get_latency(
 )
 async def get_packet_loss(
     time_range: str = Query("5m", description="Time range (1m, 5m, 15m, 1h)"),
-    protocol: Optional[str] = Query(None, description="Protocol filter"),
+    protocol: str | None = Query(None, description="Protocol filter"),
 ) -> dict[str, Any]:
     """Get packet loss time series data."""
     _validate_time_range(time_range)
@@ -130,7 +131,7 @@ async def get_protocol_distribution() -> dict[str, Any]:
 )
 async def get_statistics(
     time_range: str = Query("5m", description="Time range (1m, 5m, 15m, 1h)"),
-    protocol: Optional[str] = Query(None, description="Protocol filter"),
+    protocol: str | None = Query(None, description="Protocol filter"),
 ) -> dict[str, Any]:
     """Get aggregated metrics statistics."""
     _validate_time_range(time_range)

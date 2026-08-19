@@ -50,6 +50,7 @@ def _get_system_metrics() -> dict[str, float]:
     global _last_cpu_percent
     try:
         import psutil
+
         cpu = psutil.cpu_percent(interval=0)
         if cpu == 0.0 and _last_cpu_percent == 0.0:
             cpu = psutil.cpu_percent(interval=0.1)
@@ -75,6 +76,7 @@ def _get_connection_stats() -> dict[str, int]:
     """Get connection statistics from protocol service."""
     try:
         from vpn_simulator.api.routers.protocols import _started_protocols
+
         active = len(_started_protocols)
         return {
             "total_connections": active,

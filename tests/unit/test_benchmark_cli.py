@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
-
 from vpn_simulator.cli import cli
 
 
@@ -32,11 +30,15 @@ class TestBenchmarkRun:
         assert result.exit_code == 0
 
     def test_run_with_params(self, runner):
-        result = runner.invoke(cli, ["benchmark", "run", "handshake", "-p", "pptp", "-P", "iterations=50"])
+        result = runner.invoke(
+            cli, ["benchmark", "run", "handshake", "-p", "pptp", "-P", "iterations=50"]
+        )
         assert result.exit_code == 0
 
     def test_run_with_invalid_param(self, runner):
-        result = runner.invoke(cli, ["benchmark", "run", "handshake", "-p", "pptp", "-P", "invalid"])
+        result = runner.invoke(
+            cli, ["benchmark", "run", "handshake", "-p", "pptp", "-P", "invalid"]
+        )
         assert result.exit_code == 0
 
     def test_run_json_output(self, runner):
@@ -90,18 +92,23 @@ class TestBenchmarkCompare:
         r1 = runner.invoke(cli, ["--json", "benchmark", "run", "handshake", "-p", "pptp"])
         r2 = runner.invoke(cli, ["--json", "benchmark", "run", "handshake", "-p", "pptp"])
         import json
+
         try:
             id1 = json.loads(r1.output).get("id", "bench-1")
             id2 = json.loads(r2.output).get("id", "bench-2")
-        except:
+        except Exception:
             id1, id2 = "bench-1", "bench-2"
         result = runner.invoke(cli, ["benchmark", "compare", "-b", id1, "-c", id2])
         assert result.exit_code == 0
 
     def test_compare_not_found(self, runner):
-        result = runner.invoke(cli, ["benchmark", "compare", "-b", "nonexistent", "-c", "nonexistent2"])
+        result = runner.invoke(
+            cli, ["benchmark", "compare", "-b", "nonexistent", "-c", "nonexistent2"]
+        )
         assert result.exit_code == 0
 
     def test_compare_json(self, runner):
-        result = runner.invoke(cli, ["--json", "benchmark", "compare", "-b", "bench-1", "-c", "bench-2"])
+        result = runner.invoke(
+            cli, ["--json", "benchmark", "compare", "-b", "bench-1", "-c", "bench-2"]
+        )
         assert result.exit_code == 0

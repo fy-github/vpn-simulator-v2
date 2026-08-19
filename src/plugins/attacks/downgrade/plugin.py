@@ -110,11 +110,14 @@ class DowngradePlugin(Plugin):
                 f"协议降级攻击已启动: target={self._target_protocol}, "
                 f"force_version={self._force_version}"
             )
-            self._context.emit_event("attack.started", {
-                "attack_type": "downgrade",
-                "target_protocol": self._target_protocol,
-                "force_version": self._force_version,
-            })
+            self._context.emit_event(
+                "attack.started",
+                {
+                    "attack_type": "downgrade",
+                    "target_protocol": self._target_protocol,
+                    "force_version": self._force_version,
+                },
+            )
 
     async def stop(self) -> None:
         """停止协议降级攻击。"""
@@ -124,10 +127,13 @@ class DowngradePlugin(Plugin):
             self._context.logger.info(
                 f"协议降级攻击已停止，共拦截 {self._intercepted_handshakes} 次握手"
             )
-            self._context.emit_event("attack.completed", {
-                "attack_type": "downgrade",
-                "intercepted_handshakes": self._intercepted_handshakes,
-            })
+            self._context.emit_event(
+                "attack.completed",
+                {
+                    "attack_type": "downgrade",
+                    "intercepted_handshakes": self._intercepted_handshakes,
+                },
+            )
 
     @property
     def is_running(self) -> bool:

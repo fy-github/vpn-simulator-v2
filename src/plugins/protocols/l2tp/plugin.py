@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
+
 from plugins.protocols.l2tp.state_machine import L2TPStateMachine
 
 if TYPE_CHECKING:
@@ -53,7 +54,7 @@ class L2TPPlugin(Plugin):
             version="1.0.0",
             author="VPN Simulator",
             description="L2TP (Layer 2 Tunneling Protocol) 协议实现 - "
-                        "使用 UDP 1701 控制/数据通道 + PPP 封装",
+            "使用 UDP 1701 控制/数据通道 + PPP 封装",
             plugin_type=PluginType.PROTOCOL,
             dependencies=[],
             config_schema={

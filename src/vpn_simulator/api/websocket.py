@@ -1,7 +1,7 @@
 """WebSocket manager for VPN Simulator v2."""
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -47,7 +47,7 @@ class WebSocketManager:
             {
                 "event": event,
                 "data": data,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
 
@@ -66,7 +66,7 @@ class WebSocketManager:
             {
                 "event": event,
                 "data": data,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             }
         )
         await websocket.send_text(message)

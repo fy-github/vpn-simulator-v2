@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
-
-from vpn_simulator.api.websocket import WebSocketManager, websocket_endpoint
+from vpn_simulator.api.websocket import WebSocketManager
 
 
 @pytest.fixture

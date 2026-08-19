@@ -1,9 +1,6 @@
 """Scenario automation tests."""
 
-import pytest
 import yaml
-from pathlib import Path
-
 from vpn_simulator.domain.scenario import (
     ActionType,
     ScenarioDefinition,

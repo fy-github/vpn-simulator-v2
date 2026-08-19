@@ -75,38 +75,54 @@ class OpenVPNStateMachine(ProtocolStateMachine):
         transitions = [
             # Hard Reset 阶段
             StateTransition(
-                "INITIAL", "HARD_RESET_SENT", "SEND_HARD_RESET",
+                "INITIAL",
+                "HARD_RESET_SENT",
+                "SEND_HARD_RESET",
                 description="发送 P_HARD_RESET_CLIENT_V2",
             ),
             StateTransition(
-                "HARD_RESET_SENT", "HARD_RESET_RECEIVED", "RECEIVE_HARD_RESET",
+                "HARD_RESET_SENT",
+                "HARD_RESET_RECEIVED",
+                "RECEIVE_HARD_RESET",
                 description="收到 P_HARD_RESET_SERVER_V2",
             ),
             # TLS 握手阶段
             StateTransition(
-                "HARD_RESET_RECEIVED", "TLS_HANDSHAKE", "START_TLS",
+                "HARD_RESET_RECEIVED",
+                "TLS_HANDSHAKE",
+                "START_TLS",
                 description="开始 TLS 握手",
             ),
             StateTransition(
-                "TLS_HANDSHAKE", "TLS_ESTABLISHED", "TLS_COMPLETE",
+                "TLS_HANDSHAKE",
+                "TLS_ESTABLISHED",
+                "TLS_COMPLETE",
                 description="TLS 握手完成",
             ),
             # Push 阶段
             StateTransition(
-                "TLS_ESTABLISHED", "PUSH_REQUEST_SENT", "SEND_PUSH_REQUEST",
+                "TLS_ESTABLISHED",
+                "PUSH_REQUEST_SENT",
+                "SEND_PUSH_REQUEST",
                 description="发送 PUSH_REQUEST",
             ),
             StateTransition(
-                "PUSH_REQUEST_SENT", "CONNECTED", "RECEIVE_PUSH_REPLY",
+                "PUSH_REQUEST_SENT",
+                "CONNECTED",
+                "RECEIVE_PUSH_REPLY",
                 description="收到 PUSH_REPLY，分配 IP 和路由",
             ),
             # 错误路径
             StateTransition(
-                "TLS_HANDSHAKE", "ERROR", "TLS_FAILED",
+                "TLS_HANDSHAKE",
+                "ERROR",
+                "TLS_FAILED",
                 description="TLS 握手失败",
             ),
             StateTransition(
-                "HARD_RESET_SENT", "ERROR", "RESET_TIMEOUT",
+                "HARD_RESET_SENT",
+                "ERROR",
+                "RESET_TIMEOUT",
                 description="Hard Reset 响应超时",
             ),
         ]

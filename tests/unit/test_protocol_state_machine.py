@@ -14,12 +14,10 @@ Tests cover:
 from __future__ import annotations
 
 import pytest
-
 from vpn_simulator.domain.protocol import (
     ProtocolStateMachine,
     State,
     StateTransition,
-    TransitionRecord,
 )
 
 
@@ -74,9 +72,7 @@ class TestStateTransition:
 
     def test_transition_with_description(self):
         """Verify StateTransition accepts description."""
-        transition = StateTransition(
-            "INIT", "READY", "START", description="Start the process"
-        )
+        transition = StateTransition("INIT", "READY", "START", description="Start the process")
         assert transition.description == "Start the process"
 
 

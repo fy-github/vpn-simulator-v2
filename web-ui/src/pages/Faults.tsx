@@ -85,14 +85,6 @@ const Faults = () => {
     fetchFaults()
   }, [fetchFaults])
 
-  // GSAP animations
-  useEffect(() => {
-    if (typesRef.current) {
-    }
-    if (listRef.current) {
-    }
-  }, [])
-
   const handleCreateFault = async () => {
     try {
       await api.injectFault({
@@ -101,7 +93,8 @@ const Faults = () => {
         target: newFault.target,
       })
       fetchFaults()
-    } catch {
+    } catch (err) {
+      console.error('Failed to create fault:', err)
     }
     setShowCreateModal(false)
     setNewFault({

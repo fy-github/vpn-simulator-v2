@@ -22,7 +22,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class FaultType(Enum):
@@ -109,7 +109,7 @@ class FaultInfo:
     target: str = ""
     active: bool = True
     created_at: datetime = field(default_factory=datetime.now)
-    updated_at: Optional[datetime] = None
+    updated_at: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """将故障信息转换为字典。
@@ -151,7 +151,7 @@ class FaultManager:
     async def create_fault(
         self,
         fault_type: FaultType,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         target: str = "",
     ) -> FaultInfo:
         """创建一个故障。
@@ -172,7 +172,7 @@ class FaultManager:
         self._faults[fault.id] = fault
         return fault
 
-    async def get_fault(self, fault_id: str) -> Optional[FaultInfo]:
+    async def get_fault(self, fault_id: str) -> FaultInfo | None:
         """获取指定故障。
 
         Args:
@@ -185,7 +185,7 @@ class FaultManager:
 
     async def list_faults(
         self,
-        fault_type: Optional[FaultType] = None,
+        fault_type: FaultType | None = None,
         active_only: bool = False,
     ) -> list[FaultInfo]:
         """列出故障。
@@ -218,7 +218,7 @@ class FaultManager:
             return True
         return False
 
-    async def activate_fault(self, fault_id: str) -> Optional[FaultInfo]:
+    async def activate_fault(self, fault_id: str) -> FaultInfo | None:
         """激活故障。
 
         Args:
@@ -232,7 +232,7 @@ class FaultManager:
             fault.activate()
         return fault
 
-    async def deactivate_fault(self, fault_id: str) -> Optional[FaultInfo]:
+    async def deactivate_fault(self, fault_id: str) -> FaultInfo | None:
         """停用故障。
 
         Args:

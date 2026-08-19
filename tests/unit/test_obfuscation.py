@@ -1,10 +1,11 @@
 """混淆测试服务单元测试。"""
 
 import pytest
+
 from src.vpn_simulator.services.obfuscation import (
+    DetectionDifficulty,
     ObfuscationService,
     ObfuscationTechnique,
-    DetectionDifficulty,
     obfuscation_service,
 )
 

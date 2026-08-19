@@ -2,19 +2,17 @@
 
 from __future__ import annotations
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock
-from pathlib import Path
 
+import pytest
 from vpn_simulator.core.config import ConfigManager
 from vpn_simulator.core.database import DatabaseManager
 from vpn_simulator.core.events import EventBus
 from vpn_simulator.domain.scenario import (
     ActionType,
     ScenarioDefinition,
-    ScenarioStep,
     ScenarioState,
-    StepResult,
+    ScenarioStep,
 )
 from vpn_simulator.services.scenario_engine import ScenarioEngine
 
@@ -158,7 +156,9 @@ class TestExecute:
         assert result.steps_passed == 1
 
     @pytest.mark.asyncio
-    async def test_execute_emits_events(self, engine: ScenarioEngine, sample_scenario, mock_event_bus):
+    async def test_execute_emits_events(
+        self, engine: ScenarioEngine, sample_scenario, mock_event_bus
+    ):
         await engine.execute(sample_scenario)
         assert mock_event_bus.emit.call_count >= 2
 
@@ -201,7 +201,9 @@ class TestListExecutions:
         assert len(executions) == 2
 
     @pytest.mark.asyncio
-    async def test_list_executions_by_scenario(self, engine: ScenarioEngine, sample_scenario, ping_scenario):
+    async def test_list_executions_by_scenario(
+        self, engine: ScenarioEngine, sample_scenario, ping_scenario
+    ):
         await engine.execute(sample_scenario)
         await engine.execute(ping_scenario)
         executions = await engine.list_executions(scenario_name="Test Scenario")

@@ -12,9 +12,8 @@ Example:
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 import yaml
@@ -73,7 +72,7 @@ class TutorialService:
         Args:
             file_path: YAML 文件路径。
         """
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         if not data:
@@ -113,18 +112,20 @@ class TutorialService:
         """
         tutorials = []
         for tutorial in self._tutorials.values():
-            tutorials.append({
-                "id": tutorial.id,
-                "name": tutorial.name,
-                "protocol": tutorial.protocol,
-                "description": tutorial.description,
-                "difficulty": tutorial.difficulty,
-                "estimated_time": tutorial.estimated_time,
-                "total_steps": tutorial.total_steps,
-            })
+            tutorials.append(
+                {
+                    "id": tutorial.id,
+                    "name": tutorial.name,
+                    "protocol": tutorial.protocol,
+                    "description": tutorial.description,
+                    "difficulty": tutorial.difficulty,
+                    "estimated_time": tutorial.estimated_time,
+                    "total_steps": tutorial.total_steps,
+                }
+            )
         return tutorials
 
-    async def get_tutorial(self, tutorial_id: str) -> Optional[dict[str, Any]]:
+    async def get_tutorial(self, tutorial_id: str) -> dict[str, Any] | None:
         """获取教程详情。
 
         Args:
@@ -158,9 +159,7 @@ class TutorialService:
             ],
         }
 
-    async def get_tutorial_session(
-        self, tutorial_id: str
-    ) -> Optional[dict[str, Any]]:
+    async def get_tutorial_session(self, tutorial_id: str) -> dict[str, Any] | None:
         """获取教程会话状态。
 
         Args:
@@ -183,13 +182,17 @@ class TutorialService:
             "is_completed": session.is_completed,
             "started_at": session.started_at,
             "completed_at": session.completed_at,
-            "current_step_info": {
-                "title": current_step.title,
-                "description": current_step.description,
-                "packet_info": current_step.packet_info,
-                "rfc_reference": current_step.rfc_reference,
-                "hint": current_step.hint,
-            } if current_step else None,
+            "current_step_info": (
+                {
+                    "title": current_step.title,
+                    "description": current_step.description,
+                    "packet_info": current_step.packet_info,
+                    "rfc_reference": current_step.rfc_reference,
+                    "hint": current_step.hint,
+                }
+                if current_step
+                else None
+            ),
         }
 
     async def start_tutorial(self, tutorial_id: str) -> dict[str, Any]:
@@ -228,13 +231,17 @@ class TutorialService:
             "total_steps": tutorial.total_steps,
             "is_completed": session.is_completed,
             "started_at": session.started_at,
-            "current_step_info": {
-                "title": current_step.title,
-                "description": current_step.description,
-                "packet_info": current_step.packet_info,
-                "rfc_reference": current_step.rfc_reference,
-                "hint": current_step.hint,
-            } if current_step else None,
+            "current_step_info": (
+                {
+                    "title": current_step.title,
+                    "description": current_step.description,
+                    "packet_info": current_step.packet_info,
+                    "rfc_reference": current_step.rfc_reference,
+                    "hint": current_step.hint,
+                }
+                if current_step
+                else None
+            ),
         }
 
     async def next_step(self, tutorial_id: str) -> dict[str, Any]:
@@ -287,13 +294,17 @@ class TutorialService:
             "current_step": session.current_step,
             "total_steps": tutorial.total_steps,
             "is_completed": session.is_completed,
-            "current_step_info": {
-                "title": current_step.title,
-                "description": current_step.description,
-                "packet_info": current_step.packet_info,
-                "rfc_reference": current_step.rfc_reference,
-                "hint": current_step.hint,
-            } if current_step else None,
+            "current_step_info": (
+                {
+                    "title": current_step.title,
+                    "description": current_step.description,
+                    "packet_info": current_step.packet_info,
+                    "rfc_reference": current_step.rfc_reference,
+                    "hint": current_step.hint,
+                }
+                if current_step
+                else None
+            ),
         }
 
     async def prev_step(self, tutorial_id: str) -> dict[str, Any]:
@@ -334,13 +345,17 @@ class TutorialService:
             "current_step": session.current_step,
             "total_steps": tutorial.total_steps,
             "is_completed": session.is_completed,
-            "current_step_info": {
-                "title": current_step.title,
-                "description": current_step.description,
-                "packet_info": current_step.packet_info,
-                "rfc_reference": current_step.rfc_reference,
-                "hint": current_step.hint,
-            } if current_step else None,
+            "current_step_info": (
+                {
+                    "title": current_step.title,
+                    "description": current_step.description,
+                    "packet_info": current_step.packet_info,
+                    "rfc_reference": current_step.rfc_reference,
+                    "hint": current_step.hint,
+                }
+                if current_step
+                else None
+            ),
         }
 
     async def reset_tutorial(self, tutorial_id: str) -> dict[str, Any]:
@@ -374,11 +389,15 @@ class TutorialService:
             "total_steps": tutorial.total_steps,
             "is_completed": False,
             "started_at": session.started_at,
-            "current_step_info": {
-                "title": current_step.title,
-                "description": current_step.description,
-                "packet_info": current_step.packet_info,
-                "rfc_reference": current_step.rfc_reference,
-                "hint": current_step.hint,
-            } if current_step else None,
+            "current_step_info": (
+                {
+                    "title": current_step.title,
+                    "description": current_step.description,
+                    "packet_info": current_step.packet_info,
+                    "rfc_reference": current_step.rfc_reference,
+                    "hint": current_step.hint,
+                }
+                if current_step
+                else None
+            ),
         }

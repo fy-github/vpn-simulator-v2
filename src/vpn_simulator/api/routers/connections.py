@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -22,6 +22,7 @@ def get_connection_service():
         from vpn_simulator.core.database import DatabaseManager
         from vpn_simulator.core.events import EventBus
         from vpn_simulator.services.connection import ConnectionService
+
         _connection_service = ConnectionService(EventBus(), ConfigManager(), DatabaseManager())
     return _connection_service
 
@@ -37,7 +38,7 @@ class ConnectionInfo(BaseModel):
     remote_address: str = Field("", description="Remote address")
     remote_port: int = Field(0, description="Remote port")
     created_at: str = Field("", description="Creation timestamp")
-    connected_at: Optional[str] = Field(None, description="Connection established timestamp")
+    connected_at: str | None = Field(None, description="Connection established timestamp")
     bytes_sent: int = Field(0, description="Bytes sent")
     bytes_received: int = Field(0, description="Bytes received")
     packets_sent: int = Field(0, description="Packets sent")
@@ -59,10 +60,11 @@ class ConnectionActionResponse(BaseModel):
     description="Retrieve all active connections, optionally filtered by protocol and state.",
 )
 async def list_connections(
-    protocol: Optional[str] = None,
-    state: Optional[str] = None,
+    protocol: str | None = None,
+    state: str | None = None,
 ) -> list[dict[str, Any]]:
     from vpn_simulator.api.routers.protocols import _active_connections
+
     try:
         service = get_connection_service()
         connections = await service.list_connections(protocol=protocol, state=state)

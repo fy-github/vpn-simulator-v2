@@ -105,11 +105,14 @@ class ReorderPlugin(Plugin):
                 f"乱序故障已注入: probability={self._reorder_probability}, "
                 f"max_gap={self._max_reorder_gap}"
             )
-            self._context.emit_event("fault.injected", {
-                "fault_type": "reorder",
-                "reorder_probability": self._reorder_probability,
-                "max_reorder_gap": self._max_reorder_gap,
-            })
+            self._context.emit_event(
+                "fault.injected",
+                {
+                    "fault_type": "reorder",
+                    "reorder_probability": self._reorder_probability,
+                    "max_reorder_gap": self._max_reorder_gap,
+                },
+            )
 
     async def remove(self) -> None:
         """移除乱序故障。"""

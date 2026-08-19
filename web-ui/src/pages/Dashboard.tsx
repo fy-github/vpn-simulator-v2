@@ -44,7 +44,7 @@ const loadPreferences = (protocolNames: string[]): ProtocolPreference[] => {
         ...newProtocols.map((name, i) => ({ name, visible: true, order: parsed.length + i })),
       ]
     }
-  } catch {}
+  } catch { /* ignore corrupt stored preferences */ }
   return protocolNames.map((name, i) => ({ name, visible: true, order: i }))
 }
 
@@ -123,17 +123,6 @@ const Dashboard = () => {
     const interval = setInterval(fetchData, 3000)
     return () => clearInterval(interval)
   }, [fetchData])
-
-  useEffect(() => {
-    if (!loading) {
-      if (statsRef.current) {
-      }
-      if (protocolsRef.current) {
-      }
-      if (actionsRef.current) {
-      }
-    }
-  }, [loading])
 
   const handleStartAll = useCallback(async () => {
     try {

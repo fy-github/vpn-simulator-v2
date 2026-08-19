@@ -3,13 +3,7 @@
 from __future__ import annotations
 
 import pytest
-
 from vpn_simulator.services.voice import (
-    CallState,
-    CodecConfig,
-    NetworkConditions,
-    QualityMetrics,
-    VoiceCall,
     VoiceCodec,
     VoiceService,
 )
@@ -234,7 +228,7 @@ class TestEdgeCases:
     async def test_call_state_transitions(self, service: VoiceService):
         result = await service.start_call(codec="g711")
         assert result["state"] == "active"
-        
+
         stop_result = await service.stop_call(result["call_id"])
         assert stop_result["state"] == "completed"
 
@@ -242,6 +236,7 @@ class TestEdgeCases:
     async def test_codec_configs_valid(self, service: VoiceService):
         for codec in [VoiceCodec.G711, VoiceCodec.G729, VoiceCodec.OPUS]:
             from vpn_simulator.services.voice import CODEC_CONFIGS
+
             config = CODEC_CONFIGS[codec]
             assert config.bitrate_kbps > 0
             assert config.sample_rate_hz > 0

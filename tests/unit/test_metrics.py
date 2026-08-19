@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from vpn_simulator.services.metrics import MetricsService
 
 

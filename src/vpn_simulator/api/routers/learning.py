@@ -1,10 +1,10 @@
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -50,22 +50,26 @@ def _load_learning_data() -> None:
                 data = yaml.safe_load(f)
             for cat in data.get("categories", []):
                 cat_id = cat["id"]
-                _faq_categories.append({
-                    "id": cat_id,
-                    "name": cat.get("name", cat_id),
-                    "icon": cat.get("icon", "help-circle"),
-                    "question_count": len(cat.get("questions", [])),
-                })
+                _faq_categories.append(
+                    {
+                        "id": cat_id,
+                        "name": cat.get("name", cat_id),
+                        "icon": cat.get("icon", "help-circle"),
+                        "question_count": len(cat.get("questions", [])),
+                    }
+                )
                 for q in cat.get("questions", []):
-                    _faq_items.append({
-                        "category_id": cat_id,
-                        "category_name": cat.get("name", cat_id),
-                        "category_icon": cat.get("icon", "help-circle"),
-                        "id": q.get("id", ""),
-                        "question": q.get("question", ""),
-                        "answer": q.get("answer", ""),
-                        "tags": q.get("tags", []),
-                    })
+                    _faq_items.append(
+                        {
+                            "category_id": cat_id,
+                            "category_name": cat.get("name", cat_id),
+                            "category_icon": cat.get("icon", "help-circle"),
+                            "id": q.get("id", ""),
+                            "question": q.get("question", ""),
+                            "answer": q.get("answer", ""),
+                            "tags": q.get("tags", []),
+                        }
+                    )
             logger.info(f"Loaded {len(_faq_items)} FAQ items in {len(_faq_categories)} categories")
         except Exception as e:
             logger.warning(f"Failed to load FAQ: {e}")
@@ -76,18 +80,20 @@ def _load_learning_data() -> None:
             with open(paths_file) as f:
                 data = yaml.safe_load(f)
             for path in data.get("paths", []):
-                _learning_paths.append({
-                    "id": path.get("id", ""),
-                    "name": path.get("name", ""),
-                    "description": path.get("description", ""),
-                    "icon": path.get("icon", "target"),
-                    "difficulty": path.get("difficulty", "beginner"),
-                    "estimated_hours": path.get("estimated_hours", 0),
-                    "target_audience": path.get("target_audience", ""),
-                    "protocol_count": len(path.get("protocols", [])),
-                    "protocols": path.get("protocols", []),
-                    "prerequisites": path.get("prerequisites", []),
-                })
+                _learning_paths.append(
+                    {
+                        "id": path.get("id", ""),
+                        "name": path.get("name", ""),
+                        "description": path.get("description", ""),
+                        "icon": path.get("icon", "target"),
+                        "difficulty": path.get("difficulty", "beginner"),
+                        "estimated_hours": path.get("estimated_hours", 0),
+                        "target_audience": path.get("target_audience", ""),
+                        "protocol_count": len(path.get("protocols", [])),
+                        "protocols": path.get("protocols", []),
+                        "prerequisites": path.get("prerequisites", []),
+                    }
+                )
             logger.info(f"Loaded {len(_learning_paths)} learning paths")
         except Exception as e:
             logger.warning(f"Failed to load learning paths: {e}")
@@ -135,7 +141,7 @@ class LearningPathSummary(BaseModel):
 
 @router.get("/rfc", response_model=list[RFCReference])
 async def list_rfc_references(
-    protocol: Optional[str] = Query(None),
+    protocol: str | None = Query(None),
 ) -> list[dict[str, Any]]:
     _load_learning_data()
     result = []
@@ -143,35 +149,39 @@ async def list_rfc_references(
         if protocol and proto_id != protocol:
             continue
         for rfc in proto.get("rfcs", []):
-            result.append({
-                "protocol": proto_id,
-                "protocol_name": proto["name"],
-                "number": rfc.get("number", ""),
-                "title": rfc.get("title", ""),
-                "url": rfc.get("url", ""),
-                "description": rfc.get("description", ""),
-                "published": rfc.get("published", ""),
-                "status": rfc.get("status", ""),
-                "type": "rfc",
-            })
+            result.append(
+                {
+                    "protocol": proto_id,
+                    "protocol_name": proto["name"],
+                    "number": rfc.get("number", ""),
+                    "title": rfc.get("title", ""),
+                    "url": rfc.get("url", ""),
+                    "description": rfc.get("description", ""),
+                    "published": rfc.get("published", ""),
+                    "status": rfc.get("status", ""),
+                    "type": "rfc",
+                }
+            )
         for ref in proto.get("references", []):
-            result.append({
-                "protocol": proto_id,
-                "protocol_name": proto["name"],
-                "number": "",
-                "title": ref.get("title", ""),
-                "url": ref.get("url", ""),
-                "description": ref.get("description", ""),
-                "published": "",
-                "status": "",
-                "type": "reference",
-            })
+            result.append(
+                {
+                    "protocol": proto_id,
+                    "protocol_name": proto["name"],
+                    "number": "",
+                    "title": ref.get("title", ""),
+                    "url": ref.get("url", ""),
+                    "description": ref.get("description", ""),
+                    "published": "",
+                    "status": "",
+                    "type": "reference",
+                }
+            )
     return result
 
 
 @router.get("/faq", response_model=list[FAQItem])
 async def list_faq(
-    category: Optional[str] = Query(None),
+    category: str | None = Query(None),
 ) -> list[dict[str, Any]]:
     _load_learning_data()
     if category:

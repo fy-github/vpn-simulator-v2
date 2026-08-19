@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import asyncio
+
 import click
 from rich.console import Console
 
-from vpn_simulator.cli.utils import handle_error, handle_success, output_json, output_table
+from vpn_simulator.cli.utils import handle_error, output_json, output_table
 
 console = Console()
 
@@ -21,7 +22,9 @@ def benchmark_group() -> None:
 
 @benchmark_group.command("run")
 @click.argument("test_type", type=click.Choice(BENCHMARK_TYPES))
-@click.option("--protocol", "-p", required=True, type=click.Choice(PROTOCOLS), help="Protocol to benchmark.")
+@click.option(
+    "--protocol", "-p", required=True, type=click.Choice(PROTOCOLS), help="Protocol to benchmark."
+)
 @click.option("--param", "-P", multiple=True, help="Test parameter in key=value format.")
 @click.pass_context
 def benchmark_run(
@@ -43,7 +46,9 @@ def benchmark_run(
         params[key] = value
 
     if verbose:
-        console.print(f"[dim]Running {test_type} benchmark on {protocol} with params {params}[/dim]")
+        console.print(
+            f"[dim]Running {test_type} benchmark on {protocol} with params {params}[/dim]"
+        )
 
     # Run the benchmark
     from vpn_simulator.core.config import ConfigManager
@@ -69,7 +74,7 @@ def benchmark_run(
     if json_output:
         output_json(result)
     else:
-        console.print(f"[green]Benchmark completed![/green]")
+        console.print("[green]Benchmark completed![/green]")
         console.print(f"  ID: {result.get('id', 'N/A')}")
         console.print(f"  Type: {result.get('test_type', 'N/A')}")
         console.print(f"  Protocol: {result.get('protocol', 'N/A')}")
@@ -77,7 +82,7 @@ def benchmark_run(
 
         if result.get("result") and result["result"].get("metrics"):
             metrics = result["result"]["metrics"]
-            console.print(f"\n[bold]Metrics:[/bold]")
+            console.print("\n[bold]Metrics:[/bold]")
             if test_type == "handshake":
                 console.print(f"  Handshake Time: {metrics.get('handshake_time_ms', 0):.2f} ms")
             elif test_type == "throughput":
@@ -85,7 +90,9 @@ def benchmark_run(
             elif test_type == "memory":
                 console.print(f"  Memory Usage: {metrics.get('memory_mb', 0):.2f} MB")
             elif test_type == "concurrency":
-                console.print(f"  Concurrent Connections: {metrics.get('concurrent_connections', 0)}")
+                console.print(
+                    f"  Concurrent Connections: {metrics.get('concurrent_connections', 0)}"
+                )
             console.print(f"  CPU Usage: {metrics.get('cpu_percent', 0):.1f}%")
 
 
@@ -119,20 +126,43 @@ def benchmark_results(ctx: click.Context, limit: int) -> None:
         rows = []
         for r in results:
             metrics = r.get("result", {}).get("metrics", {})
-            rows.append([
-                r.get("id", "")[:8],
-                r.get("test_type", ""),
-                r.get("protocol", ""),
-                r.get("status", ""),
-                f"{metrics.get('handshake_time_ms', 0):.1f}" if r.get("test_type") == "handshake" else "-",
-                f"{metrics.get('throughput_mbps', 0):.1f}" if r.get("test_type") == "throughput" else "-",
-                f"{metrics.get('memory_mb', 0):.1f}" if r.get("test_type") == "memory" else "-",
-                str(metrics.get("concurrent_connections", 0)) if r.get("test_type") == "concurrency" else "-",
-            ])
+            rows.append(
+                [
+                    r.get("id", "")[:8],
+                    r.get("test_type", ""),
+                    r.get("protocol", ""),
+                    r.get("status", ""),
+                    (
+                        f"{metrics.get('handshake_time_ms', 0):.1f}"
+                        if r.get("test_type") == "handshake"
+                        else "-"
+                    ),
+                    (
+                        f"{metrics.get('throughput_mbps', 0):.1f}"
+                        if r.get("test_type") == "throughput"
+                        else "-"
+                    ),
+                    f"{metrics.get('memory_mb', 0):.1f}" if r.get("test_type") == "memory" else "-",
+                    (
+                        str(metrics.get("concurrent_connections", 0))
+                        if r.get("test_type") == "concurrency"
+                        else "-"
+                    ),
+                ]
+            )
 
         output_table(
             title="Benchmark Results",
-            columns=["ID", "Type", "Protocol", "Status", "Handshake(ms)", "Throughput(Mbps)", "Memory(MB)", "Connections"],
+            columns=[
+                "ID",
+                "Type",
+                "Protocol",
+                "Status",
+                "Handshake(ms)",
+                "Throughput(Mbps)",
+                "Memory(MB)",
+                "Connections",
+            ],
             rows=rows,
         )
 
@@ -172,8 +202,12 @@ def benchmark_compare(ctx: click.Context, baseline: str, current: str) -> None:
         baseline_info = result.get("baseline", {})
         current_info = result.get("current", {})
 
-        console.print(f"[bold]Baseline:[/bold] {baseline_info.get('id', 'N/A')} ({baseline_info.get('protocol', 'N/A')})")
-        console.print(f"[bold]Current:[/bold]  {current_info.get('id', 'N/A')} ({current_info.get('protocol', 'N/A')})")
+        console.print(
+            f"[bold]Baseline:[/bold] {baseline_info.get('id', 'N/A')} ({baseline_info.get('protocol', 'N/A')})"
+        )
+        console.print(
+            f"[bold]Current:[/bold]  {current_info.get('id', 'N/A')} ({current_info.get('protocol', 'N/A')})"
+        )
 
         changes = result.get("changes", {})
         if changes:

@@ -21,7 +21,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class BenchmarkType(Enum):
@@ -141,9 +141,9 @@ class BenchmarkInfo:
     protocol: str = ""
     status: BenchmarkStatus = BenchmarkStatus.PENDING
     params: dict[str, Any] = field(default_factory=dict)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    result: Optional[BenchmarkResult] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    result: BenchmarkResult | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """将测试信息转换为字典。
@@ -204,7 +204,7 @@ class BenchmarkManager:
         self,
         test_type: BenchmarkType,
         protocol: str,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
     ) -> BenchmarkInfo:
         """创建一个基准测试实例。
 
@@ -224,7 +224,7 @@ class BenchmarkManager:
         self._benchmarks[benchmark.id] = benchmark
         return benchmark
 
-    async def get_benchmark(self, benchmark_id: str) -> Optional[BenchmarkInfo]:
+    async def get_benchmark(self, benchmark_id: str) -> BenchmarkInfo | None:
         """获取指定基准测试。
 
         Args:
@@ -237,9 +237,9 @@ class BenchmarkManager:
 
     async def list_benchmarks(
         self,
-        test_type: Optional[BenchmarkType] = None,
-        protocol: Optional[str] = None,
-        status: Optional[BenchmarkStatus] = None,
+        test_type: BenchmarkType | None = None,
+        protocol: str | None = None,
+        status: BenchmarkStatus | None = None,
     ) -> list[BenchmarkInfo]:
         """列出基准测试。
 
@@ -274,7 +274,7 @@ class BenchmarkManager:
             return True
         return False
 
-    async def start_benchmark(self, benchmark_id: str) -> Optional[BenchmarkInfo]:
+    async def start_benchmark(self, benchmark_id: str) -> BenchmarkInfo | None:
         """启动基准测试。
 
         Args:
@@ -290,7 +290,7 @@ class BenchmarkManager:
 
     async def complete_benchmark(
         self, benchmark_id: str, result: BenchmarkResult
-    ) -> Optional[BenchmarkInfo]:
+    ) -> BenchmarkInfo | None:
         """完成基准测试。
 
         Args:
@@ -305,9 +305,7 @@ class BenchmarkManager:
             benchmark.mark_completed(result)
         return benchmark
 
-    async def fail_benchmark(
-        self, benchmark_id: str, error: str
-    ) -> Optional[BenchmarkInfo]:
+    async def fail_benchmark(self, benchmark_id: str, error: str) -> BenchmarkInfo | None:
         """标记基准测试失败。
 
         Args:

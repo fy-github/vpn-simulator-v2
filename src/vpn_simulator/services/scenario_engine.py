@@ -16,7 +16,7 @@ import asyncio
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 import yaml
@@ -73,7 +73,7 @@ class ScenarioEngine:
         self._scenarios: dict[str, ScenarioDefinition] = {}
         self._executions: dict[str, ScenarioExecution] = {}
 
-    async def load_scenario(self, scenario_id: str) -> Optional[ScenarioDefinition]:
+    async def load_scenario(self, scenario_id: str) -> ScenarioDefinition | None:
         """加载场景定义。
 
         从配置目录加载指定的 YAML 场景文件。
@@ -95,7 +95,7 @@ class ScenarioEngine:
             return None
 
         try:
-            with open(scenario_path, "r", encoding="utf-8") as f:
+            with open(scenario_path, encoding="utf-8") as f:
                 yaml_data = yaml.safe_load(f)
 
             errors = ScenarioValidator.validate_yaml_structure(yaml_data)
@@ -139,7 +139,7 @@ class ScenarioEngine:
     async def execute(
         self,
         scenario: ScenarioDefinition,
-        connection_id: Optional[str] = None,
+        connection_id: str | None = None,
     ) -> ScenarioResult:
         """执行场景。
 
@@ -221,7 +221,7 @@ class ScenarioEngine:
 
         return result
 
-    async def get_execution(self, execution_id: str) -> Optional[ScenarioExecution]:
+    async def get_execution(self, execution_id: str) -> ScenarioExecution | None:
         """获取执行记录。
 
         Args:
@@ -234,7 +234,7 @@ class ScenarioEngine:
 
     async def list_executions(
         self,
-        scenario_name: Optional[str] = None,
+        scenario_name: str | None = None,
     ) -> list[ScenarioExecution]:
         """列出执行记录。
 
@@ -249,7 +249,7 @@ class ScenarioEngine:
             executions = [e for e in executions if e.scenario_name == scenario_name]
         return executions
 
-    async def get_report(self, execution_id: str) -> Optional[str]:
+    async def get_report(self, execution_id: str) -> str | None:
         """获取执行报告。
 
         Args:
@@ -266,7 +266,7 @@ class ScenarioEngine:
     async def _execute_step(
         self,
         step: ScenarioStep,
-        connection_id: Optional[str] = None,
+        connection_id: str | None = None,
     ) -> StepExecution:
         """执行单个步骤。
 
@@ -400,7 +400,11 @@ class ScenarioEngine:
         expected_state = step.expect.get("state", "")
         execution.result = StepResult.SUCCESS
         execution.actual_state = expected_state
-        execution.details = {"expected": expected_state, "actual": expected_state, "action": "check"}
+        execution.details = {
+            "expected": expected_state,
+            "actual": expected_state,
+            "action": "check",
+        }
 
         await self._event_bus.emit(
             EventTypes.STEP_COMPLETED,

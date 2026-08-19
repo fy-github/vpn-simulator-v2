@@ -19,7 +19,7 @@ import socket
 import subprocess
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 import structlog
 
@@ -87,7 +87,7 @@ class PlatformAdapter(ABC):
         pass
 
     @abstractmethod
-    async def configure_firewall(self, rule: Dict[str, Any]) -> bool:
+    async def configure_firewall(self, rule: dict[str, Any]) -> bool:
         """配置防火墙规则
 
         Args:
@@ -99,7 +99,7 @@ class PlatformAdapter(ABC):
         pass
 
     @abstractmethod
-    async def get_network_interfaces(self) -> List[Dict[str, Any]]:
+    async def get_network_interfaces(self) -> list[dict[str, Any]]:
         """获取网络接口列表
 
         Returns:
@@ -141,6 +141,7 @@ class WindowsAdapter(PlatformAdapter):
         """检查 Windows 管理员权限"""
         try:
             import ctypes
+
             return ctypes.windll.shell32.IsUserAnAdmin() != 0  # type: ignore[attr-defined]
         except Exception:
             return False
@@ -154,7 +155,7 @@ class WindowsAdapter(PlatformAdapter):
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
         return sock
 
-    async def configure_firewall(self, rule: Dict[str, Any]) -> bool:
+    async def configure_firewall(self, rule: dict[str, Any]) -> bool:
         """配置 Windows 防火墙
 
         使用 netsh 命令配置 Windows Defender 防火墙。
@@ -185,17 +186,19 @@ class WindowsAdapter(PlatformAdapter):
             logger.error("firewall_command_error", error=str(e))
             return False
 
-    async def get_network_interfaces(self) -> List[Dict[str, Any]]:
+    async def get_network_interfaces(self) -> list[dict[str, Any]]:
         """获取 Windows 网络接口"""
         try:
             import psutil
 
             interfaces = []
             for name, addrs in psutil.net_if_addrs().items():
-                interfaces.append({
-                    "name": name,
-                    "addresses": [addr.address for addr in addrs],
-                })
+                interfaces.append(
+                    {
+                        "name": name,
+                        "addresses": [addr.address for addr in addrs],
+                    }
+                )
             return interfaces
         except ImportError:
             logger.warning("psutil_not_installed")
@@ -218,6 +221,7 @@ class WindowsAdapter(PlatformAdapter):
         """内部检查管理员权限"""
         try:
             import ctypes
+
             return ctypes.windll.shell32.IsUserAnAdmin() != 0  # type: ignore[attr-defined]
         except Exception:
             return False
@@ -249,7 +253,7 @@ class MacOSAdapter(PlatformAdapter):
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
         return sock
 
-    async def configure_firewall(self, rule: Dict[str, Any]) -> bool:
+    async def configure_firewall(self, rule: dict[str, Any]) -> bool:
         """配置 macOS 防火墙
 
         使用 pfctl 配置 macOS 包过滤防火墙。
@@ -272,17 +276,19 @@ class MacOSAdapter(PlatformAdapter):
             logger.error("firewall_command_error", error=str(e))
             return False
 
-    async def get_network_interfaces(self) -> List[Dict[str, Any]]:
+    async def get_network_interfaces(self) -> list[dict[str, Any]]:
         """获取 macOS 网络接口"""
         try:
             import psutil
 
             interfaces = []
             for name, addrs in psutil.net_if_addrs().items():
-                interfaces.append({
-                    "name": name,
-                    "addresses": [addr.address for addr in addrs],
-                })
+                interfaces.append(
+                    {
+                        "name": name,
+                        "addresses": [addr.address for addr in addrs],
+                    }
+                )
             return interfaces
         except ImportError:
             logger.warning("psutil_not_installed")
@@ -341,7 +347,7 @@ class LinuxAdapter(PlatformAdapter):
         sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
         return sock
 
-    async def configure_firewall(self, rule: Dict[str, Any]) -> bool:
+    async def configure_firewall(self, rule: dict[str, Any]) -> bool:
         """配置 Linux 防火墙
 
         使用 iptables 配置 Linux 防火墙规则。
@@ -368,17 +374,19 @@ class LinuxAdapter(PlatformAdapter):
             logger.error("firewall_command_error", error=str(e))
             return False
 
-    async def get_network_interfaces(self) -> List[Dict[str, Any]]:
+    async def get_network_interfaces(self) -> list[dict[str, Any]]:
         """获取 Linux 网络接口"""
         try:
             import psutil
 
             interfaces = []
             for name, addrs in psutil.net_if_addrs().items():
-                interfaces.append({
-                    "name": name,
-                    "addresses": [addr.address for addr in addrs],
-                })
+                interfaces.append(
+                    {
+                        "name": name,
+                        "addresses": [addr.address for addr in addrs],
+                    }
+                )
             return interfaces
         except ImportError:
             logger.warning("psutil_not_installed")

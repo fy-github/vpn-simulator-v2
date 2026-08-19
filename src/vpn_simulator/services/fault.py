@@ -12,7 +12,7 @@ Example:
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 from sqlalchemy import select
@@ -76,7 +76,7 @@ class FaultService:
     async def create_fault(
         self,
         fault_type: str,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         target: str = "",
     ) -> dict[str, Any]:
         """创建一个故障注入实例。
@@ -139,7 +139,7 @@ class FaultService:
         )
         return fault.to_dict()
 
-    async def get_fault(self, fault_id: str) -> Optional[dict[str, Any]]:
+    async def get_fault(self, fault_id: str) -> dict[str, Any] | None:
         """获取指定故障的详细信息。
 
         Args:
@@ -156,7 +156,7 @@ class FaultService:
 
     async def list_faults(
         self,
-        fault_type: Optional[str] = None,
+        fault_type: str | None = None,
         active_only: bool = False,
     ) -> list[dict[str, Any]]:
         """列出故障。
@@ -182,7 +182,7 @@ class FaultService:
         )
         return result
 
-    async def activate_fault(self, fault_id: str) -> Optional[dict[str, Any]]:
+    async def activate_fault(self, fault_id: str) -> dict[str, Any] | None:
         """激活故障。
 
         Args:
@@ -209,7 +209,7 @@ class FaultService:
         logger.info("fault_activated", fault_id=fault_id)
         return fault.to_dict()
 
-    async def deactivate_fault(self, fault_id: str) -> Optional[dict[str, Any]]:
+    async def deactivate_fault(self, fault_id: str) -> dict[str, Any] | None:
         """停用故障。
 
         Args:

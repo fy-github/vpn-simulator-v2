@@ -22,7 +22,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class AttackType(Enum):
@@ -75,7 +75,7 @@ class AttackResult:
 
     success: bool = False
     data: dict[str, Any] = field(default_factory=dict)
-    error: Optional[str] = None
+    error: str | None = None
     duration_seconds: float = 0.0
     attempts: int = 0
 
@@ -116,9 +116,9 @@ class AttackInfo:
     status: AttackStatus = AttackStatus.PENDING
     params: dict[str, Any] = field(default_factory=dict)
     target: str = ""
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    result: Optional[AttackResult] = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+    result: AttackResult | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """将攻击信息转换为字典。
@@ -133,9 +133,7 @@ class AttackInfo:
             "params": self.params,
             "target": self.target,
             "started_at": self.started_at.isoformat() if self.started_at else None,
-            "completed_at": (
-                self.completed_at.isoformat() if self.completed_at else None
-            ),
+            "completed_at": (self.completed_at.isoformat() if self.completed_at else None),
             "result": self.result.to_dict() if self.result else None,
         }
 
@@ -183,7 +181,7 @@ class AttackManager:
     async def create_attack(
         self,
         attack_type: AttackType,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         target: str = "",
     ) -> AttackInfo:
         """创建一个攻击实例。
@@ -204,7 +202,7 @@ class AttackManager:
         self._attacks[attack.id] = attack
         return attack
 
-    async def get_attack(self, attack_id: str) -> Optional[AttackInfo]:
+    async def get_attack(self, attack_id: str) -> AttackInfo | None:
         """获取指定攻击。
 
         Args:
@@ -217,8 +215,8 @@ class AttackManager:
 
     async def list_attacks(
         self,
-        attack_type: Optional[AttackType] = None,
-        status: Optional[AttackStatus] = None,
+        attack_type: AttackType | None = None,
+        status: AttackStatus | None = None,
     ) -> list[AttackInfo]:
         """列出攻击。
 
@@ -250,7 +248,7 @@ class AttackManager:
             return True
         return False
 
-    async def start_attack(self, attack_id: str) -> Optional[AttackInfo]:
+    async def start_attack(self, attack_id: str) -> AttackInfo | None:
         """启动攻击。
 
         Args:
@@ -264,7 +262,7 @@ class AttackManager:
             attack.mark_running()
         return attack
 
-    async def stop_attack(self, attack_id: str) -> Optional[AttackInfo]:
+    async def stop_attack(self, attack_id: str) -> AttackInfo | None:
         """停止攻击。
 
         Args:
@@ -278,9 +276,7 @@ class AttackManager:
             attack.mark_stopped()
         return attack
 
-    async def complete_attack(
-        self, attack_id: str, result: AttackResult
-    ) -> Optional[AttackInfo]:
+    async def complete_attack(self, attack_id: str, result: AttackResult) -> AttackInfo | None:
         """完成攻击。
 
         Args:
@@ -295,9 +291,7 @@ class AttackManager:
             attack.mark_completed(result)
         return attack
 
-    async def fail_attack(
-        self, attack_id: str, error: str
-    ) -> Optional[AttackInfo]:
+    async def fail_attack(self, attack_id: str, error: str) -> AttackInfo | None:
         """标记攻击失败。
 
         Args:

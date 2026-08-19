@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
-from datetime import datetime
 
+import pytest
 from vpn_simulator.core.config import ConfigManager
 from vpn_simulator.core.database import DatabaseManager
 from vpn_simulator.core.events import EventBus
@@ -148,7 +147,9 @@ class TestExecuteStepCounting:
     @pytest.mark.asyncio
     async def test_execute_counts_passed(self, engine: ScenarioEngine):
         steps = [
-            ScenarioStep(name="s1", action=ActionType.CONNECT, params={"protocol": "pptp"}, expect={}),
+            ScenarioStep(
+                name="s1", action=ActionType.CONNECT, params={"protocol": "pptp"}, expect={}
+            ),
             ScenarioStep(name="s2", action=ActionType.DISCONNECT, params={}, expect={}),
         ]
         scenario = ScenarioDefinition(name="test", description="test", steps=steps)
@@ -173,10 +174,12 @@ class TestExecuteErrorHandling:
     @pytest.mark.asyncio
     async def test_execute_exception_sets_error_state(self, engine: ScenarioEngine, mock_event_bus):
         steps = [
-            ScenarioStep(name="s1", action=ActionType.CONNECT, params={"protocol": "pptp"}, expect={}),
+            ScenarioStep(
+                name="s1", action=ActionType.CONNECT, params={"protocol": "pptp"}, expect={}
+            ),
         ]
         scenario = ScenarioDefinition(name="test", description="test", steps=steps)
-        with patch.object(engine, '_execute_step', side_effect=RuntimeError("boom")):
+        with patch.object(engine, "_execute_step", side_effect=RuntimeError("boom")):
             result = await engine.execute(scenario)
         assert result.state == ScenarioState.ERROR
         assert result.error_message == "boom"
@@ -184,10 +187,12 @@ class TestExecuteErrorHandling:
     @pytest.mark.asyncio
     async def test_execute_sets_failed_on_step_failure(self, engine: ScenarioEngine):
         steps = [
-            ScenarioStep(name="s1", action=ActionType.CONNECT, params={"protocol": "pptp"}, expect={}),
+            ScenarioStep(
+                name="s1", action=ActionType.CONNECT, params={"protocol": "pptp"}, expect={}
+            ),
         ]
         scenario = ScenarioDefinition(name="test", description="test", steps=steps)
-        with patch.object(engine, '_execute_step') as mock_step:
+        with patch.object(engine, "_execute_step") as mock_step:
             mock_step.return_value = MagicMock(result=StepResult.FAILED)
             result = await engine.execute(scenario)
         assert result.state == ScenarioState.FAILED

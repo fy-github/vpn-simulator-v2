@@ -136,8 +136,7 @@ class SSTPStateMachine(ProtocolStateMachine):
                 "PPP_LCP",
                 "PPP_AUTH",
                 "LCP_NEGOTIATION_COMPLETE",
-                description="PPP LCP 协商完成: MRU/魔术字/认证协议 "
-                "配置交换",
+                description="PPP LCP 协商完成: MRU/魔术字/认证协议 " "配置交换",
             ),
             # PPP 认证
             StateTransition(

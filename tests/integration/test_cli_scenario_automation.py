@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import pytest
 from click.testing import CliRunner
-from unittest.mock import patch, MagicMock
-
 from vpn_simulator.cli import cli
 
 

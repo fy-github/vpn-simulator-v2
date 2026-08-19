@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from vpn_simulator.plugins.registry import Plugin, PluginMeta, PluginType, plugin
+
 from plugins.protocols.openvpn.state_machine import OpenVPNStateMachine
 
 if TYPE_CHECKING:
@@ -52,8 +53,7 @@ class OpenVPNPlugin(Plugin):
             name="openvpn",
             version="1.0.0",
             author="VPN Simulator",
-            description="OpenVPN 协议实现 - "
-                        "TLS over UDP/TCP 控制通道 + PUSH_REPLY 下发配置",
+            description="OpenVPN 协议实现 - " "TLS over UDP/TCP 控制通道 + PUSH_REPLY 下发配置",
             plugin_type=PluginType.PROTOCOL,
             dependencies=[],
             config_schema={

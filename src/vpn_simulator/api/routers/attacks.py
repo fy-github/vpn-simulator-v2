@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -22,6 +22,7 @@ def get_attack_service():
         from vpn_simulator.core.database import DatabaseManager
         from vpn_simulator.core.events import EventBus
         from vpn_simulator.services.attack import AttackService
+
         _attack_service = AttackService(EventBus(), ConfigManager(), DatabaseManager())
     return _attack_service
 

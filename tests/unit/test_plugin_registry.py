@@ -12,10 +12,7 @@ Tests cover:
 
 from __future__ import annotations
 
-from typing import Any
-
 import pytest
-
 from vpn_simulator.plugins.context import PluginContext
 from vpn_simulator.plugins.registry import (
     Plugin,
@@ -24,7 +21,6 @@ from vpn_simulator.plugins.registry import (
     PluginType,
     plugin,
 )
-
 
 # ── Test Helpers ───────────────────────────────────────────────────────────────
 
@@ -248,6 +244,7 @@ class TestPluginDecorator:
 
     def test_decorator_registers_plugin(self):
         """Verify @plugin decorator registers the plugin."""
+
         @plugin("decorated")
         class DecoratedPlugin(Plugin):
             def meta(self) -> PluginMeta:
@@ -271,6 +268,7 @@ class TestPluginDecorator:
 
     def test_decorator_returns_class(self):
         """Verify @plugin decorator returns the original class."""
+
         @plugin("test_class")
         class TestPlugin(Plugin):
             def meta(self) -> PluginMeta:

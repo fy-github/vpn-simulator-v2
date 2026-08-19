@@ -1,16 +1,11 @@
 import { useTranslation } from 'react-i18next'
-import { useRef, useEffect } from 'react'
+import { useRef } from 'react'
 
 import ProtocolComparator from '../components/ProtocolComparator'
 
 const Comparison = () => {
   const { t } = useTranslation()
   const headerRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (headerRef.current) {
-    }
-  }, [])
 
   return (
     <div className="h-[calc(100vh-7rem)] flex flex-col">

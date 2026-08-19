@@ -19,11 +19,12 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 
 class ObfuscationTechnique(str, Enum):
     """支持的混淆技术。"""
+
     OBFS4 = "obfs4"
     SHADOWSOCKS = "shadowsocks"
     UDP2RAW = "udp2raw"
@@ -33,16 +34,18 @@ class ObfuscationTechnique(str, Enum):
 
 class DetectionDifficulty(str, Enum):
     """检测难度等级。"""
-    TRIVIAL = "trivial"       # 容易检测
-    EASY = "easy"             # 较易检测
-    MEDIUM = "medium"         # 中等难度
-    HARD = "hard"             # 较难检测
-    VERY_HARD = "very_hard"   # 很难检测
+
+    TRIVIAL = "trivial"  # 容易检测
+    EASY = "easy"  # 较易检测
+    MEDIUM = "medium"  # 中等难度
+    HARD = "hard"  # 较难检测
+    VERY_HARD = "very_hard"  # 很难检测
 
 
 @dataclass
 class TrafficFeatures:
     """流量特征。"""
+
     avg_packet_size: float = 0.0
     packet_size_std: float = 0.0
     avg_interval_ms: float = 0.0
@@ -66,6 +69,7 @@ class TrafficFeatures:
 @dataclass
 class ShannonEntropy:
     """Shannon 熵分析。"""
+
     payload_entropy: float = 0.0
     header_entropy: float = 0.0
     overall_entropy: float = 0.0
@@ -83,6 +87,7 @@ class ShannonEntropy:
 @dataclass
 class ObfuscationTestResult:
     """混淆测试结果。"""
+
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: datetime = field(default_factory=datetime.now)
     technique: ObfuscationTechnique = ObfuscationTechnique.OBFS4
@@ -116,6 +121,7 @@ class ObfuscationTestResult:
 @dataclass
 class TechniqueInfo:
     """混淆技术信息。"""
+
     name: str
     technique: ObfuscationTechnique
     description: str
@@ -301,6 +307,7 @@ class ObfuscationService:
         ports = defaultdict(int)
 
         import socket
+
         current_time = 0.0
         for _ in range(packet_count):
             size = random.randint(*config["packet_size_range"])
@@ -327,24 +334,30 @@ class ObfuscationService:
 
             try:
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                sock.sendto(payload, ('127.0.0.1', 9996))
+                sock.sendto(payload, ("127.0.0.1", 9996))
                 sock.close()
             except Exception:
                 pass
 
-            packets.append({
-                "timestamp": current_time,
-                "size": size,
-                "protocol": proto,
-                "port": port,
-                "payload_entropy": payload_entropy,
-            })
+            packets.append(
+                {
+                    "timestamp": current_time,
+                    "size": size,
+                    "protocol": proto,
+                    "port": port,
+                    "payload_entropy": payload_entropy,
+                }
+            )
 
         # 计算流量特征
         avg_size = sum(sizes) / len(sizes) if sizes else 0
         size_std = math.sqrt(sum((s - avg_size) ** 2 for s in sizes) / len(sizes)) if sizes else 0
         avg_interval = sum(intervals) / len(intervals) if intervals else 0
-        interval_std = math.sqrt(sum((i - avg_interval) ** 2 for i in intervals) / len(intervals)) if intervals else 0
+        interval_std = (
+            math.sqrt(sum((i - avg_interval) ** 2 for i in intervals) / len(intervals))
+            if intervals
+            else 0
+        )
 
         # 计算突发比率
         burst_threshold = avg_interval * 0.5
@@ -373,7 +386,7 @@ class ObfuscationService:
         # 使用模拟的熵值范围
         payload_entropy = random.uniform(*config["entropy_range"])
         header_entropy = random.uniform(3.0, 5.0)  # 头部熵通常较低
-        overall_entropy = (payload_entropy * 0.7 + header_entropy * 0.3)
+        overall_entropy = payload_entropy * 0.7 + header_entropy * 0.3
 
         shannon_entropy = ShannonEntropy(
             payload_entropy=payload_entropy,
@@ -406,12 +419,16 @@ class ObfuscationService:
         try:
             tech = ObfuscationTechnique(technique.lower())
         except ValueError:
-            raise ValueError(f"不支持的混淆技术: {technique}。支持的技术: {[t.value for t in ObfuscationTechnique]}")
+            raise ValueError(
+                f"不支持的混淆技术: {technique}。支持的技术: {[t.value for t in ObfuscationTechnique]}"
+            )
 
         config = _TECHNIQUE_CONFIGS[tech]
 
         # 生成模拟流量
-        packets, traffic_features, shannon_entropy = self._generate_simulated_traffic(tech, packet_count)
+        packets, traffic_features, shannon_entropy = self._generate_simulated_traffic(
+            tech, packet_count
+        )
 
         # 计算检测率
         detection_rate = random.uniform(*config["detection_rate_range"])

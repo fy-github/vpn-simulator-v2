@@ -29,7 +29,9 @@ def automation_list(ctx: click.Context) -> None:
         resp.raise_for_status()
         scenarios = resp.json()
     except httpx.HTTPStatusError as e:
-        handle_error(f"API error: {e.response.status_code} - {e.response.text}", json_output=json_output)
+        handle_error(
+            f"API error: {e.response.status_code} - {e.response.text}", json_output=json_output
+        )
         return
     except httpx.RequestError:
         scenarios = _get_static_scenarios()
@@ -82,13 +84,18 @@ def automation_run(ctx: click.Context, scenario_id: str, connection_id: str | No
         if e.response.status_code == 404:
             handle_error(f"Automation scenario '{scenario_id}' not found", json_output=json_output)
         else:
-            handle_error(f"API error: {e.response.status_code} - {e.response.text}", json_output=json_output)
+            handle_error(
+                f"API error: {e.response.status_code} - {e.response.text}", json_output=json_output
+            )
         return
     except httpx.RequestError:
         handle_error("API server not available. Start the server first.", json_output=json_output)
         return
 
-    handle_success(result.get("message", f"Automation scenario '{scenario_id}' started"), json_output=json_output)
+    handle_success(
+        result.get("message", f"Automation scenario '{scenario_id}' started"),
+        json_output=json_output,
+    )
 
 
 @automation_group.command("status")
@@ -168,7 +175,9 @@ def automation_report(ctx: click.Context, scenario_id: str, execution_id: str | 
         output_json(report_data)
         return
 
-    console.print(f"\n[bold cyan]Automation Report: {report_data.get('scenario_name', scenario_id)}[/bold cyan]")
+    console.print(
+        f"\n[bold cyan]Automation Report: {report_data.get('scenario_name', scenario_id)}[/bold cyan]"
+    )
     console.print("=" * 60)
     console.print(f"Execution ID: {report_data.get('execution_id', '')}")
     console.print(f"State:        {report_data.get('state', '')}")

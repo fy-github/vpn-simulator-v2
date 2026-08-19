@@ -8,10 +8,10 @@
 - traffic_analysis: 流量分析
 """
 
-from plugins.attacks.mitm.plugin import MITMPlugin
-from plugins.attacks.replay.plugin import ReplayPlugin
 from plugins.attacks.brute_force.plugin import BruteForcePlugin
 from plugins.attacks.downgrade.plugin import DowngradePlugin
+from plugins.attacks.mitm.plugin import MITMPlugin
+from plugins.attacks.replay.plugin import ReplayPlugin
 from plugins.attacks.traffic_analysis.plugin import TrafficAnalysisPlugin
 
 __all__ = [

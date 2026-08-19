@@ -37,11 +37,12 @@ Multi-protocol VPN Server Simulator with modern Web UI — supports **8 VPN prot
 - **Voice Simulator** — VoIP call simulation with codec support
 - **Obfuscation Testing** — Traffic obfuscation technique testing
 - **Vendor CLI** — Cisco IOS and Huawei VRP command simulation
+- **DHCP Simulation** — Spoof random MAC addresses to concurrently acquire DHCP leases (with 802.1Q VLAN tagging and explicit release)
 
 ### Tech Stack
 
 **Backend:**
-- Python 3.12 + FastAPI
+- Python 3.11+ + FastAPI
 - SQLAlchemy + aiosqlite (async SQLite)
 - Structlog (structured logging)
 - Pydantic v2 (data validation)
@@ -60,7 +61,7 @@ Multi-protocol VPN Server Simulator with modern Web UI — supports **8 VPN prot
 
 ### Prerequisites
 
-- Python 3.12+
+- Python 3.11+
 - Node.js 18+
 - npm or yarn
 
@@ -71,17 +72,25 @@ Multi-protocol VPN Server Simulator with modern Web UI — supports **8 VPN prot
 git clone https://github.com/fy-github/vpn-simulator-v2.git
 cd vpn-simulator-v2
 
-# Create Python virtual environment
+# Install Python dependencies (recommended: uv, reads the locked uv.lock)
+uv sync --extra dev
+
+# — or with pip + requirements.txt —
 python -m venv .venv
 source .venv/bin/activate  # macOS/Linux
 # .venv\Scripts\activate   # Windows
-
-# Install Python dependencies
-pip install -r requirements.txt
+pip install -r requirements.txt        # runtime dependencies
+pip install -r requirements-dev.txt    # + dev/test dependencies
 
 # Install frontend dependencies
 cd web-ui && npm install && cd ..
 ```
+
+> **国内镜像（可选）：** 若 PyPI（`files.pythonhosted.org`）下载缓慢，可用清华镜像：
+> ```bash
+> export UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple   # uv
+> pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple   # pip
+> ```
 
 ### Running
 
@@ -102,6 +111,24 @@ cd web-ui && npm run build
 ```
 
 The built files will be in `web-ui/dist/`.
+
+## Dependency Management
+
+`pyproject.toml` is the single source of truth for Python dependencies (PEP 621). Three derived files keep installs reproducible:
+
+| File | Purpose |
+|------|---------|
+| `uv.lock` | Fully-resolved lockfile (all transitive deps pinned). Used by `uv sync`. |
+| `requirements.txt` | Pinned runtime dependencies, exported from `uv.lock` for `pip` users. |
+| `requirements-dev.txt` | Runtime + dev/test dependencies (pytest, ruff, black, mypy, …). |
+
+Regenerate after editing `pyproject.toml`:
+
+```bash
+uv lock                                   # re-resolve uv.lock
+uv export --no-hashes --no-dev -o requirements.txt
+uv export --no-hashes --extra dev -o requirements-dev.txt
+```
 
 ## Project Structure
 
@@ -155,15 +182,16 @@ vpn-simulator-v2/
 | Voice | `POST /api/v1/voice/calls` |
 | Obfuscation | `GET /api/v1/obfuscation/techniques` |
 | Vendor CLI | `POST /api/v1/vendor-cli/execute` |
+| DHCP | `POST /api/v1/dhcp/start\|stop\|release`, `GET /api/v1/dhcp/status\|leases` |
 
 ## Testing
 
 ```bash
 # Run all tests
-.venv/bin/python -m pytest tests/ -q
+uv run pytest tests/ -q
 
 # Run with coverage
-.venv/bin/python -m pytest tests/ --cov=vpn_simulator --cov-report=term
+uv run pytest tests/ --cov=vpn_simulator --cov-report=term
 
 # TypeScript type check
 cd web-ui && npx tsc --noEmit
@@ -172,7 +200,17 @@ cd web-ui && npx tsc --noEmit
 cd web-ui && npm run build
 ```
 
-**Test Results:** 1022 tests passing, 90% coverage
+**Test Results:** 1037 tests passing, 81% coverage (Python 3.11, deps pinned by `uv.lock`).
+
+## Lint
+
+CI 全量启用 `ruff check`、`black --check`、eslint 门禁（见 `.github/workflows/ci.yml`）。
+本地复现：
+
+```bash
+uv run ruff check src tests && uv run black --check src tests   # 后端
+cd web-ui && npm run lint                                        # 前端
+```
 
 ## Configuration
 
