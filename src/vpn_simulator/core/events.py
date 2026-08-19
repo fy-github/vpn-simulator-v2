@@ -239,6 +239,11 @@ class EventTypes:
     FAULT_INJECTED = "fault.injected"
     FAULT_REMOVED = "fault.removed"
 
+    # 时间变化损伤事件
+    IMPAIRMENT_APPLIED = "impairment.applied"
+    IMPAIRMENT_STARTED = "impairment.started"
+    IMPAIRMENT_STOPPED = "impairment.stopped"
+
     # 攻击事件
     ATTACK_STARTED = "attack.started"
     ATTACK_COMPLETED = "attack.completed"

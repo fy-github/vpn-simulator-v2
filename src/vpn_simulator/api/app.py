@@ -26,6 +26,7 @@ from vpn_simulator.api.routers import (  # noqa: E402
     dhcp,
     dpi,
     faults,
+    impairment,
     iot,
     learning,
     logs,
@@ -107,12 +108,14 @@ async def _restore_state() -> None:
     from vpn_simulator.api.routers.attacks import get_attack_service
     from vpn_simulator.api.routers.connections import get_connection_service
     from vpn_simulator.api.routers.faults import get_fault_service
+    from vpn_simulator.api.routers.impairment import get_impairment_service
     from vpn_simulator.api.routers.protocols import get_protocol_service
 
     await get_protocol_service().restore_protocols()
     await get_connection_service().restore_connections()
     await get_fault_service().restore_faults()
     await get_attack_service().restore_attacks()
+    await get_impairment_service().restore_impairments()
 
 
 @asynccontextmanager
@@ -150,6 +153,7 @@ app.add_middleware(AuthMiddleware, api_key=_API_KEY)
 app.include_router(protocols.router, prefix="/api/v1", tags=["protocols"])
 app.include_router(connections.router, prefix="/api/v1", tags=["connections"])
 app.include_router(faults.router, prefix="/api/v1", tags=["faults"])
+app.include_router(impairment.router, prefix="/api/v1", tags=["impairments"])
 app.include_router(attacks.router, prefix="/api/v1", tags=["attacks"])
 app.include_router(benchmark.router, prefix="/api/v1", tags=["benchmark"])
 app.include_router(topology.router, prefix="/api/v1", tags=["topology"])

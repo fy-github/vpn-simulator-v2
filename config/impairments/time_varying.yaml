@@ -1,0 +1,50 @@
+# 时间变化网络损伤预设（F1）
+# 每条预设叠加在某个故障插件参数之上，按 5 种变化曲线之一随时间演变。
+# change_type: linear | exponential | step | sine | random
+presets:
+  - name: "拥塞渐增（延迟线性）"
+    fault_type: latency
+    param: delay_ms
+    change_type: linear
+    start_value: 0
+    end_value: 300
+    duration_seconds: 60
+    target: wireguard
+
+  - name: "指数拥塞（延迟指数）"
+    fault_type: latency
+    param: delay_ms
+    change_type: exponential
+    start_value: 10
+    end_value: 500
+    duration_seconds: 120
+    target: wireguard
+
+  - name: "突发丢包（阶跃）"
+    fault_type: packet_loss
+    param: loss_rate
+    change_type: step
+    start_value: 0.0
+    end_value: 0.3
+    duration_seconds: 60
+    step_at_seconds: 30
+    target: ""
+
+  - name: "带宽波动（正弦）"
+    fault_type: bandwidth
+    param: bandwidth_kbps
+    change_type: sine
+    start_value: 100
+    end_value: 1000
+    duration_seconds: 60
+    period_seconds: 20
+    target: ""
+
+  - name: "随机抖动（随机）"
+    fault_type: latency
+    param: jitter_ms
+    change_type: random
+    start_value: 0
+    end_value: 50
+    duration_seconds: 60
+    target: ""

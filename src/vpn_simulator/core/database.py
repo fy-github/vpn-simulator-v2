@@ -20,7 +20,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, Text, event
+from sqlalchemy import JSON, Boolean, Column, DateTime, Float, Integer, String, Text, event
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -110,6 +110,28 @@ class FaultRecord(Base):
     active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     updated_at = Column(DateTime)
+
+
+class ImpairmentRecord(Base):
+    """时间变化网络损伤配置表（F1）"""
+
+    __tablename__ = "impairments"
+
+    id = Column(String(36), primary_key=True)
+    name = Column(String(100))
+    fault_type = Column(String(50), nullable=False)
+    param = Column(String(50), nullable=False)
+    change_type = Column(String(20), nullable=False)
+    start_value = Column(Float, nullable=False)
+    end_value = Column(Float, nullable=False)
+    duration_seconds = Column(Float, nullable=False)
+    period_seconds = Column(Float, default=0.0)
+    step_at_seconds = Column(Float)
+    target = Column(String(100))
+    active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    started_at = Column(DateTime)
+    stopped_at = Column(DateTime)
 
 
 class AttackRecord(Base):
