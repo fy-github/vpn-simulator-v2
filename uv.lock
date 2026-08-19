@@ -747,6 +747,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pyasn1"
+version = "0.6.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/9a/23310166d960def5897e91fe20e5b724601b02a22e84ba1f94232c0b7f67/pyasn1-0.6.4.tar.gz", hash = "sha256:9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81", size = 151262, upload-time = "2026-07-09T01:12:33.988Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9a/3b/6163796d69c3977d1e4287bea4a6979161cbbdd170ebb430511e8e1999ce/pyasn1-0.6.4-py3-none-any.whl", hash = "sha256:deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b", size = 84410, upload-time = "2026-07-09T01:12:32.92Z" },
+]
+
+[[package]]
 name = "pycparser"
 version = "3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -879,6 +888,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/49/2e/ced460408999b33da6b31b0021b0f37d329e202d4169aeb164493778f25b/pygments-2.21.0.tar.gz", hash = "sha256:610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c", size = 5005329, upload-time = "2026-08-17T08:02:48.824Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/71/46/17f022dd3e953bf20a04a028a21ec746d942f8d2af30fa0f124fa0e6a684/pygments-2.21.0-py3-none-any.whl", hash = "sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9", size = 1250147, upload-time = "2026-08-17T08:02:44.912Z" },
+]
+
+[[package]]
+name = "pysnmp"
+version = "7.1.28"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyasn1" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ee/c3/6e7a0e32d6ac94c1465a93dd4826be526a12f26928eed5ee590abfb207d8/pysnmp-7.1.28.tar.gz", hash = "sha256:6b837f1e90a9abb01ea21a1bbf222e6ba67199e6d1bdc4f7083a333a053ed1fc", size = 268283, upload-time = "2026-07-31T13:34:07.082Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/0b/14/79d0c4d338fef4a0911f4d3d3eb9fe9b027ebe4399cc4e41dc3e001c3245/pysnmp-7.1.28-py3-none-any.whl", hash = "sha256:417559de9e35e283882c80913897489554e98a388b2a77b6e1014ea8257cfe1b", size = 355211, upload-time = "2026-07-31T13:34:05.742Z" },
 ]
 
 [[package]]
@@ -1323,6 +1344,7 @@ dependencies = [
     { name = "httpx" },
     { name = "psutil" },
     { name = "pydantic" },
+    { name = "pysnmp" },
     { name = "python-dotenv" },
     { name = "python-multipart" },
     { name = "pyyaml" },
@@ -1362,6 +1384,7 @@ requires-dist = [
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.6.0,<4.0.0" },
     { name = "psutil", specifier = ">=5.9.7,<6.0" },
     { name = "pydantic", specifier = ">=2.5.0,<3.0.0" },
+    { name = "pysnmp", specifier = ">=7.1.28" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.4,<8.0.0" },
     { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23.3,<0.24.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0,<5.0.0" },

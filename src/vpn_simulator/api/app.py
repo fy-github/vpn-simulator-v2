@@ -36,6 +36,7 @@ from vpn_simulator.api.routers import (  # noqa: E402
     pcap,
     protocols,
     scenarios,
+    snmp,
     stats,
     topology,
     traffic,
@@ -168,6 +169,7 @@ app.include_router(learning.router, prefix="/api/v1", tags=["learning"])
 app.include_router(packets.router, prefix="/api/v1", tags=["packets"])
 app.include_router(pcap.router, prefix="/api/v1", tags=["pcap"])
 app.include_router(scenarios.router, prefix="/api/v1", tags=["scenarios"])
+app.include_router(snmp.router, prefix="/api/v1", tags=["snmp"])
 app.include_router(metrics.router, prefix="/api/v1", tags=["metrics"])
 app.include_router(traffic.router, prefix="/api/v1", tags=["traffic"])
 app.include_router(iot.router, prefix="/api/v1", tags=["iot"])
