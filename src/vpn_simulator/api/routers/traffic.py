@@ -6,13 +6,13 @@ and real-time packet streaming via WebSocket.
 
 from __future__ import annotations
 
-import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import structlog
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/traffic")
 
@@ -35,7 +35,11 @@ class CaptureResponse(BaseModel):
     timestamp: str | None = None
 
 
-def _get_service():
+if TYPE_CHECKING:
+    from vpn_simulator.services.traffic import TrafficService
+
+
+def _get_service() -> TrafficService:
     from vpn_simulator.services.traffic import get_traffic_service
 
     return get_traffic_service()

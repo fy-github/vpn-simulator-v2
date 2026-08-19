@@ -198,9 +198,9 @@ class ConnectionService:
                 result = await session.execute(stmt)
                 record = result.scalar_one_or_none()
                 if record:
-                    record.state = conn.state.value
-                    record.connected_at = conn.connected_at
-                    record.disconnected_at = conn.disconnected_at
+                    record.state = conn.state.value  # type: ignore[assignment]
+                    record.connected_at = conn.connected_at  # type: ignore[assignment]
+                    record.disconnected_at = conn.disconnected_at  # type: ignore[assignment]
 
         # 根据状态发布不同事件
         event_map = {
@@ -267,10 +267,10 @@ class ConnectionService:
             result = await session.execute(stmt)
             record = result.scalar_one_or_none()
             if record:
-                record.bytes_sent = conn.bytes_sent
-                record.bytes_received = conn.bytes_received
-                record.packets_sent = conn.packets_sent
-                record.packets_received = conn.packets_received
+                record.bytes_sent = conn.bytes_sent  # type: ignore[assignment]
+                record.bytes_received = conn.bytes_received  # type: ignore[assignment]
+                record.packets_sent = conn.packets_sent  # type: ignore[assignment]
+                record.packets_received = conn.packets_received  # type: ignore[assignment]
 
     async def remove_connection(self, connection_id: str) -> bool:
         """移除连接。

@@ -6,12 +6,12 @@ throughput, latency, packet loss, and connection statistics.
 
 from __future__ import annotations
 
-import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import structlog
 from fastapi import APIRouter, HTTPException, Query
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/metrics")
 
@@ -22,7 +22,11 @@ _VALID_TIME_RANGES = ["1m", "5m", "15m", "1h"]
 _metrics_service = None
 
 
-def _get_service():
+if TYPE_CHECKING:
+    from vpn_simulator.services.metrics import MetricsService
+
+
+def _get_service() -> MetricsService:
     global _metrics_service
     if _metrics_service is None:
         from vpn_simulator.services.metrics import MetricsService

@@ -300,6 +300,6 @@ class FaultService:
             result = await session.execute(stmt)
             record = result.scalar_one_or_none()
             if record:
-                record.active = fault.active
-                record.params = fault.params
-                record.updated_at = fault.updated_at
+                record.active = fault.active  # type: ignore[assignment]
+                record.params = fault.params  # type: ignore[assignment]
+                record.updated_at = fault.updated_at  # type: ignore[assignment]

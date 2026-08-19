@@ -386,7 +386,7 @@ class AttackService:
             result = await session.execute(stmt)
             record = result.scalar_one_or_none()
             if record:
-                record.status = attack.status.value
-                record.started_at = attack.started_at
-                record.completed_at = attack.completed_at
-                record.result = attack.result.to_dict() if attack.result else None
+                record.status = attack.status.value  # type: ignore[assignment]
+                record.started_at = attack.started_at  # type: ignore[assignment]
+                record.completed_at = attack.completed_at  # type: ignore[assignment]
+                record.result = attack.result.to_dict() if attack.result else None  # type: ignore[assignment]

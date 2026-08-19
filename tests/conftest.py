@@ -16,6 +16,15 @@ from vpn_simulator.domain.protocol import ProtocolStateMachine, State, StateTran
 from vpn_simulator.plugins.context import PluginContext
 from vpn_simulator.plugins.registry import PluginMeta, PluginRegistry, PluginType
 
+
+@pytest.fixture(scope="session", autouse=True)
+def _configure_structlog() -> None:
+    """Ensure structlog uses the stdlib bridge during the whole test session."""
+    from vpn_simulator.logging_setup import configure_logging
+
+    configure_logging()
+
+
 # ── Event System Fixtures ──────────────────────────────────────────────────────
 
 

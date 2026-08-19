@@ -1,14 +1,14 @@
 """流量混淆测试 API 路由。"""
 
-import logging
 from typing import Any
 
+import structlog
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from ...services.obfuscation import obfuscation_service
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/obfuscation")
 

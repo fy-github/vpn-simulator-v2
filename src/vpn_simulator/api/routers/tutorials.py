@@ -1,13 +1,13 @@
-import logging
 import time
 from pathlib import Path
 from typing import Any
 
+import structlog
 import yaml
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/tutorials")
 

@@ -45,7 +45,7 @@ class TestPluginContextInit:
     def test_default_logger(self, mock_event_bus):
         ctx = PluginContext(event_bus=mock_event_bus)
         assert ctx.logger is not None
-        assert isinstance(ctx.logger, logging.Logger)
+        assert ctx.logger.name == "vpn_simulator.plugin"
 
 
 class TestGetConfig:
@@ -120,4 +120,4 @@ class TestCreateChildLogger:
     def test_child_logger_hierarchy(self, mock_event_bus):
         ctx = PluginContext(event_bus=mock_event_bus)
         child = ctx.create_child_logger("test")
-        assert child.parent is ctx.logger
+        assert child.name == "vpn_simulator.plugin.test"

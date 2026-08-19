@@ -6,13 +6,13 @@ and real-time monitoring.
 
 from __future__ import annotations
 
-import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import structlog
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/voice")
 
@@ -56,7 +56,11 @@ class CallResponse(BaseModel):
     timestamp: str | None = None
 
 
-def _get_service():
+if TYPE_CHECKING:
+    from vpn_simulator.services.voice import VoiceService
+
+
+def _get_service() -> VoiceService:
     from vpn_simulator.services.voice import get_voice_service
 
     return get_voice_service()

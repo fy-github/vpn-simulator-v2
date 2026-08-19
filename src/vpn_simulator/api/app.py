@@ -1,17 +1,23 @@
 """FastAPI application entry point for VPN Simulator v2."""
 
-import logging
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from vpn_simulator.api.middleware.auth import AuthMiddleware
-from vpn_simulator.api.middleware.logging import RequestLoggingMiddleware
-from vpn_simulator.api.routers import (
+from vpn_simulator.logging_setup import configure_logging
+
+# 必须在 import 绑定 structlog logger 的模块（middleware / routers）之前调用，
+# 因为 structlog 会缓存每个名字的首个 logger。
+configure_logging()
+
+from vpn_simulator.api.middleware.auth import AuthMiddleware  # noqa: E402
+from vpn_simulator.api.middleware.logging import RequestLoggingMiddleware  # noqa: E402
+from vpn_simulator.api.routers import (  # noqa: E402
     attacks,
     benchmark,
     comparison,
@@ -35,9 +41,9 @@ from vpn_simulator.api.routers import (
     vendor_cli,
     voice,
 )
-from vpn_simulator.api.websocket import websocket_endpoint, ws_manager
+from vpn_simulator.api.websocket import websocket_endpoint, ws_manager  # noqa: E402
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # 可选 API Key：设置 VPN_SIM_API_KEY 环境变量后，除公开路径外均需携带
 # X-API-Key 请求头。未设置时保持免认证（本地教学工具默认行为）。

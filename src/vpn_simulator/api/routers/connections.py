@@ -2,20 +2,24 @@
 
 from __future__ import annotations
 
-import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import structlog
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/connections")
 
 _connection_service = None
 
 
-def get_connection_service():
+if TYPE_CHECKING:
+    from vpn_simulator.services.connection import ConnectionService
+
+
+def get_connection_service() -> ConnectionService:
     global _connection_service
     if _connection_service is None:
         from vpn_simulator.core.config import ConfigManager
@@ -94,7 +98,7 @@ async def list_connections(
             result.append(conn)
         return result
     except Exception as e:
-        logger.warning("Failed to list connections: %s", e)
+        logger.warning("Failed to list connections", error=str(e))
         return list(_active_connections.values())
 
 
@@ -129,7 +133,7 @@ async def get_connection(connection_id: str) -> dict[str, Any]:
     except HTTPException:
         raise
     except Exception as e:
-        logger.warning("Failed to get connection %s: %s", connection_id, e)
+        logger.warning("Failed to get connection", connection_id=connection_id, error=str(e))
         raise HTTPException(status_code=404, detail=f"Connection {connection_id} not found")
 
 
@@ -158,7 +162,7 @@ async def disconnect_connection(connection_id: str) -> dict[str, str]:
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.warning("Failed to disconnect connection %s: %s", connection_id, e)
+        logger.warning("Failed to disconnect connection", connection_id=connection_id, error=str(e))
 
     if not removed:
         raise HTTPException(status_code=404, detail=f"Connection {connection_id} not found")

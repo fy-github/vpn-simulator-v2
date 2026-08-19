@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import structlog
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/dhcp")
 
@@ -16,7 +16,11 @@ router = APIRouter(prefix="/dhcp")
 _dhcp_service = None
 
 
-def get_dhcp_service():
+if TYPE_CHECKING:
+    from vpn_simulator.services.dhcp import DHCPService
+
+
+def get_dhcp_service() -> DHCPService:
     """获取 DHCP 服务实例。"""
     global _dhcp_service
     if _dhcp_service is None:
@@ -74,10 +78,10 @@ async def start_dhcp(request: DHCPRunRequest) -> dict[str, str]:
         service = get_dhcp_service()
         return service.start(request.model_dump())
     except RuntimeError as e:
-        logger.warning("Failed to start DHCP job: %s", e)
+        logger.warning("Failed to start DHCP job", error=str(e))
         raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
-        logger.warning("Failed to start DHCP job: %s", e)
+        logger.warning("Failed to start DHCP job", error=str(e))
         raise HTTPException(status_code=500, detail=f"Failed to start DHCP job: {e}")
 
 
@@ -110,7 +114,7 @@ async def release_dhcp(request: DHCPReleaseRequest) -> dict[str, Any]:
             "returncode": result["returncode"],
         }
     except Exception as e:
-        logger.warning("Failed to release DHCP leases: %s", e)
+        logger.warning("Failed to release DHCP leases", error=str(e))
         raise HTTPException(status_code=500, detail=f"Failed to release DHCP leases: {e}")
 
 

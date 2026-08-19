@@ -17,14 +17,15 @@ Example:
 from __future__ import annotations
 
 import importlib.util
-import logging
 from pathlib import Path
 from types import ModuleType
+
+import structlog
 
 from vpn_simulator.plugins.context import PluginContext
 from vpn_simulator.plugins.registry import PluginRegistry
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 
 class PluginLoaderError(Exception):

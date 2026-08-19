@@ -1,12 +1,14 @@
 """IoT 设备模拟 API 路由。"""
 
-import logging
-from typing import Any
+from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+import structlog
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/iot")
 
@@ -14,7 +16,11 @@ router = APIRouter(prefix="/iot")
 _iot_service = None
 
 
-def get_iot_service():
+if TYPE_CHECKING:
+    from vpn_simulator.services.iot import IoTService
+
+
+def get_iot_service() -> IoTService:
     """获取 IoT 服务实例。"""
     global _iot_service
     if _iot_service is None:

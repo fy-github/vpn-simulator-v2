@@ -2,20 +2,24 @@
 
 from __future__ import annotations
 
-import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import structlog
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/faults")
 
 _fault_service = None
 
 
-def get_fault_service():
+if TYPE_CHECKING:
+    from vpn_simulator.services.fault import FaultService
+
+
+def get_fault_service() -> FaultService:
     global _fault_service
     if _fault_service is None:
         from vpn_simulator.core.config import ConfigManager
@@ -79,7 +83,7 @@ async def list_faults() -> list[dict[str, Any]]:
             for f in faults
         ]
     except Exception as e:
-        logger.warning("Failed to list faults: %s", e)
+        logger.warning("Failed to list faults", error=str(e))
         return []
 
 
@@ -107,10 +111,10 @@ async def add_fault(request: CreateFaultRequest) -> dict[str, Any]:
             "active": fault.get("active", True),
         }
     except ValueError as e:
-        logger.warning("Invalid fault request: %s", e)
+        logger.warning("Invalid fault request", error=str(e))
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.warning("Failed to create fault: %s", e)
+        logger.warning("Failed to create fault", error=str(e))
         return {
             "id": "fault-001",
             "type": request.type,
@@ -137,10 +141,10 @@ async def remove_fault(fault_id: str) -> dict[str, str]:
             "message": f"Fault {fault_id} removed",
         }
     except ValueError as e:
-        logger.warning("Fault not found: %s", e)
+        logger.warning("Fault not found", error=str(e))
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.warning("Failed to remove fault %s: %s", fault_id, e)
+        logger.warning("Failed to remove fault", fault_id=fault_id, error=str(e))
         return {
             "fault_id": fault_id,
             "status": "removed",

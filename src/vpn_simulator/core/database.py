@@ -13,6 +13,7 @@ Example:
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
@@ -20,8 +21,13 @@ from typing import Any
 
 import structlog
 from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, Text, event
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import DeclarativeBase
 
 logger = structlog.get_logger(__name__)
 
@@ -174,7 +180,7 @@ class DatabaseManager:
         """
         self.database_url = database_url
         self._engine: AsyncEngine | None = None
-        self._session_factory: sessionmaker | None = None
+        self._session_factory: async_sessionmaker[AsyncSession] | None = None
 
     async def initialize(self) -> None:
         """初始化数据库
@@ -199,9 +205,8 @@ class DatabaseManager:
                 cursor.execute("PRAGMA foreign_keys=ON")
                 cursor.close()
 
-        self._session_factory = sessionmaker(
+        self._session_factory = async_sessionmaker(
             self._engine,
-            class_=AsyncSession,
             expire_on_commit=False,
         )
 
@@ -289,10 +294,15 @@ _default_manager: DatabaseManager | None = None
 
 
 def get_database_manager() -> DatabaseManager:
-    """获取进程内共享的 DatabaseManager 实例（惰性创建）。"""
+    """获取进程内共享的 DatabaseManager 实例（惰性创建）。
+
+    优先使用 VPN_SIM_DATABASE_URL 环境变量（与 ConfigManager 一致），
+    未设置时回退到默认 SQLite URL。
+    """
     global _default_manager
     if _default_manager is None:
-        _default_manager = DatabaseManager()
+        database_url = os.getenv("VPN_SIM_DATABASE_URL") or "sqlite+aiosqlite:///vpn_simulator.db"
+        _default_manager = DatabaseManager(database_url)
     return _default_manager
 
 

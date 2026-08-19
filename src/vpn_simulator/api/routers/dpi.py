@@ -1,14 +1,14 @@
 """深度包检测 (DPI) API 路由。"""
 
-import logging
 from typing import Any
 
+import structlog
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from ...services.dpi import dpi_service
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/dpi")
 

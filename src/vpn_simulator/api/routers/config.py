@@ -1,12 +1,12 @@
 """Configuration management routes for VPN Simulator v2."""
 
-import logging
 from typing import Any
 
+import structlog
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/config")
 

@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-import logging
 import time
 import uuid
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import structlog
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/protocols")
 
@@ -18,7 +18,11 @@ _protocol_service = None
 _active_connections: dict[str, dict[str, Any]] = {}
 
 
-def get_protocol_service():
+if TYPE_CHECKING:
+    from vpn_simulator.services.protocol import ProtocolService
+
+
+def get_protocol_service() -> ProtocolService:
     global _protocol_service
     if _protocol_service is None:
         from vpn_simulator.core.config import ConfigManager
@@ -75,7 +79,7 @@ async def list_protocols() -> list[dict[str, Any]]:
             for p in protocols
         ]
     except Exception as e:
-        logger.warning("Failed to list protocols: %s", e)
+        logger.warning("Failed to list protocols", error=str(e))
         return []
 
 
@@ -117,7 +121,7 @@ async def start_protocol(
             "message": f"Protocol {name} started",
         }
     except Exception as e:
-        logger.warning("Failed to start protocol %s: %s", name, e)
+        logger.warning("Failed to start protocol", protocol=name, error=str(e))
         raise HTTPException(status_code=500, detail=f"Failed to start protocol {name}: {e}")
 
 
@@ -147,7 +151,7 @@ async def stop_protocol(name: str) -> dict[str, str]:
         service = get_protocol_service()
         await service.stop_protocol(name)
     except Exception as e:
-        logger.warning("Failed to stop protocol %s: %s", name, e)
+        logger.warning("Failed to stop protocol", protocol=name, error=str(e))
         raise HTTPException(status_code=500, detail=f"Failed to stop protocol {name}: {e}")
     to_remove = [cid for cid, c in _active_connections.items() if c["protocol"] == name]
     for cid in to_remove:
@@ -176,5 +180,5 @@ async def get_protocol_status(name: str) -> dict[str, Any]:
             "connections": 0,
         }
     except Exception as e:
-        logger.warning("Failed to get protocol status %s: %s", name, e)
+        logger.warning("Failed to get protocol status", protocol=name, error=str(e))
         return {"name": name, "state": "stopped", "port": 0, "connections": 0}

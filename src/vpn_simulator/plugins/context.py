@@ -20,11 +20,14 @@ Example:
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+import structlog
+
 from vpn_simulator.core.events import EventBus
+
+_DEFAULT_LOGGER_NAME = "vpn_simulator.plugin"
 
 
 @dataclass
@@ -48,7 +51,7 @@ class PluginContext:
         context = PluginContext(
             event_bus=event_bus,
             config=config_manager,
-            logger=logging.getLogger("plugin"),
+            logger=structlog.get_logger("plugin"),
         )
 
         # Using in a plugin
@@ -73,9 +76,7 @@ class PluginContext:
     config: Any = None
     """Configuration manager instance."""
 
-    logger: logging.Logger = field(
-        default_factory=lambda: logging.getLogger("vpn_simulator.plugin")
-    )
+    logger: Any = field(default_factory=lambda: structlog.get_logger(_DEFAULT_LOGGER_NAME))
     """Logger instance for structured logging."""
 
     database: Any = None
@@ -140,9 +141,9 @@ class PluginContext:
             if asyncio.iscoroutinefunction(self.event_bus.emit):
                 asyncio.create_task(self.event_bus.emit(event_name, data or {}))
             else:
-                self.event_bus.emit(event_name, data or {})
+                _ = self.event_bus.emit(event_name, data or {})
 
-    def create_child_logger(self, name: str) -> logging.Logger:
+    def create_child_logger(self, name: str) -> Any:
         """Create a child logger for a plugin.
 
         Creates a logger that inherits from the context's logger,
@@ -158,4 +159,5 @@ class PluginContext:
             logger = context.create_child_logger("pptp")
             logger.info("PPTP plugin initialized")
         """
-        return logging.getLogger(f"{self.logger.name}.{name}")
+        base_name = getattr(self.logger, "name", _DEFAULT_LOGGER_NAME)
+        return structlog.get_logger(f"{base_name}.{name}")

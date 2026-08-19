@@ -1,8 +1,8 @@
 """Packet management routes for VPN Simulator v2."""
 
-import logging
 from typing import Any
 
+import structlog
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from ...domain.packet import PacketDirection, PacketType
 from ...services.packet_parser import packet_parser
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/packets")
 

@@ -28,7 +28,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import structlog
 
@@ -318,6 +318,6 @@ class DHCPService:
             data = json.loads(self._state_file.read_text(encoding="utf-8"))
             if isinstance(data, list):
                 return data
-            return data.get("leases", [])
+            return cast(list[dict[str, Any]], data.get("leases", []))
         except (OSError, json.JSONDecodeError):
             return []

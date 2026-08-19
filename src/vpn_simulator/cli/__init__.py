@@ -1,25 +1,14 @@
 """VPN Simulator CLI - Command-line interface for VPN Simulator v2."""
 
-import logging
-import sys
-
 import click
-import structlog
 from rich.console import Console
 
-structlog.configure(
-    wrapper_class=structlog.stdlib.BoundLogger,
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    cache_logger_on_first_use=True,
-)
-logging.basicConfig(
-    format="%(message)s",
-    stream=sys.stderr,
-    level=logging.WARNING,
-)
+from vpn_simulator.logging_setup import configure_logging
 
 # 子命令模块在 import 时即绑定 structlog logger，
 # 因此必须在 configure() 之后才导入（故使用 noqa: E402 抑制顺序告警）。
+configure_logging()
+
 from vpn_simulator.cli.commands.attacks import attacks_group  # noqa: E402
 from vpn_simulator.cli.commands.automation import automation_group  # noqa: E402
 from vpn_simulator.cli.commands.benchmark import benchmark_group  # noqa: E402
