@@ -183,27 +183,27 @@ def _create_state_machine(name: str) -> ProtocolStateMachine:
         ValueError: 不支持的协议名称。
     """
     if name == "PPTP":
-        from plugins.protocols.pptp.state_machine import PPTPStateMachine
+        from vpn_simulator.plugins.protocols.pptp.state_machine import PPTPStateMachine
 
         return PPTPStateMachine()
     elif name == "L2TP":
-        from plugins.protocols.l2tp.state_machine import L2TPStateMachine
+        from vpn_simulator.plugins.protocols.l2tp.state_machine import L2TPStateMachine
 
         return L2TPStateMachine()
     elif name == "OPENVPN":
-        from plugins.protocols.openvpn.state_machine import OpenVPNStateMachine
+        from vpn_simulator.plugins.protocols.openvpn.state_machine import OpenVPNStateMachine
 
         return OpenVPNStateMachine()
     elif name == "IPSEC":
-        from plugins.protocols.ipsec.state_machine import IPSecStateMachine
+        from vpn_simulator.plugins.protocols.ipsec.state_machine import IPSecStateMachine
 
         return IPSecStateMachine()
     elif name == "IKEV2":
-        from plugins.protocols.ikev2.state_machine import IKEv2StateMachine
+        from vpn_simulator.plugins.protocols.ikev2.state_machine import IKEv2StateMachine
 
         return IKEv2StateMachine()
     elif name == "WIREGUARD":
-        from plugins.protocols.wireguard.state_machine import WireGuardStateMachine
+        from vpn_simulator.plugins.protocols.wireguard.state_machine import WireGuardStateMachine
 
         return WireGuardStateMachine()
     else:
