@@ -2,7 +2,8 @@
 
 将 MetricsService.get_statistics() 的聚合指标渲染为 Prometheus 文本
 格式（version 0.0.4），供 Prometheus/`/metrics` 抓取端点直接消费。
-作为首个 exporter，为后续 F6（可观测性）铺路。
+渲染底层复用官方 `prometheus-client` 库（F6 收尾），保证转义、浮点
+格式与标签排序与 Prometheus 生态一致。
 
 Example:
     >>> from vpn_simulator.plugins.exporters.prometheus import render_prometheus_text
@@ -12,6 +13,8 @@ Example:
 from __future__ import annotations
 
 from typing import Any
+
+from prometheus_client import CollectorRegistry, Gauge, generate_latest
 
 from vpn_simulator.plugins import Plugin, PluginContext, PluginMeta, PluginType, plugin
 
@@ -29,27 +32,6 @@ _METRIC_DEFS: tuple[tuple[str, str, str], ...] = (
 _STAT_KEYS: tuple[str, ...] = ("min", "max", "avg", "p50", "p95", "p99")
 
 
-def _escape_label_value(value: str) -> str:
-    """转义 Prometheus 标签值中的特殊字符。"""
-    return value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
-
-
-def _emit_gauge(
-    lines: list[str],
-    name: str,
-    help_text: str,
-    value: float,
-    labels: dict[str, str],
-) -> None:
-    """向 lines 追加一个 gauge 指标块（HELP/TYPE/样本）。"""
-    lines.append(f"# HELP {name} {help_text}")
-    lines.append(f"# TYPE {name} gauge")
-    label_str = ",".join(
-        f'{key}="{_escape_label_value(str(val))}"' for key, val in sorted(labels.items())
-    )
-    lines.append(f"{name}{{{label_str}}} {value}")
-
-
 def render_prometheus_text(metrics: dict[str, Any]) -> str:
     """将 get_statistics() 的输出渲染为 Prometheus 文本格式。
 
@@ -59,33 +41,37 @@ def render_prometheus_text(metrics: dict[str, Any]) -> str:
     Returns:
         Prometheus 文本格式（末尾含换行），无指标时返回空串。
     """
-    lines: list[str] = []
+    registry = CollectorRegistry()
     protocol = str(metrics.get("protocol", "all"))
+    gauges: dict[str, Gauge] = {}
+
+    def get_gauge(name: str, help_text: str, labelnames: list[str]) -> Gauge:
+        """复用同一指标名的 Gauge 对象（不同标签组合走 .labels()）。"""
+        if name not in gauges:
+            gauges[name] = Gauge(name, help_text, labelnames, registry=registry)
+        return gauges[name]
 
     for section, metric_name, help_text in _METRIC_DEFS:
         stats = metrics.get(section, {}).get("stats", {})
-        for stat in _STAT_KEYS:
-            if stat in stats:
-                _emit_gauge(
-                    lines,
-                    metric_name,
-                    help_text,
-                    float(stats[stat]),
-                    {"stat": stat, "protocol": protocol},
-                )
+        samples = [(stat, float(stats[stat])) for stat in _STAT_KEYS if stat in stats]
+        if not samples:
+            continue
+        gauge = get_gauge(metric_name, help_text, ["stat", "protocol"])
+        for stat, value in samples:
+            gauge.labels(stat=stat, protocol=protocol).set(value)
 
     connections = metrics.get("connections", {})
-    for stat in ("current", "peak", "average"):
-        if stat in connections:
-            _emit_gauge(
-                lines,
-                "vpn_simulator_connections",
-                "Simulated VPN connection count",
-                float(connections[stat]),
-                {"stat": stat},
-            )
+    conn_samples = [
+        (stat, float(connections[stat]))
+        for stat in ("current", "peak", "average")
+        if stat in connections
+    ]
+    if conn_samples:
+        gauge = get_gauge("vpn_simulator_connections", "Simulated VPN connection count", ["stat"])
+        for stat, value in conn_samples:
+            gauge.labels(stat=stat).set(value)
 
-    return "\n".join(lines) + ("\n" if lines else "")
+    return generate_latest(registry).decode("utf-8")
 
 
 @plugin("prometheus")

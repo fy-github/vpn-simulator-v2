@@ -37,6 +37,7 @@ dependencies = [
     "scapy>=2.7.0",
     "cryptography>=50.0.0",
     "pysnmp>=7.1.28",
+    "prometheus-client>=0.26.0",
 ]
 
 [project.optional-dependencies]
