@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 from click.testing import CliRunner
 from vpn_simulator.cli import cli
+from vpn_simulator.cli.commands import server as server_module
 
 
 @pytest.fixture
@@ -13,24 +14,35 @@ def runner() -> CliRunner:
 
 
 class TestServerCommands:
-    def test_server_start(self, runner: CliRunner):
-        result = runner.invoke(cli, ["server", "start"])
+    def test_server_start(self, runner: CliRunner, monkeypatch):
+        monkeypatch.setattr(server_module, "_is_running", lambda pid: False)
+        monkeypatch.setattr(server_module, "_start_daemon", lambda host, port: 12345)
+        result = runner.invoke(cli, ["server", "start", "--daemon"])
         assert result.exit_code == 0
         assert "Success" in result.output or "started" in result.output.lower()
 
-    def test_server_start_with_options(self, runner: CliRunner):
-        result = runner.invoke(cli, ["server", "start", "--host", "127.0.0.1", "--port", "9090"])
+    def test_server_start_with_options(self, runner: CliRunner, monkeypatch):
+        monkeypatch.setattr(server_module, "_is_running", lambda pid: False)
+        monkeypatch.setattr(server_module, "_start_daemon", lambda host, port: 12345)
+        result = runner.invoke(
+            cli, ["server", "start", "--host", "127.0.0.1", "--port", "9090", "--daemon"]
+        )
         assert result.exit_code == 0
 
-    def test_server_stop(self, runner: CliRunner):
+    def test_server_stop(self, runner: CliRunner, monkeypatch):
+        monkeypatch.setattr(server_module, "_is_running", lambda pid: False)
         result = runner.invoke(cli, ["server", "stop"])
         assert result.exit_code == 0
 
-    def test_server_status(self, runner: CliRunner):
+    def test_server_status(self, runner: CliRunner, monkeypatch):
+        monkeypatch.setattr(server_module, "_is_running", lambda pid: False)
+        monkeypatch.setattr(server_module, "_read_state", lambda: {})
         result = runner.invoke(cli, ["server", "status"])
         assert result.exit_code == 0
 
-    def test_server_status_json(self, runner: CliRunner):
+    def test_server_status_json(self, runner: CliRunner, monkeypatch):
+        monkeypatch.setattr(server_module, "_is_running", lambda pid: False)
+        monkeypatch.setattr(server_module, "_read_state", lambda: {})
         result = runner.invoke(cli, ["--json", "server", "status"])
         assert result.exit_code == 0
         import json

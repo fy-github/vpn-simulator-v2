@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from click.testing import CliRunner
 from vpn_simulator.cli import cli
+from vpn_simulator.cli.commands import server as server_module
 
 
 class TestCLIBasic:
@@ -50,31 +51,41 @@ class TestServerCommands:
         assert result.exit_code == 0
         assert "Manage the VPN Simulator server" in result.output
 
-    def test_server_start(self, cli_runner: CliRunner):
-        """Verify server start command."""
-        result = cli_runner.invoke(cli, ["server", "start"])
+    def test_server_start(self, cli_runner: CliRunner, monkeypatch):
+        """Verify server start command (daemon mode, spawn mocked)."""
+        monkeypatch.setattr(server_module, "_is_running", lambda pid: False)
+        monkeypatch.setattr(server_module, "_start_daemon", lambda host, port: 12345)
+        result = cli_runner.invoke(cli, ["server", "start", "--daemon"])
         assert result.exit_code == 0
         assert "Success" in result.output or "started" in result.output.lower()
 
-    def test_server_start_with_options(self, cli_runner: CliRunner):
-        """Verify server start command with options."""
+    def test_server_start_with_options(self, cli_runner: CliRunner, monkeypatch):
+        """Verify server start command with options (daemon mode, spawn mocked)."""
+        monkeypatch.setattr(server_module, "_is_running", lambda pid: False)
+        monkeypatch.setattr(server_module, "_start_daemon", lambda host, port: 12345)
         result = cli_runner.invoke(
-            cli, ["server", "start", "--host", "127.0.0.1", "--port", "9090"]
+            cli,
+            ["server", "start", "--host", "127.0.0.1", "--port", "9090", "--daemon"],
         )
         assert result.exit_code == 0
 
-    def test_server_stop(self, cli_runner: CliRunner):
+    def test_server_stop(self, cli_runner: CliRunner, monkeypatch):
         """Verify server stop command."""
+        monkeypatch.setattr(server_module, "_is_running", lambda pid: False)
         result = cli_runner.invoke(cli, ["server", "stop"])
         assert result.exit_code == 0
 
-    def test_server_status(self, cli_runner: CliRunner):
+    def test_server_status(self, cli_runner: CliRunner, monkeypatch):
         """Verify server status command."""
+        monkeypatch.setattr(server_module, "_is_running", lambda pid: False)
+        monkeypatch.setattr(server_module, "_read_state", lambda: {})
         result = cli_runner.invoke(cli, ["server", "status"])
         assert result.exit_code == 0
 
-    def test_server_status_json(self, cli_runner: CliRunner):
+    def test_server_status_json(self, cli_runner: CliRunner, monkeypatch):
         """Verify server status command with JSON output."""
+        monkeypatch.setattr(server_module, "_is_running", lambda pid: False)
+        monkeypatch.setattr(server_module, "_read_state", lambda: {})
         result = cli_runner.invoke(cli, ["--json", "server", "status"])
         assert result.exit_code == 0
         import json
