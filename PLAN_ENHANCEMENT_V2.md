@@ -247,9 +247,12 @@ src/vpn_simulator/
     └── prometheus.py          # 新增：首个 exporter（P0-2 H3，为 F6 铺路）
 ```
 
-> 注：F6 的 `/metrics` 端点由 Phase 0 的 `plugins/exporters/prometheus.py` 提供
-> （手写 Prometheus 文本格式，未引入 `prometheus-client`）；F6 增量交付为内置
-> Grafana 仪表板 + 告警规则（`config/grafana/`）。
+> 注：F6 的 `/metrics` 端点由 Phase 0 的 `plugins/exporters/prometheus.py` 提供，
+> 渲染底层已迁移到官方 `prometheus-client`（输出与手写格式字节兼容）；F6 增量
+> 交付为内置 Grafana 仪表板 + 告警规则（`config/grafana/`）。
+>
+> 注：F7 的大规模设备聚合统计通过 `ScaleAggregateRecord` 单行落库（`/api/v1/scale/{persist,snapshots}`），
+> 不逐设备写 30,000 行。
 
 ---
 
@@ -272,7 +275,7 @@ src/vpn_simulator/
 | scapy | 报文构造/解析、PCAP 回放 | 2.7.0（已引入） | Phase 1 / F3 |
 | cryptography | X25519 / ChaCha20-Poly1305（WireGuard 握手真实曲线） | 50.0.0（已引入） | Phase 1 |
 | pysnmp | SNMP OID 校验（`ObjectIdentifier`） | 7.1.28（已引入） | F4 |
-| prometheus-client | ~~Prometheus 指标~~（未引入：现用手写文本格式导出） | — | P0-2 H3 / F6 |
+| prometheus-client | Prometheus 指标渲染（`/metrics` 端点） | 0.26.0（已引入，F6 收尾） | P0-2 H3 / F6 |
 | pyshark | PCAP 深度解析（可选，未引入） | 0.6+ | F3 |
 | grafana-api | Grafana 集成（可选，未引入） | 1.0+ | F6 |
 | exabgp | BGP 模拟（可选，未引入） | 4.0+ | F5 |
