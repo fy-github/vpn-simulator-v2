@@ -19,11 +19,11 @@ def get_connection_service():
     global _connection_service
     if _connection_service is None:
         from vpn_simulator.core.config import ConfigManager
-        from vpn_simulator.core.database import DatabaseManager
+        from vpn_simulator.core.database import get_database_manager
         from vpn_simulator.core.events import EventBus
         from vpn_simulator.services.connection import ConnectionService
 
-        _connection_service = ConnectionService(EventBus(), ConfigManager(), DatabaseManager())
+        _connection_service = ConnectionService(EventBus(), ConfigManager(), get_database_manager())
     return _connection_service
 
 
@@ -141,19 +141,30 @@ async def get_connection(connection_id: str) -> dict[str, Any]:
 )
 async def disconnect_connection(connection_id: str) -> dict[str, str]:
     """Disconnect a connection."""
+    from vpn_simulator.api.routers.protocols import _active_connections
+
+    removed = False
+
+    # 移除协议 start 时在路由器内存中伪造的连接
+    if connection_id in _active_connections:
+        del _active_connections[connection_id]
+        removed = True
+
+    # 移除 service 管理的连接（若存在）
     try:
         service = get_connection_service()
-        await service.disconnect_connection(connection_id)
-        return {
-            "connection_id": connection_id,
-            "status": "disconnected",
-            "message": f"Connection {connection_id} disconnected",
-        }
+        if await service.disconnect_connection(connection_id):
+            removed = True
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
-    except Exception:
-        return {
-            "connection_id": connection_id,
-            "status": "disconnected",
-            "message": f"Connection {connection_id} disconnected",
-        }
+    except Exception as e:
+        logger.warning("Failed to disconnect connection %s: %s", connection_id, e)
+
+    if not removed:
+        raise HTTPException(status_code=404, detail=f"Connection {connection_id} not found")
+
+    return {
+        "connection_id": connection_id,
+        "status": "disconnected",
+        "message": f"Connection {connection_id} disconnected",
+    }

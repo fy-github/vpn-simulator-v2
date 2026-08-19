@@ -78,9 +78,14 @@ def connection_disconnect(ctx: click.Context, connection_id: str, force: bool) -
 
     try:
         service = _get_service()
-        asyncio.run(service.disconnect_connection(connection_id))
-        handle_success(f"Connection {connection_id} disconnected", json_output=json_output)
+        removed = asyncio.run(service.disconnect_connection(connection_id))
     except Exception as e:
         handle_error(
             f"Failed to disconnect connection {connection_id}: {e}", json_output=json_output
         )
+        return
+
+    if not removed:
+        handle_error(f"Connection {connection_id} not found", json_output=json_output)
+    else:
+        handle_success(f"Connection {connection_id} disconnected", json_output=json_output)

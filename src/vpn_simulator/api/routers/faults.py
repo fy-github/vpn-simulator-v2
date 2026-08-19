@@ -19,11 +19,11 @@ def get_fault_service():
     global _fault_service
     if _fault_service is None:
         from vpn_simulator.core.config import ConfigManager
-        from vpn_simulator.core.database import DatabaseManager
+        from vpn_simulator.core.database import get_database_manager
         from vpn_simulator.core.events import EventBus
         from vpn_simulator.services.fault import FaultService
 
-        _fault_service = FaultService(EventBus(), ConfigManager(), DatabaseManager())
+        _fault_service = FaultService(EventBus(), ConfigManager(), get_database_manager())
     return _fault_service
 
 

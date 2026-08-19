@@ -275,3 +275,38 @@ class DatabaseManager:
         except Exception as e:
             logger.error("database_health_check_failed", error=str(e))
             return False
+
+
+# ---------------------------------------------------------------------------
+# 进程内共享的 DatabaseManager
+#
+# 应用为单进程内存模拟器，此处提供惰性单例，供应用启动时初始化、各服务
+# 复用同一个已初始化的引擎，避免调用方各自 new DatabaseManager() 却从未
+# initialize() 导致 `RuntimeError: Database not initialized`。
+# ---------------------------------------------------------------------------
+
+_default_manager: DatabaseManager | None = None
+
+
+def get_database_manager() -> DatabaseManager:
+    """获取进程内共享的 DatabaseManager 实例（惰性创建）。"""
+    global _default_manager
+    if _default_manager is None:
+        _default_manager = DatabaseManager()
+    return _default_manager
+
+
+async def initialize_database() -> DatabaseManager:
+    """初始化共享数据库（幂等）。"""
+    manager = get_database_manager()
+    if manager._engine is None:
+        await manager.initialize()
+    return manager
+
+
+async def close_database() -> None:
+    """关闭共享数据库（幂等）。"""
+    global _default_manager
+    if _default_manager is not None:
+        await _default_manager.close()
+        _default_manager = None

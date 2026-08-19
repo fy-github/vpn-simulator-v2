@@ -95,6 +95,27 @@ class TestStartProtocol:
             assert result["status"] == "started"
             assert mock_event_bus.emit.called
 
+    @pytest.mark.asyncio
+    async def test_start_protocol_tracks_active_state_machine(
+        self, service: ProtocolService, mock_event_bus
+    ):
+        with patch("vpn_simulator.services.protocol.PluginRegistry") as mock_registry:
+            mock_plugin = MagicMock()
+            mock_meta = MagicMock()
+            mock_meta.plugin_type = PluginType.PROTOCOL
+            mock_meta.name = "pptp"
+            mock_plugin.meta.return_value = mock_meta
+            mock_registry.get.return_value = mock_plugin
+            mock_registry.get_by_type.return_value = []
+
+            await service.start_protocol("pptp", port=1723)
+
+            assert "pptp" in service._active_state_machines
+            state = await service.get_protocol_state("pptp")
+            assert state is not None
+            detail = await service.get_protocol("pptp")
+            assert detail is not None and detail["active"] is True
+
 
 class TestStopProtocol:
     @pytest.mark.asyncio

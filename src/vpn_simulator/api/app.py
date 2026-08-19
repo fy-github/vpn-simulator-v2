@@ -1,6 +1,7 @@
 """FastAPI application entry point for VPN Simulator v2."""
 
 import logging
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -38,6 +39,10 @@ from vpn_simulator.api.websocket import websocket_endpoint, ws_manager
 
 logger = logging.getLogger(__name__)
 
+# 可选 API Key：设置 VPN_SIM_API_KEY 环境变量后，除公开路径外均需携带
+# X-API-Key 请求头。未设置时保持免认证（本地教学工具默认行为）。
+_API_KEY = os.getenv("VPN_SIM_API_KEY")
+
 
 async def _load_plugins() -> None:
     """Load all plugins from the plugins directory."""
@@ -51,21 +56,10 @@ async def _load_plugins() -> None:
     context = PluginContext(event_bus=event_bus, config=config_manager)
     loader = PluginLoader(context)
 
-    # Find plugins directory - try multiple locations
-    possible_paths = [
-        Path(__file__).parent.parent.parent / "plugins",
-        Path(__file__).parent.parent / "plugins",
-        Path.cwd() / "src" / "plugins",
-        Path.cwd() / "plugins",
-    ]
-
-    plugins_dir = None
-    for path in possible_paths:
-        if path.exists() and path.is_dir():
-            plugins_dir = path
-            break
-
-    if plugins_dir is None:
+    # 插件实现（protocols / faults / attacks / exporters）已合并进
+    # vpn_simulator.plugins 包内，因此路径是确定的。
+    plugins_dir = Path(__file__).parent.parent / "plugins"
+    if not plugins_dir.is_dir():
         logger.warning("Plugins directory not found, skipping plugin loading")
         return
 
@@ -95,9 +89,13 @@ async def _load_plugins() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler for startup/shutdown."""
+    from vpn_simulator.core.database import close_database, initialize_database
+
     await _load_plugins()
+    await initialize_database()
     yield
     await ws_manager.disconnect_all()
+    await close_database()
 
 
 app = FastAPI(
@@ -110,13 +108,14 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    # 通配符 origin 与 allow_credentials=True 组合在浏览器端无效，故关闭凭据。
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 app.add_middleware(RequestLoggingMiddleware)
-app.add_middleware(AuthMiddleware)
+app.add_middleware(AuthMiddleware, api_key=_API_KEY)
 
 app.include_router(protocols.router, prefix="/api/v1", tags=["protocols"])
 app.include_router(connections.router, prefix="/api/v1", tags=["connections"])

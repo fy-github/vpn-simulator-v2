@@ -78,6 +78,7 @@ class ProtocolService:
                     "description": meta.description,
                     "dependencies": meta.dependencies,
                     "config_schema": meta.config_schema,
+                    "active": meta.name in self._active_state_machines,
                 }
             )
         logger.info("protocols_listed", count=len(protocols))
@@ -157,6 +158,11 @@ class ProtocolService:
             merged_config["port"] = port
 
         logger.info("starting_protocol", name=name, protocol_config=merged_config)
+
+        # 挂载插件状态机实例，作为"协议是否激活"的唯一事实来源
+        state_machine = getattr(plugin, "state_machine", None)
+        if state_machine is not None:
+            self._active_state_machines[name] = state_machine
 
         # 发布协议启动事件
         await self._event_bus.emit(

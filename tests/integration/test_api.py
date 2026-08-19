@@ -95,13 +95,27 @@ class TestConnectionEndpoints:
         assert response.status_code == 404
         assert "not found" in response.json()["detail"]
 
-    def test_disconnect_connection(self, client: TestClient):
-        """Verify disconnecting a connection."""
+    def test_disconnect_nonexistent_connection(self, client: TestClient):
+        """Verify disconnecting a nonexistent connection returns 404."""
         response = client.delete("/api/v1/connections/test-conn-001")
+        assert response.status_code == 404
+        assert "not found" in response.json()["detail"]
+
+    def test_disconnect_active_connection(self, client: TestClient):
+        """Verify disconnecting a started protocol's connection removes it."""
+        client.post("/api/v1/protocols/wireguard/start", json={"port": 51820, "config": {}})
+        conns = client.get("/api/v1/connections?protocol=wireguard").json()
+        assert conns, "expected a fabricated wireguard connection"
+        conn_id = conns[0]["id"]
+
+        response = client.delete(f"/api/v1/connections/{conn_id}")
         assert response.status_code == 200
-        data = response.json()
-        assert data["connection_id"] == "test-conn-001"
-        assert data["status"] == "disconnected"
+        assert response.json()["status"] == "disconnected"
+
+        remaining = client.get("/api/v1/connections?protocol=wireguard").json()
+        assert all(c["id"] != conn_id for c in remaining)
+
+        client.post("/api/v1/protocols/wireguard/stop")
 
 
 class TestFaultEndpoints:

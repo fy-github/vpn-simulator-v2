@@ -75,9 +75,9 @@ def _get_system_metrics() -> dict[str, float]:
 def _get_connection_stats() -> dict[str, int]:
     """Get connection statistics from protocol service."""
     try:
-        from vpn_simulator.api.routers.protocols import _started_protocols
+        from vpn_simulator.api.routers.protocols import _active_connections
 
-        active = len(_started_protocols)
+        active = len(_active_connections)
         return {
             "total_connections": active,
             "active_connections": active,

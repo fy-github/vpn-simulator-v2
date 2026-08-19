@@ -19,11 +19,11 @@ def get_attack_service():
     global _attack_service
     if _attack_service is None:
         from vpn_simulator.core.config import ConfigManager
-        from vpn_simulator.core.database import DatabaseManager
+        from vpn_simulator.core.database import get_database_manager
         from vpn_simulator.core.events import EventBus
         from vpn_simulator.services.attack import AttackService
 
-        _attack_service = AttackService(EventBus(), ConfigManager(), DatabaseManager())
+        _attack_service = AttackService(EventBus(), ConfigManager(), get_database_manager())
     return _attack_service
 
 

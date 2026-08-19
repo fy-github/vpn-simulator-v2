@@ -15,7 +15,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/protocols")
 
 _protocol_service = None
-_started_protocols: set[str] = set()
 _active_connections: dict[str, dict[str, Any]] = {}
 
 
@@ -23,11 +22,11 @@ def get_protocol_service():
     global _protocol_service
     if _protocol_service is None:
         from vpn_simulator.core.config import ConfigManager
-        from vpn_simulator.core.database import DatabaseManager
+        from vpn_simulator.core.database import get_database_manager
         from vpn_simulator.core.events import EventBus
         from vpn_simulator.services.protocol import ProtocolService
 
-        _protocol_service = ProtocolService(EventBus(), ConfigManager(), DatabaseManager())
+        _protocol_service = ProtocolService(EventBus(), ConfigManager(), get_database_manager())
     return _protocol_service
 
 
@@ -69,8 +68,8 @@ async def list_protocols() -> list[dict[str, Any]]:
         return [
             {
                 "name": p.get("name", ""),
-                "state": "running" if p.get("name", "") in _started_protocols else "stopped",
-                "port": 1723 if p.get("name", "") in _started_protocols else 0,
+                "state": "running" if p.get("active", False) else "stopped",
+                "port": _get_default_port(p.get("name", "")) if p.get("active", False) else 0,
                 "connections": 0,
             }
             for p in protocols
@@ -96,7 +95,6 @@ async def start_protocol(
             port=request.port,
             config=request.config,
         )
-        _started_protocols.add(name)
         conn_id = f"conn_{name}_{uuid.uuid4().hex[:8]}"
         _active_connections[conn_id] = {
             "id": conn_id,
@@ -151,7 +149,6 @@ async def stop_protocol(name: str) -> dict[str, str]:
     except Exception as e:
         logger.warning("Failed to stop protocol %s: %s", name, e)
         raise HTTPException(status_code=500, detail=f"Failed to stop protocol {name}: {e}")
-    _started_protocols.discard(name)
     to_remove = [cid for cid, c in _active_connections.items() if c["protocol"] == name]
     for cid in to_remove:
         del _active_connections[cid]
@@ -171,10 +168,11 @@ async def get_protocol_status(name: str) -> dict[str, Any]:
         protocol = await service.get_protocol(name)
         if protocol is None:
             return {"name": name, "state": "stopped", "port": 0, "connections": 0}
+        active = bool(protocol.get("active", False))
         return {
             "name": protocol.get("name", name),
-            "state": "running" if protocol.get("active", False) else "stopped",
-            "port": 0,
+            "state": "running" if active else "stopped",
+            "port": _get_default_port(name) if active else 0,
             "connections": 0,
         }
     except Exception as e:

@@ -304,6 +304,13 @@ class ConnectionService:
 
         return removed
 
+    async def disconnect_connection(self, connection_id: str) -> bool:
+        """断开并移除连接。
+
+        语义与 remove_connection 一致，提供该命名以匹配 API/CLI 调用点。
+        """
+        return await self.remove_connection(connection_id)
+
     async def get_connection_stats(self) -> dict[str, Any]:
         """获取连接统计汇总。
 
