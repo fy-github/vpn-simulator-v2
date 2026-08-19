@@ -357,6 +357,56 @@ class TrafficService:
         packets = self._recent_packets[-limit:]
         return [p.to_dict() for p in reversed(packets)]
 
+    def record_external_packet(
+        self,
+        *,
+        src_ip: str,
+        dst_ip: str,
+        src_port: int,
+        dst_port: int,
+        size: int,
+        payload_preview: str = "",
+        protocol: Protocol = Protocol.UDP,
+    ) -> Packet:
+        """注入一个外部真实捕获的报文到流量流。
+
+        将报文加入统计、最近报文列表和 WS 流缓冲（`_packet_buffer`），
+        使真实协议报文（如 WireGuard 握手）能被前端流量可视化消费。
+
+        Args:
+            src_ip: 源 IP。
+            dst_ip: 目的 IP。
+            src_port: 源端口。
+            dst_port: 目的端口。
+            size: 报文大小（字节）。
+            payload_preview: 载荷预览（十六进制字符串）。
+            protocol: 传输层协议，默认 UDP。
+
+        Returns:
+            创建的 Packet 对象。
+        """
+        packet = Packet(
+            protocol=protocol,
+            src_ip=src_ip,
+            dst_ip=dst_ip,
+            src_port=src_port,
+            dst_port=dst_port,
+            size=size,
+            ttl=64,
+            flags=[],
+            payload_preview=payload_preview,
+        )
+        self._packets.append(packet)
+        self._recent_packets.append(packet)
+        if len(self._recent_packets) > self._max_recent_packets:
+            self._recent_packets = self._recent_packets[-self._max_recent_packets :]
+        try:
+            self._packet_buffer.put_nowait(packet)
+        except asyncio.QueueFull:
+            pass
+        self._update_stats()
+        return packet
+
     async def get_packet_stream(self) -> AsyncIterator[dict[str, Any]]:
         """Async generator for streaming packets.
 

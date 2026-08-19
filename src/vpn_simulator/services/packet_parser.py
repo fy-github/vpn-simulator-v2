@@ -229,6 +229,8 @@ class PacketParser:
             return struct.unpack(">H", data)[0]
         elif field_def.field_type == FieldType.UINT32:
             return struct.unpack(">I", data)[0]
+        elif field_def.field_type == FieldType.UINT32_LE:
+            return struct.unpack("<I", data)[0]
         elif field_def.field_type == FieldType.UINT64:
             return struct.unpack(">Q", data)[0]
         elif field_def.field_type == FieldType.STRING:

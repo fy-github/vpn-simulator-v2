@@ -33,6 +33,7 @@ class FieldType(Enum):
     UINT8 = "uint8"
     UINT16 = "uint16"
     UINT32 = "uint32"
+    UINT32_LE = "uint32_le"
     UINT64 = "uint64"
     BYTES = "bytes"
     STRING = "string"
@@ -656,6 +657,33 @@ IPSEC_FIELDS = {
     "QUICK_MODE": IKEV1_QUICK_MODE_FIELDS,
 }
 
+# WireGuard Handshake Initiation 报文字段（148 字节，小端）
+WIREGUARD_HANDSHAKE_INITIATION_FIELDS = [
+    FieldDefinition("msg_type", 0, 4, FieldType.UINT32_LE, "消息类型（1=Initiation）"),
+    FieldDefinition("sender_index", 4, 4, FieldType.UINT32_LE, "发送端索引"),
+    FieldDefinition("ephemeral", 8, 32, FieldType.BYTES, "发起方临时公钥（X25519）"),
+    FieldDefinition("encrypted_static", 40, 48, FieldType.BYTES, "加密的发起方静态公钥 + 认证标签"),
+    FieldDefinition("encrypted_timestamp", 88, 28, FieldType.BYTES, "加密的时间戳 + 认证标签"),
+    FieldDefinition("mac1", 116, 16, FieldType.BYTES, "MAC1 消息认证码"),
+    FieldDefinition("mac2", 132, 16, FieldType.BYTES, "MAC2 cookie 消息认证码"),
+]
+
+# WireGuard Handshake Response 报文字段（92 字节，小端）
+WIREGUARD_HANDSHAKE_RESPONSE_FIELDS = [
+    FieldDefinition("msg_type", 0, 4, FieldType.UINT32_LE, "消息类型（2=Response）"),
+    FieldDefinition("sender_index", 4, 4, FieldType.UINT32_LE, "发送端索引"),
+    FieldDefinition("receiver_index", 8, 4, FieldType.UINT32_LE, "接收端索引"),
+    FieldDefinition("ephemeral", 12, 32, FieldType.BYTES, "响应方临时公钥（X25519）"),
+    FieldDefinition("encrypted_nothing", 44, 16, FieldType.BYTES, "加密空载荷 + 认证标签"),
+    FieldDefinition("mac1", 60, 16, FieldType.BYTES, "MAC1 消息认证码"),
+    FieldDefinition("mac2", 76, 16, FieldType.BYTES, "MAC2 cookie 消息认证码"),
+]
+
+WIREGUARD_FIELDS = {
+    "HANDSHAKE_INITIATION": WIREGUARD_HANDSHAKE_INITIATION_FIELDS,
+    "HANDSHAKE_RESPONSE": WIREGUARD_HANDSHAKE_RESPONSE_FIELDS,
+}
+
 # 所有协议的报文字段映射
 ALL_PROTOCOL_FIELDS = {
     "pptp": PPTP_FIELDS,
@@ -663,6 +691,7 @@ ALL_PROTOCOL_FIELDS = {
     "openvpn": OPENVPN_FIELDS,
     "ipsec": IPSEC_FIELDS,
     "ikev2": IPSEC_FIELDS,  # IKEv2 使用与 IPSec 相同的字段定义
+    "wireguard": WIREGUARD_FIELDS,
 }
 
 
