@@ -96,13 +96,13 @@ cd web-ui && npm install && cd ..
 
 ```bash
 # Start backend API server
-.venv/bin/python -m uvicorn vpn_simulator.api.app:app --host 0.0.0.0 --port 8000
+.venv/bin/python -m uvicorn vpn_simulator.api.app:app --host 0.0.0.0 --port 8080
 
 # In another terminal, start frontend dev server
 cd web-ui && npm run dev
 ```
 
-Open http://localhost:5174 in your browser.
+Open http://localhost:3000 in your browser.
 
 ### Production Build
 
@@ -162,6 +162,14 @@ vpn-simulator-v2/
     ├── integration/          # API integration tests
     └── e2e/                  # End-to-end tests
 ```
+
+## Persistence & State
+
+The backend initializes a SQLite database (SQLAlchemy + aiosqlite) on startup
+and creates `vpn_simulator.db` with all tables automatically. Note that the
+simulator currently keeps its live protocol/connection state **in memory**
+(per-process); the database layer is initialized and available to the services,
+but it is not yet the single source of truth for live protocol/connection state.
 
 ## API Endpoints
 

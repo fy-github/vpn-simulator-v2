@@ -55,8 +55,8 @@ apiClient.interceptors.response.use(
 
 // API methods
 export const api = {
-  // Health check
-  healthCheck: () => apiClient.get('/health'),
+  // Health check (backend exposes it at the root, outside /api/v1)
+  healthCheck: () => axios.get('/health'),
 
   // Protocols
   getProtocols: () => apiClient.get('/protocols'),
