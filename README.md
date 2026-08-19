@@ -1,6 +1,6 @@
 # VPN Simulator v2
 
-Multi-protocol VPN Server Simulator with modern Web UI — supports **8 VPN protocols** for teaching, testing, and security research.
+Multi-protocol VPN Server Simulator with modern Web UI — supports **9 VPN/tunnel protocols** for teaching, testing, and security research.
 <img width="1911" height="837" alt="image" src="https://github.com/user-attachments/assets/fa5fe893-2e4a-4aac-b238-eeeef8ea6a2e" />
 
 
@@ -16,6 +16,7 @@ Multi-protocol VPN Server Simulator with modern Web UI — supports **8 VPN prot
 | IPSec (IKEv1) | 500 / 4500 | UDP | Implemented |
 | IKEv2/IPSec | 500 / 4500 | UDP | Implemented |
 | WireGuard | 51820 | UDP | Implemented |
+| VXLAN | 4789 | UDP (MAC-in-UDP) | Implemented |
 | SSTP | 443 | TCP | Implemented |
 | OpenConnect | 443 | TCP | Implemented |
 
@@ -29,7 +30,7 @@ Multi-protocol VPN Server Simulator with modern Web UI — supports **8 VPN prot
 - **Fault Injection** — Network, protocol, authentication, encryption fault simulation
 - **Attack Simulation** — DoS, MITM, replay, brute force, injection attack testing
 - **Scenario Engine** — Predefined network scenarios (3G, satellite, WiFi, wired)
-- **Tutorial System** — Step-by-step protocol handshake tutorials for all 8 protocols
+- **Tutorial System** — Step-by-step protocol handshake tutorials for all 9 protocols
 - **Learning Resources** — RFC references, FAQ, learning paths
 - **Protocol Comparison** — Side-by-side protocol state machine comparison
 - **DPI (Deep Packet Inspection)** — Protocol identification and traffic classification
@@ -95,8 +96,8 @@ cd web-ui && npm install && cd ..
 ### Running
 
 ```bash
-# Start backend API server
-.venv/bin/python -m uvicorn vpn_simulator.api.app:app --host 0.0.0.0 --port 8080
+# Start backend API server (默认仅监听本机；如需对外暴露请显式 --host 0.0.0.0 并配置 VPN_SIM_API_KEY)
+.venv/bin/python -m uvicorn vpn_simulator.api.app:app --host 127.0.0.1 --port 8080
 
 # In another terminal, start frontend dev server
 cd web-ui && npm run dev
@@ -208,7 +209,7 @@ cd web-ui && npx tsc --noEmit
 cd web-ui && npm run build
 ```
 
-**Test Results:** 1037 tests passing, 81% coverage (Python 3.11, deps pinned by `uv.lock`).
+**Test Results:** 1040 tests passing, 81% coverage (Python 3.11, deps pinned by `uv.lock`).
 
 ## Lint
 
@@ -232,6 +233,7 @@ Each protocol has a dedicated configuration dialog accessible from the Protocols
 - **IPSec** — Auth type (PSK/cert), Phase1/Phase2 parameters
 - **IKEv2** — Auth method, IP pool, encryption/DH parameters
 - **WireGuard** — Tunnel IP, private/public keys
+- **VXLAN** — VNI, local/remote VTEP addresses, MTU
 - **SSTP** — Users, MTU, IP pool, DNS, certificates
 - **OpenConnect** — Users, tunnel type, MTU, IP pool, certificates
 

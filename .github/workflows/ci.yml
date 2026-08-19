@@ -31,6 +31,9 @@ jobs:
       - name: Format check (black)
         run: uv run black --check src tests
 
+      - name: Type check (mypy)
+        run: uv run mypy src/vpn_simulator
+
       - name: Run tests
         run: uv run pytest tests/ -q
 
