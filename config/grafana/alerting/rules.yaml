@@ -1,0 +1,30 @@
+# Prometheus 告警规则（供 Grafana Alerting / Prometheus 加载）
+groups:
+  - name: vpn-simulator
+    rules:
+      - alert: HighLatency
+        expr: vpn_simulator_latency_ms{stat="avg"} > 200
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "VPN 握手延迟过高"
+          description: "{{ $labels.protocol }} 平均延迟 {{ $value }}ms，超过 200ms 阈值。"
+
+      - alert: HighPacketLoss
+        expr: vpn_simulator_packet_loss_percent{stat="avg"} > 10
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "VPN 丢包率过高"
+          description: "{{ $labels.protocol }} 丢包率 {{ $value }}%，超过 10% 阈值。"
+
+      - alert: NoMetrics
+        expr: absent(vpn_simulator_throughput_mbps)
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "VPN Simulator 指标缺失"
+          description: "超过 5 分钟未采集到 VPN Simulator 指标。"

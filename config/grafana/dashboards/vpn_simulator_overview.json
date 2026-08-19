@@ -1,0 +1,76 @@
+{
+  "uid": "vpn-simulator-overview",
+  "title": "VPN Simulator Overview",
+  "tags": ["vpn", "simulator", "teaching"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "editable": true,
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Throughput (Mbps)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "vpn_simulator_throughput_mbps",
+          "legendFormat": "{{stat}} ({{protocol}})"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Latency (ms)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "vpn_simulator_latency_ms",
+          "legendFormat": "{{stat}} ({{protocol}})"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Packet Loss (%)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "vpn_simulator_packet_loss_percent",
+          "legendFormat": "{{stat}} ({{protocol}})"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Active Connections",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "vpn_simulator_connections{stat=\"current\"}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "gauge",
+      "title": "Peak Connections",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "vpn_simulator_connections{stat=\"peak\"}"
+        }
+      ]
+    }
+  ]
+}

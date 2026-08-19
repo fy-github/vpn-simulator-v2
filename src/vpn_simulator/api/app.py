@@ -26,6 +26,7 @@ from vpn_simulator.api.routers import (  # noqa: E402
     dhcp,
     dpi,
     faults,
+    grafana,
     impairment,
     iot,
     learning,
@@ -157,6 +158,7 @@ app.add_middleware(AuthMiddleware, api_key=_API_KEY)
 app.include_router(protocols.router, prefix="/api/v1", tags=["protocols"])
 app.include_router(connections.router, prefix="/api/v1", tags=["connections"])
 app.include_router(faults.router, prefix="/api/v1", tags=["faults"])
+app.include_router(grafana.router, prefix="/api/v1", tags=["grafana"])
 app.include_router(impairment.router, prefix="/api/v1", tags=["impairments"])
 app.include_router(attacks.router, prefix="/api/v1", tags=["attacks"])
 app.include_router(benchmark.router, prefix="/api/v1", tags=["benchmark"])
