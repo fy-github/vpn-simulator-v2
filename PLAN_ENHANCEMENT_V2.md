@@ -61,6 +61,21 @@ PCAP 回放从"模拟"变成"真测"。
 > 执行顺序：**Phase 0 → Phase 1 → F1 → F2 → F3 → F4 → F5 → F6 → F7 → F8**。
 > 其中 Phase 1 的 `packetio` 是 F1/F2/F3 的地基，故置于 P1 功能之前。
 
+### 执行进度（已全部完成 ✅）
+
+| 阶段/功能 | 状态 | 提交 |
+|-----------|------|------|
+| Phase 0（持久化 + 工程卫生） | ✅ 完成 | `f44907d`…`5a1edcf`（含 mypy 全绿、README 修正、exporters 首个 Prometheus 导出、默认绑 127.0.0.1、启动状态恢复） |
+| Phase 1（真实报文地基） | ✅ 完成 | `00d3125`、`ee09333`、`aa96fcf`、`cbd34a0`（真实 X25519/ChaCha20-Poly1305/BLAKE2s Noise_IKpsk2 握手 + scapy 报文层 + UDP 收发 + 报文入流量流） |
+| F1 时间变化损伤 | ✅ 完成 | `22cb357`、`09fc1aa` |
+| F2 VPN 配置验证 | ✅ 完成 | `30a8b1f` |
+| F3 PCAP 回放 | ✅ 完成 | `c2a98c6` |
+| F4 SNMP 设备模拟 | ✅ 完成 | `4225824` |
+| F5 路由协议模拟 | ✅ 完成 | `12587f5` |
+| F6 Grafana 集成 | ✅ 完成 | `e083fd2` |
+| F7 大规模设备模拟 | ✅ 完成 | `9fac173` |
+| F8 C2 攻击场景 | ✅ 完成 | `7d792a7` |
+
 ---
 
 ## 三、Phase 0：持久化 + 工程卫生
@@ -127,6 +142,7 @@ config_history/topologies）且连接/故障/攻击已做写通（write-through�
 
 ## 五、Phase 2–4：F1–F8 功能（精化）
 
+> **状态：F1–F8 已全部实现并合入 main（见上"执行进度"）。**
 > 以下在 v2 初稿基础上精化，标注与真实报文/持久化的关系。
 
 ### 5.1 F1: 时间变化网络损伤
@@ -200,7 +216,11 @@ src/vpn_simulator/
 ├── domain/
 │   ├── impairment.py          # 新增（F1）
 │   ├── validation.py          # 新增（F2）
-│   └── pcap.py                # 新增（F3）
+│   ├── pcap.py                # 新增（F3）
+│   ├── snmp.py                # 新增（F4）
+│   ├── routing.py             # 新增（F5）
+│   ├── scale.py               # 新增（F7）
+│   └── c2.py                  # 新增（F8）
 ├── services/
 │   ├── protocol.py            # 变更：restore_from_db（P0-1）
 │   ├── connection.py          # 变更：restore_from_db（P0-1）
@@ -210,27 +230,38 @@ src/vpn_simulator/
 │   ├── validation.py          # 新增（F2）
 │   ├── pcap.py                # 新增（F3）
 │   ├── snmp.py                # 新增（F4）
-│   └── routing.py             # 新增（F5）
+│   ├── routing.py             # 新增（F5）
+│   ├── grafana.py             # 新增（F6）
+│   ├── scale.py               # 新增（F7）
+│   └── c2.py                  # 新增（F8）
 ├── api/routers/
 │   ├── impairment.py          # 新增（F1）
 │   ├── validation.py          # 新增（F2）
 │   ├── pcap.py                # 新增（F3）
-│   └── snmp.py                # 新增（F4）
+│   ├── snmp.py                # 新增（F4）
+│   ├── routing.py             # 新增（F5）
+│   ├── grafana.py             # 新增（F6）
+│   ├── scale.py               # 新增（F7）
+│   └── c2.py                  # 新增（F8）
 └── plugins/exporters/
-    └── prometheus/            # 新增：首个 exporter（P0-2 H3，为 F6 铺路）
+    └── prometheus.py          # 新增：首个 exporter（P0-2 H3，为 F6 铺路）
 ```
+
+> 注：F6 的 `/metrics` 端点由 Phase 0 的 `plugins/exporters/prometheus.py` 提供
+> （手写 Prometheus 文本格式，未引入 `prometheus-client`）；F6 增量交付为内置
+> Grafana 仪表板 + 告警规则（`config/grafana/`）。
 
 ---
 
 ## 七、里程碑与验收
 
-| 里程碑 | 内容 | 验收 |
-|--------|------|------|
-| M0 | Phase 0 | 重启状态不丢；CI 含 mypy 且全绿；README 正确；exporters 有首个实现；默认绑 127.0.0.1 |
-| M1 | Phase 1 | 真实 UDP 报文驱动 WireGuard/OpenVPN 握手状态跳转 |
-| M2 | F1+F2+F3 | 损伤时间线、6 协议配置真测、PCAP 时序回放 |
-| M3 | F4+F5+F6 | SNMP OID 查询、BGP/OSPF 会话、`/metrics` 端点 |
-| M4 | F7+F8 | 30,000+ 设备、5+ C2 场景 |
+| 里程碑 | 内容 | 验收 | 状态 |
+|--------|------|------|------|
+| M0 | Phase 0 | 重启状态不丢；CI 含 mypy 且全绿；README 正确；exporters 有首个实现；默认绑 127.0.0.1 | ✅ |
+| M1 | Phase 1 | 真实 UDP 报文驱动 WireGuard 握手状态跳转 | ✅ |
+| M2 | F1+F2+F3 | 损伤时间线、6 协议配置真测、PCAP 时序回放 | ✅ |
+| M3 | F4+F5+F6 | SNMP OID 查询、BGP/OSPF 会话、`/metrics` 端点 | ✅ |
+| M4 | F7+F8 | 30,000+ 设备、5+ C2 场景 | ✅ |
 
 ---
 
@@ -238,13 +269,13 @@ src/vpn_simulator/
 
 | 依赖 | 用途 | 版本 | 引入阶段 |
 |------|------|------|----------|
-| scapy | 报文构造/解析、PCAP 回放 | 2.5+ | Phase 1 / F3 |
-| cryptography | X25519 / ChaCha20-Poly1305 / BLAKE2s（WireGuard 握手真实曲线） | 42+ | Phase 1 |
-| pysnmp | SNMP 协议 | 6.0+ | F4 |
-| prometheus-client | Prometheus 指标 | 0.17+ | P0-2 H3 / F6 |
-| pyshark | PCAP 深度解析（可选） | 0.6+ | F3 |
-| grafana-api | Grafana 集成（可选） | 1.0+ | F6 |
-| exabgp | BGP 模拟（可选） | 4.0+ | F5 |
+| scapy | 报文构造/解析、PCAP 回放 | 2.7.0（已引入） | Phase 1 / F3 |
+| cryptography | X25519 / ChaCha20-Poly1305（WireGuard 握手真实曲线） | 50.0.0（已引入） | Phase 1 |
+| pysnmp | SNMP OID 校验（`ObjectIdentifier`） | 7.1.28（已引入） | F4 |
+| prometheus-client | ~~Prometheus 指标~~（未引入：现用手写文本格式导出） | — | P0-2 H3 / F6 |
+| pyshark | PCAP 深度解析（可选，未引入） | 0.6+ | F3 |
+| grafana-api | Grafana 集成（可选，未引入） | 1.0+ | F6 |
+| exabgp | BGP 模拟（可选，未引入） | 4.0+ | F5 |
 
 ---
 
@@ -264,6 +295,6 @@ src/vpn_simulator/
 
 1. ~~**真实报文首协议**~~ ✅ **已定案：WireGuard**（UDP，握手结构简单）；OpenVPN 暂缓。
 2. ~~**密码学边界**~~ ✅ **已定案：接入真实曲线**（X25519 ECDH + ChaCha20-Poly1305 + BLAKE2s，实现 Noise_IKpsk2 握手）。
-3. **持久化范围**：是否连"报文记录 packets / 状态历史 state_transitions"也做清理策略（防止无限增长）？
-4. **exporters 首实现**：Prometheus 文本导出是否就是 P0-2 的"最小 exporter"，还是先做 JSON/CSV 报告导出更贴合教学场景？
-5. **SNMP 版本**：仅 v2c 还是同时 v3（加密/认证）？
+3. **持久化范围**：是否连"报文记录 packets / 状态历史 state_transitions"也做清理策略（防止无限增长）？（**待定**）
+4. ~~**exporters 首实现**~~ ✅ **已定案：Prometheus 文本格式导出**（`plugins/exporters/prometheus.py`，为 F6 `/metrics` 铺路）。
+5. ~~**SNMP 版本**~~ ✅ **已定案：v2c + v3 同时支持**（F4 模拟 12 种设备类型，设备按 v2c/v3 轮换）。
