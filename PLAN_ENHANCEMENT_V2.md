@@ -134,9 +134,9 @@ config_history/topologies）且连接/故障/攻击已做写通（write-through�
 
 ### 4.3 验收标准
 
-- [ ] `packetio` 能真实收/发 UDP 报文并解析出 WireGuard Handshake Init 结构
-- [ ] 真实报文驱动 WireGuard 状态机至少完成一次握手状态跳转
-- [ ] 与 Web UI 的 traffic 流打通：真实报文进入 `packets` 表与 WS 流
+- [x] `packetio` 能真实收/发 UDP 报文并解析出 WireGuard Handshake Init 结构
+- [x] 真实报文驱动 WireGuard 状态机至少完成一次握手状态跳转
+- [x] 与 Web UI 的 traffic 流打通：真实报文进入 `packets` 表与 WS 流
 
 ---
 
@@ -233,7 +233,8 @@ src/vpn_simulator/
 │   ├── routing.py             # 新增（F5）
 │   ├── grafana.py             # 新增（F6）
 │   ├── scale.py               # 新增（F7）
-│   └── c2.py                  # 新增（F8）
+│   ├── c2.py                  # 新增（F8）
+│   └── retention.py           # 新增（待确认 #3：packets/state_transitions 保留策略）
 ├── api/routers/
 │   ├── impairment.py          # 新增（F1）
 │   ├── validation.py          # 新增（F2）
@@ -242,7 +243,8 @@ src/vpn_simulator/
 │   ├── routing.py             # 新增（F5）
 │   ├── grafana.py             # 新增（F6）
 │   ├── scale.py               # 新增（F7）
-│   └── c2.py                  # 新增（F8）
+│   ├── c2.py                  # 新增（F8）
+│   └── retention.py           # 新增（待确认 #3）
 └── plugins/exporters/
     └── prometheus.py          # 新增：首个 exporter（P0-2 H3，为 F6 铺路）
 ```
@@ -298,6 +300,6 @@ src/vpn_simulator/
 
 1. ~~**真实报文首协议**~~ ✅ **已定案：WireGuard**（UDP，握手结构简单）；OpenVPN 暂缓。
 2. ~~**密码学边界**~~ ✅ **已定案：接入真实曲线**（X25519 ECDH + ChaCha20-Poly1305 + BLAKE2s，实现 Noise_IKpsk2 握手）。
-3. **持久化范围**：是否连"报文记录 packets / 状态历史 state_transitions"也做清理策略（防止无限增长）？（**待定**）
+3. ~~**持久化范围**~~ ✅ **已定案：对 `packets` / `state_transitions` 增加保留策略**——`RetentionService` 按「最大行数（保留最新 N 行）+ 最大保留时长（TTL）」清理，应用启动时挂起周期任务自动清理，另暴露 `/api/v1/retention/{status,cleanup}` 供手动触发（防止无限增长）。
 4. ~~**exporters 首实现**~~ ✅ **已定案：Prometheus 文本格式导出**（`plugins/exporters/prometheus.py`，为 F6 `/metrics` 铺路）。
 5. ~~**SNMP 版本**~~ ✅ **已定案：v2c + v3 同时支持**（F4 模拟 12 种设备类型，设备按 v2c/v3 轮换）。
