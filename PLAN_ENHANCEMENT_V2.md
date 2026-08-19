@@ -234,7 +234,7 @@ src/vpn_simulator/
 │   ├── grafana.py             # 新增（F6）
 │   ├── scale.py               # 新增（F7）
 │   ├── c2.py                  # 新增（F8）
-│   └── retention.py           # 新增（待确认 #3：packets/state_transitions 保留策略）
+│   └── retention.py           # 新增（packets/state_transitions 保留策略）
 ├── api/routers/
 │   ├── impairment.py          # 新增（F1）
 │   ├── validation.py          # 新增（F2）
@@ -244,7 +244,7 @@ src/vpn_simulator/
 │   ├── grafana.py             # 新增（F6）
 │   ├── scale.py               # 新增（F7）
 │   ├── c2.py                  # 新增（F8）
-│   └── retention.py           # 新增（待确认 #3）
+│   └── retention.py           # 新增（保留策略）
 └── plugins/exporters/
     └── prometheus.py          # 新增：首个 exporter（P0-2 H3，为 F6 铺路）
 ```
