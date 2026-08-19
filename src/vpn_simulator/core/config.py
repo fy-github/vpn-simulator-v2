@@ -47,7 +47,7 @@ class Config:
     """
 
     # 服务器配置
-    server_host: str = "0.0.0.0"
+    server_host: str = "127.0.0.1"
     server_port: int = 8080
 
     # 数据库配置

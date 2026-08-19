@@ -14,7 +14,7 @@ router = APIRouter(prefix="/config")
 class ServerConfig(BaseModel):
     """Server configuration."""
 
-    host: str = Field("0.0.0.0", description="Server host")
+    host: str = Field("127.0.0.1", description="Server host")
     port: int = Field(8080, description="Server port")
 
 
@@ -36,7 +36,7 @@ class Config(BaseModel):
 async def get_config() -> dict[str, Any]:
     """Get current configuration."""
     return {
-        "server": {"host": "0.0.0.0", "port": 8080},
+        "server": {"host": "127.0.0.1", "port": 8080},
         "protocols": {},
         "faults": {},
         "logging": {"level": "INFO", "format": "json"},

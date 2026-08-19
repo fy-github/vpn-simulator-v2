@@ -111,7 +111,7 @@ def server_group() -> None:
 
 
 @server_group.command("start")
-@click.option("--host", "-h", default="0.0.0.0", help="Server bind address.")
+@click.option("--host", "-h", default="127.0.0.1", help="Server bind address.")
 @click.option("--port", "-p", default=8080, type=int, help="Server bind port.")
 @click.option("--daemon", "-d", is_flag=True, help="Run as background daemon.")
 @click.pass_context
@@ -171,7 +171,7 @@ def server_status(ctx: click.Context) -> None:
     running = _is_running(pid)
     state = _read_state()
 
-    host = str(state.get("host", "0.0.0.0"))
+    host = str(state.get("host", "127.0.0.1"))
     port = int(state.get("port", 8080))
     started_at = state.get("started_at")
 

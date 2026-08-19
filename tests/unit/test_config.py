@@ -23,7 +23,7 @@ class TestConfig:
     def test_default_values(self):
         """Verify Config has expected default values."""
         config = Config()
-        assert config.server_host == "0.0.0.0"
+        assert config.server_host == "127.0.0.1"
         assert config.server_port == 8080
         assert config.log_level == "INFO"
         assert config.log_format == "json"
