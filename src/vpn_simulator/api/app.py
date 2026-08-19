@@ -33,6 +33,7 @@ from vpn_simulator.api.routers import (  # noqa: E402
     metrics,
     obfuscation,
     packets,
+    pcap,
     protocols,
     scenarios,
     stats,
@@ -165,6 +166,7 @@ app.include_router(comparison.router, prefix="/api/v1", tags=["comparison"])
 app.include_router(tutorials.router, prefix="/api/v1", tags=["tutorials"])
 app.include_router(learning.router, prefix="/api/v1", tags=["learning"])
 app.include_router(packets.router, prefix="/api/v1", tags=["packets"])
+app.include_router(pcap.router, prefix="/api/v1", tags=["pcap"])
 app.include_router(scenarios.router, prefix="/api/v1", tags=["scenarios"])
 app.include_router(metrics.router, prefix="/api/v1", tags=["metrics"])
 app.include_router(traffic.router, prefix="/api/v1", tags=["traffic"])
