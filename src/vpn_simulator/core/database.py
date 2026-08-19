@@ -202,6 +202,25 @@ class ProtocolRecord(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
+class ScaleAggregateRecord(Base):
+    """大规模设备聚合快照表（F7）
+
+    只持久化聚合统计（按类型/状态分布 + 均值），不逐设备落库，
+    避免 30,000+ 台设备的行爆炸。
+    """
+
+    __tablename__ = "scale_aggregates"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    total_devices = Column(Integer, nullable=False)
+    by_type = Column(JSON, nullable=False)
+    by_state = Column(JSON, nullable=False)
+    avg_cpu_percent = Column(Float, nullable=False)
+    avg_memory_percent = Column(Float, nullable=False)
+    pool_size = Column(Integer, default=0)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+
+
 class DatabaseManager:
     """数据库管理器
 

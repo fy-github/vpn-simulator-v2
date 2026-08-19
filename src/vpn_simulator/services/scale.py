@@ -18,7 +18,13 @@ import time
 from typing import Any
 
 import structlog
+from sqlalchemy import select
 
+from vpn_simulator.core.database import (
+    DatabaseManager,
+    ScaleAggregateRecord,
+    get_database_manager,
+)
 from vpn_simulator.domain.scale import DEVICE_STATES, SimulatedDevice
 from vpn_simulator.domain.snmp import DEVICE_TYPES
 
@@ -32,9 +38,15 @@ MAX_PAGE_SIZE = 1000
 class ScaleService:
     """大规模设备模拟服务（惰性加载 + 聚合统计 + 连接池巡检）。"""
 
-    def __init__(self, total: int = DEFAULT_TOTAL, pool_size: int = DEFAULT_POOL_SIZE) -> None:
+    def __init__(
+        self,
+        total: int = DEFAULT_TOTAL,
+        pool_size: int = DEFAULT_POOL_SIZE,
+        db_manager: DatabaseManager | None = None,
+    ) -> None:
         self._total = total
         self._pool_size = pool_size
+        self._db_manager = db_manager
 
     @property
     def total(self) -> int:
@@ -148,3 +160,52 @@ class ScaleService:
             "concurrency": concurrency or self._pool_size,
             "by_state": by_state,
         }
+
+    # ------------------------------------------------------------------
+    # 聚合持久化（单行快照，不逐设备落库）
+    # ------------------------------------------------------------------
+    def _manager(self) -> DatabaseManager:
+        """返回数据库管理器（注入优先，否则用进程内共享单例）。"""
+        return self._db_manager or get_database_manager()
+
+    async def persist_snapshot(self) -> dict[str, Any]:
+        """把当前聚合统计写入一行快照（而非逐设备写 30,000 行）。"""
+        manager = self._manager()
+        if manager._engine is None:
+            await manager.initialize()
+        stats = self.stats()
+        async with manager.session() as session:
+            session.add(
+                ScaleAggregateRecord(
+                    total_devices=stats["total"],
+                    by_type=stats["by_type"],
+                    by_state=stats["by_state"],
+                    avg_cpu_percent=stats["avg_cpu_percent"],
+                    avg_memory_percent=stats["avg_memory_percent"],
+                    pool_size=stats["pool_size"],
+                )
+            )
+        logger.info("scale_snapshot_persisted", total=stats["total"])
+        return stats
+
+    async def latest_snapshot(self) -> dict[str, Any] | None:
+        """读取最近一次聚合快照。"""
+        manager = self._manager()
+        if manager._engine is None:
+            await manager.initialize()
+        async with manager.session() as session:
+            stmt = select(ScaleAggregateRecord).order_by(ScaleAggregateRecord.id.desc()).limit(1)
+            result = await session.execute(stmt)
+            record = result.scalar_one_or_none()
+            if record is None:
+                return None
+            return {
+                "id": record.id,
+                "total_devices": record.total_devices,
+                "by_type": record.by_type,
+                "by_state": record.by_state,
+                "avg_cpu_percent": record.avg_cpu_percent,
+                "avg_memory_percent": record.avg_memory_percent,
+                "pool_size": record.pool_size,
+                "created_at": record.created_at.isoformat() if record.created_at else None,
+            }

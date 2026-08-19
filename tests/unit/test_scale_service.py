@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+from vpn_simulator.core.database import DatabaseManager
 from vpn_simulator.services.scale import DEFAULT_TOTAL, ScaleService
 
 
@@ -62,3 +63,28 @@ async def test_simulate_poll_with_connection_pool():
     assert sum(result["by_state"].values()) == 1000
     assert result["duration_ms"] >= 0
     assert result["throughput_devices_per_sec"] > 0
+
+
+@pytest.mark.asyncio
+async def test_persist_and_latest_snapshot():
+    db = DatabaseManager("sqlite+aiosqlite:///:memory:")
+    await db.initialize()
+    service = ScaleService(total=1000, pool_size=50, db_manager=db)
+
+    snapshot = await service.persist_snapshot()
+    assert snapshot["total"] == 1000
+
+    latest = await service.latest_snapshot()
+    assert latest is not None
+    assert latest["total_devices"] == 1000
+    assert sum(latest["by_type"].values()) == 1000
+    assert sum(latest["by_state"].values()) == 1000
+    assert latest["avg_cpu_percent"] == pytest.approx(49.5, abs=0.1)
+
+
+@pytest.mark.asyncio
+async def test_latest_snapshot_empty_returns_none():
+    db = DatabaseManager("sqlite+aiosqlite:///:memory:")
+    await db.initialize()
+    service = ScaleService(total=10, db_manager=db)
+    assert await service.latest_snapshot() is None

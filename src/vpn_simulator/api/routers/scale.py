@@ -23,9 +23,10 @@ def get_scale_service() -> ScaleService:
     """懒加载单例 ScaleService。"""
     global _scale_service
     if _scale_service is None:
+        from vpn_simulator.core.database import get_database_manager
         from vpn_simulator.services.scale import ScaleService
 
-        _scale_service = ScaleService()
+        _scale_service = ScaleService(db_manager=get_database_manager())
     return _scale_service
 
 
@@ -80,3 +81,26 @@ async def stats() -> dict[str, Any]:
 async def poll(request: PollRequest) -> dict[str, Any]:
     """Run a bulk poll."""
     return await get_scale_service().simulate_poll(request.count, request.concurrency)
+
+
+@router.post(
+    "/persist",
+    summary="Persist aggregate snapshot",
+    description="Persist one aggregate snapshot row (not per-device rows).",
+)
+async def persist() -> dict[str, Any]:
+    """Persist aggregate snapshot."""
+    return await get_scale_service().persist_snapshot()
+
+
+@router.get(
+    "/snapshots",
+    summary="Get latest aggregate snapshot",
+    description="Get the most recent aggregate snapshot.",
+)
+async def latest_snapshot() -> dict[str, Any]:
+    """Get latest snapshot."""
+    snapshot = await get_scale_service().latest_snapshot()
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="No snapshot persisted yet")
+    return snapshot
