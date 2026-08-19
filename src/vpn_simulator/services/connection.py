@@ -12,7 +12,8 @@ Example:
 
 from __future__ import annotations
 
-from typing import Any
+from datetime import datetime
+from typing import Any, cast
 
 import structlog
 from sqlalchemy import select
@@ -21,6 +22,7 @@ from vpn_simulator.core.config import ConfigManager
 from vpn_simulator.core.database import ConnectionRecord, DatabaseManager
 from vpn_simulator.core.events import EventBus, EventTypes
 from vpn_simulator.domain.connection import (
+    ConnectionInfo,
     ConnectionManager,
     ConnectionState,
     ConnectionType,
@@ -344,3 +346,36 @@ class ConnectionService:
             stats["total_packets_received"] += conn.packets_received
 
         return stats
+
+    async def restore_connections(self) -> None:
+        """从数据库恢复连接（应用启动时调用）。"""
+        async with self._db_manager.session() as session:
+            result = await session.execute(select(ConnectionRecord))
+            records = result.scalars().all()
+
+        restored = 0
+        for record in records:
+            conn = ConnectionInfo(
+                id=cast(str, record.id),
+                protocol=cast(str, record.protocol),
+                state=ConnectionState(cast(str, record.state)),
+                connection_type=ConnectionType(cast(str, record.connection_type)),
+                local_address=cast(str, record.local_address) or "",
+                local_port=cast(int, record.local_port) or 0,
+                remote_address=cast(str, record.remote_address) or "",
+                remote_port=cast(int, record.remote_port) or 0,
+                created_at=cast(datetime, record.created_at) or datetime.now(),
+                connected_at=cast(datetime | None, record.connected_at),
+                disconnected_at=cast(datetime | None, record.disconnected_at),
+                bytes_sent=cast(int, record.bytes_sent) or 0,
+                bytes_received=cast(int, record.bytes_received) or 0,
+                packets_sent=cast(int, record.packets_sent) or 0,
+                packets_received=cast(int, record.packets_received) or 0,
+                protocol_data=cast(dict[str, Any], record.protocol_data) or {},
+                error_message=cast(str | None, record.error_message),
+                error_code=cast(str | None, record.error_code),
+            )
+            self._connection_manager.restore_connection(conn)
+            restored += 1
+
+        logger.info("connections_restored", count=restored)

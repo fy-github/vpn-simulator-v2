@@ -92,6 +92,23 @@ async def _load_plugins() -> None:
     logger.info(f"Initialized {len(initialized)} plugins: {initialized}")
 
 
+async def _restore_state() -> None:
+    """从数据库恢复协议/连接/故障/攻击的持久化状态。
+
+    必须在 _load_plugins()（注册插件并初始化状态机）和 initialize_database()
+    之后调用，使各服务的领域状态与数据库一致。
+    """
+    from vpn_simulator.api.routers.attacks import get_attack_service
+    from vpn_simulator.api.routers.connections import get_connection_service
+    from vpn_simulator.api.routers.faults import get_fault_service
+    from vpn_simulator.api.routers.protocols import get_protocol_service
+
+    await get_protocol_service().restore_protocols()
+    await get_connection_service().restore_connections()
+    await get_fault_service().restore_faults()
+    await get_attack_service().restore_attacks()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan handler for startup/shutdown."""
@@ -99,6 +116,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     await _load_plugins()
     await initialize_database()
+    await _restore_state()
     yield
     await ws_manager.disconnect_all()
     await close_database()

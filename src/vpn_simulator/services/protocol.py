@@ -12,13 +12,14 @@ Example:
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
 from sqlalchemy import select
 
 from vpn_simulator.core.config import ConfigManager
-from vpn_simulator.core.database import DatabaseManager, StateTransitionRecord
+from vpn_simulator.core.database import DatabaseManager, ProtocolRecord, StateTransitionRecord
 from vpn_simulator.core.events import EventBus, EventTypes
 from vpn_simulator.domain.protocol import ProtocolStateMachine
 from vpn_simulator.plugins.registry import PluginRegistry, PluginType
@@ -177,6 +178,7 @@ class ProtocolService:
             "port": merged_config.get("port", 0),
             "config": merged_config,
         }
+        await self._persist_protocol(name, merged_config, result["port"])
         logger.info("protocol_started", name=name, port=result["port"])
         return result
 
@@ -202,6 +204,9 @@ class ProtocolService:
 
         # 清理状态机
         del self._active_state_machines[name]
+
+        # 清理持久化记录
+        await self._delete_protocol(name)
 
         # 发布协议停止事件
         await self._event_bus.emit(
@@ -348,3 +353,52 @@ class ProtocolService:
             to_state=to_state,
             event=event,
         )
+
+    async def restore_protocols(self) -> None:
+        """从数据库恢复此前运行的协议（应用启动时调用）。
+
+        查询 state=running 的 ProtocolRecord，重新挂载对应插件的状态机。
+        """
+        async with self._db_manager.session() as session:
+            result = await session.execute(
+                select(ProtocolRecord).where(ProtocolRecord.state == "running")
+            )
+            records = result.scalars().all()
+
+        restored = 0
+        for record in records:
+            plugin = PluginRegistry.get(record.name)
+            if plugin is None or plugin.meta().plugin_type != PluginType.PROTOCOL:
+                continue
+            state_machine = getattr(plugin, "state_machine", None)
+            if state_machine is not None:
+                self._active_state_machines[record.name] = state_machine
+                restored += 1
+
+        logger.info("protocols_restored", count=restored)
+
+    async def _persist_protocol(self, name: str, config: dict[str, Any], port: Any) -> None:
+        """将协议运行状态持久化到数据库（幂等 upsert）。"""
+        async with self._db_manager.session() as session:
+            record = await session.get(ProtocolRecord, name)
+            if record is None:
+                record = ProtocolRecord(
+                    name=name,
+                    state="running",
+                    config=config,
+                    port=port,
+                    started_at=datetime.now(UTC),
+                )
+                session.add(record)
+            else:
+                record.state = "running"
+                record.config = config
+                record.port = port
+                record.started_at = datetime.now(UTC)
+
+    async def _delete_protocol(self, name: str) -> None:
+        """删除协议的持久化运行记录。"""
+        async with self._db_manager.session() as session:
+            record = await session.get(ProtocolRecord, name)
+            if record is not None:
+                await session.delete(record)

@@ -218,6 +218,14 @@ class FaultManager:
             return True
         return False
 
+    def restore_fault(self, fault: FaultInfo) -> None:
+        """恢复一个已持久化的故障（供启动时从数据库水合）。
+
+        Args:
+            fault: 已构造的故障信息。
+        """
+        self._faults[fault.id] = fault
+
     async def activate_fault(self, fault_id: str) -> FaultInfo | None:
         """激活故障。
 

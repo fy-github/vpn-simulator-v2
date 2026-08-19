@@ -27,7 +27,7 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 logger = structlog.get_logger(__name__)
 
@@ -149,6 +149,21 @@ class TopologyRecord(Base):
     topology = Column(JSON, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
     updated_at = Column(DateTime)
+
+
+class ProtocolRecord(Base):
+    """协议运行状态表
+
+    记录协议"运行/停止"状态，使应用重启后能恢复此前启动的协议。
+    """
+
+    __tablename__ = "protocols"
+
+    name: Mapped[str] = mapped_column(String(50), primary_key=True)
+    state: Mapped[str] = mapped_column(String(20), nullable=False)
+    port: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    config: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
 class DatabaseManager:
@@ -315,8 +330,10 @@ async def initialize_database() -> DatabaseManager:
 
 
 async def close_database() -> None:
-    """关闭共享数据库（幂等）。"""
-    global _default_manager
+    """关闭共享数据库（幂等）。
+
+    关闭引擎但保留单例对象，使下一次 initialize_database() 能在同一实例上
+    重新初始化；各服务缓存的 manager 引用因此始终有效。
+    """
     if _default_manager is not None:
         await _default_manager.close()
-        _default_manager = None

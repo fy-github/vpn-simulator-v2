@@ -248,6 +248,14 @@ class AttackManager:
             return True
         return False
 
+    def restore_attack(self, attack: AttackInfo) -> None:
+        """恢复一个已持久化的攻击（供启动时从数据库水合）。
+
+        Args:
+            attack: 已构造的攻击信息。
+        """
+        self._attacks[attack.id] = attack
+
     async def start_attack(self, attack_id: str) -> AttackInfo | None:
         """启动攻击。
 

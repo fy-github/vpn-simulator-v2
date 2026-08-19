@@ -170,7 +170,7 @@ class TestAttackEndpoints:
         assert isinstance(response.json(), list)
 
     def test_start_attack(self, client: TestClient):
-        """Verify starting an attack with invalid service call returns error."""
+        """Verify starting an attack creates and starts it."""
         response = client.post(
             "/api/v1/attacks",
             json={
@@ -179,9 +179,11 @@ class TestAttackEndpoints:
                 "params": {"proxy_port": 8888},
             },
         )
-        assert response.status_code == 500
+        assert response.status_code == 200
         data = response.json()
-        assert "detail" in data
+        assert data["type"] == "mitm"
+        assert data["target"] == "pptp"
+        assert data["status"] == "running"
 
     def test_start_attack_invalid_type(self, client: TestClient):
         """Verify starting attack with invalid type fails validation."""

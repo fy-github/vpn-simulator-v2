@@ -12,7 +12,8 @@ Example:
 
 from __future__ import annotations
 
-from typing import Any
+from datetime import datetime
+from typing import Any, cast
 
 import structlog
 from sqlalchemy import select
@@ -390,3 +391,37 @@ class AttackService:
                 record.started_at = attack.started_at  # type: ignore[assignment]
                 record.completed_at = attack.completed_at  # type: ignore[assignment]
                 record.result = attack.result.to_dict() if attack.result else None  # type: ignore[assignment]
+
+    async def restore_attacks(self) -> None:
+        """从数据库恢复攻击（应用启动时调用）。"""
+        async with self._db_manager.session() as session:
+            result = await session.execute(select(AttackRecord))
+            records = result.scalars().all()
+
+        restored = 0
+        for record in records:
+            raw_result = cast(dict[str, Any] | None, record.result)
+            attack_result: AttackResult | None = None
+            if raw_result is not None:
+                attack_result = AttackResult(
+                    success=bool(raw_result.get("success", False)),
+                    data=raw_result.get("data", {}) or {},
+                    error=raw_result.get("error"),
+                    duration_seconds=float(raw_result.get("duration_seconds", 0.0) or 0.0),
+                    attempts=int(raw_result.get("attempts", 0) or 0),
+                )
+
+            attack = AttackInfo(
+                id=cast(str, record.id),
+                attack_type=AttackType(cast(str, record.type)),
+                status=AttackStatus(cast(str, record.status)),
+                params=cast(dict[str, Any], record.params) or {},
+                target=cast(str, record.target) or "",
+                started_at=cast(datetime | None, record.started_at),
+                completed_at=cast(datetime | None, record.completed_at),
+                result=attack_result,
+            )
+            self._attack_manager.restore_attack(attack)
+            restored += 1
+
+        logger.info("attacks_restored", count=restored)

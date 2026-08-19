@@ -260,3 +260,11 @@ class ConnectionManager:
             del self._connections[conn_id]
             return True
         return False
+
+    def restore_connection(self, conn: ConnectionInfo) -> None:
+        """恢复一个已持久化的连接（供启动时从数据库水合）。
+
+        Args:
+            conn: 已构造的连接信息。
+        """
+        self._connections[conn.id] = conn

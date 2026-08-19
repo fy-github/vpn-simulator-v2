@@ -12,7 +12,8 @@ Example:
 
 from __future__ import annotations
 
-from typing import Any
+from datetime import datetime
+from typing import Any, cast
 
 import structlog
 from sqlalchemy import select
@@ -303,3 +304,25 @@ class FaultService:
                 record.active = fault.active  # type: ignore[assignment]
                 record.params = fault.params  # type: ignore[assignment]
                 record.updated_at = fault.updated_at  # type: ignore[assignment]
+
+    async def restore_faults(self) -> None:
+        """从数据库恢复故障（应用启动时调用）。"""
+        async with self._db_manager.session() as session:
+            result = await session.execute(select(FaultRecord))
+            records = result.scalars().all()
+
+        restored = 0
+        for record in records:
+            fault = FaultInfo(
+                id=cast(str, record.id),
+                fault_type=FaultType(cast(str, record.type)),
+                params=cast(dict[str, Any], record.params) or {},
+                target=cast(str, record.target) or "",
+                active=cast(bool, record.active),
+                created_at=cast(datetime, record.created_at) or datetime.now(),
+                updated_at=cast(datetime | None, record.updated_at),
+            )
+            self._fault_manager.restore_fault(fault)
+            restored += 1
+
+        logger.info("faults_restored", count=restored)
