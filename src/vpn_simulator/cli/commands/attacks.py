@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import TYPE_CHECKING
 
 import click
 from rich.console import Console
@@ -14,7 +15,11 @@ console = Console()
 ATTACK_TYPES = ["mitm", "replay", "brute_force", "downgrade", "traffic_analysis"]
 
 
-def _get_service():
+if TYPE_CHECKING:
+    from vpn_simulator.services.attack import AttackService
+
+
+def _get_service() -> AttackService:
     from vpn_simulator.core.config import ConfigManager
     from vpn_simulator.core.database import DatabaseManager
     from vpn_simulator.core.events import EventBus
@@ -86,7 +91,8 @@ def attack_start(ctx: click.Context, type: str, target: str, param: tuple[str, .
 
     try:
         service = _get_service()
-        asyncio.run(service.start_attack(attack_type=type, target=target, params=params))
+        created = asyncio.run(service.create_attack(attack_type=type, target=target, params=params))
+        asyncio.run(service.start_attack(created["id"]))
         handle_success(f"Attack {type} started on {target}", json_output=json_output)
     except Exception as e:
         handle_error(f"Failed to start attack: {e}", json_output=json_output)

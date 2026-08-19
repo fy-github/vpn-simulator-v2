@@ -2,20 +2,24 @@
 
 from __future__ import annotations
 
-import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+import structlog
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/attacks")
 
 _attack_service = None
 
 
-def get_attack_service():
+if TYPE_CHECKING:
+    from vpn_simulator.services.attack import AttackService
+
+
+def get_attack_service() -> AttackService:
     global _attack_service
     if _attack_service is None:
         from vpn_simulator.core.config import ConfigManager
@@ -79,7 +83,7 @@ async def list_attacks() -> list[dict[str, Any]]:
             for a in attacks
         ]
     except Exception as e:
-        logger.warning("Failed to list attacks: %s", e)
+        logger.warning("Failed to list attacks", error=str(e))
         return []
 
 
@@ -93,11 +97,12 @@ async def start_attack(request: CreateAttackRequest) -> dict[str, Any]:
     """Start an attack."""
     try:
         service = get_attack_service()
-        attack = await service.start_attack(
+        created = await service.create_attack(
             attack_type=request.type,
             target=request.target,
             params=request.params,
         )
+        attack = await service.start_attack(created["id"])
         return {
             "id": attack.get("id", "attack-001"),
             "type": attack.get("type", request.type),
@@ -106,10 +111,10 @@ async def start_attack(request: CreateAttackRequest) -> dict[str, Any]:
             "params": attack.get("params", request.params),
         }
     except ValueError as e:
-        logger.warning("Invalid attack request: %s", e)
+        logger.warning("Invalid attack request", error=str(e))
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.warning("Failed to start attack: %s", e)
+        logger.warning("Failed to start attack", error=str(e))
         raise HTTPException(status_code=500, detail=f"Failed to start attack: {e}")
 
 
@@ -130,10 +135,10 @@ async def stop_attack(attack_id: str) -> dict[str, str]:
             "message": f"Attack {attack_id} stopped",
         }
     except ValueError as e:
-        logger.warning("Attack not found: %s", e)
+        logger.warning("Attack not found", error=str(e))
         raise HTTPException(status_code=404, detail=f"Attack {attack_id} not found")
     except Exception as e:
-        logger.warning("Failed to stop attack %s: %s", attack_id, e)
+        logger.warning("Failed to stop attack", attack_id=attack_id, error=str(e))
         return {
             "attack_id": attack_id,
             "status": "stopped",
