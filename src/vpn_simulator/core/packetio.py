@@ -13,6 +13,8 @@ from __future__ import annotations
 import asyncio
 from typing import cast
 
+from vpn_simulator.core.impairment_engine import ImpairmentEngine
+
 
 class _DatagramProtocol(asyncio.DatagramProtocol):
     """接收 datagram 并放入队列。"""
@@ -41,11 +43,18 @@ class UdpSocket:
         ...     data, addr = await sock.recvfrom(timeout=5.0)
     """
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 0) -> None:
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 0,
+        impairment: ImpairmentEngine | None = None,
+    ) -> None:
         self._host = host
         self._port = port
         self._transport: asyncio.DatagramTransport | None = None
         self._protocol: _DatagramProtocol | None = None
+        self._impairment = impairment
+        self._dropped = 0
 
     async def __aenter__(self) -> UdpSocket:
         await self.bind()
@@ -70,10 +79,24 @@ class UdpSocket:
         return (str(sockname[0]), int(sockname[1])) if sockname else None
 
     async def sendto(self, data: bytes, addr: tuple[str, int]) -> None:
-        """发送 datagram 到指定地址。"""
+        """发送 datagram 到指定地址。
+
+        若配置了损伤引擎，则在发送前应用延迟/抖动与丢包：丢包时该报文
+        不会被真正发送（计入 `dropped_packets`）。
+        """
         if self._transport is None:
             raise RuntimeError("UdpSocket not bound; call bind() first")
+        if self._impairment is not None:
+            should_send = await self._impairment.apply_outbound()
+            if not should_send:
+                self._dropped += 1
+                return
         self._transport.sendto(data, addr)
+
+    @property
+    def dropped_packets(self) -> int:
+        """因损伤丢包而被丢弃的出站报文数量。"""
+        return self._dropped
 
     async def recvfrom(self, timeout: float | None = None) -> tuple[bytes, tuple[str, int]]:
         """接收一个 datagram，返回 (data, addr)。
