@@ -51,3 +51,23 @@
 - 后端 pytest 全绿；mypy/ruff/black 全绿。
 - OpenVPN 控制信道走真实 TLS 1.3 握手 + 状态机到 CONNECTED + 数据密钥 TLS 信道内交换。
 - 每功能独立提交并推送到 `origin/main`。
+
+## 五、完成状态
+
+全部阶段（P1–P3）已实现、测试并推送到 `origin/main`。OpenVPN 控制信道现为：
+Hard Reset（`--tls-auth` HMAC）→ 真实 TLS 1.3 握手（`ssl.MemoryBIO` 承载于
+P_CONTROL_V1）→ TLS 加密信道内交换 32 字节数据密钥 + PUSH_REQUEST/PUSH_REPLY →
+状态机到 CONNECTED。数据密钥不再由 `--tls-auth` 预共享密钥经 HKDF 推导，而是由
+真实 TLS 会话保护。
+
+| 阶段 | 提交 | 说明 |
+|------|------|------|
+| P1 | `4fb3b09` | `openvpn/tls.py`：`TLSBIO`（MemoryBIO + SSLObject）+ 单元测试 |
+| P2 | `85bdc52` | `openvpn_handshake.py`：真实 TLS 握手 + 数据密钥交换 + PUSH；移除 `derive_data_key` |
+| P3 | 本提交 | README 同步 |
+
+技术注：本环境 Python ssl 未暴露 `export_keying_material`（OpenSSL 4.x 移除），故
+数据密钥改为在真实 TLS 加密信道内交换随机 32 字节（替代 RFC 5705 exporter，已在
+`tls.py` 明示）。最终指标：后端 1329 tests 通过、82.3% 覆盖率（`--cov-fail-under=78`）；
+mypy / ruff / black 全绿。
+

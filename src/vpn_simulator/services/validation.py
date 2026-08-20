@@ -210,7 +210,7 @@ class ValidationService:
                     "handshake",
                     StepStatus.PASS if handshake_ok else StepStatus.FAIL,
                     (
-                        "控制信道 Hard Reset 成功（--tls-auth HMAC 校验通过）"
+                        "控制信道握手成功（Hard Reset + 真实 TLS 1.3 + PUSH 下发）"
                         if handshake_ok
                         else f"握手失败: {error}"
                     ),
