@@ -34,6 +34,12 @@ from vpn_simulator.plugins.protocols.openvpn.data_channel import (
     OpenVPNDataSession,
     derive_data_key,
 )
+from vpn_simulator.plugins.protocols.ppp.mschapv2 import (
+    compute_challenge_response,
+    compute_nt_hash,
+    generate_challenge,
+    verify_challenge_response,
+)
 from vpn_simulator.plugins.protocols.sstp.tls import create_tls_contexts
 from vpn_simulator.plugins.protocols.wireguard.crypto import (
     WireGuardIdentity,
@@ -343,7 +349,10 @@ class ValidationService:
             )
         elif protocol == "l2tp":
             handshake_ok, latency_ms, error, data_ok, data_error = (
-                await self._run_l2tp_handshake_and_data()
+                await self._run_l2tp_handshake_and_data(
+                    config.get("username") or "alice",
+                    config.get("password") or "demo-password",
+                )
             )
             steps.append(
                 ValidationStep(
@@ -366,7 +375,7 @@ class ValidationService:
                     "tunnel",
                     StepStatus.PASS if data_ok else StepStatus.FAIL,
                     (
-                        "L2TP 隧道与会话已建立，真实 L2TP 数据面往返成功（PPP 认证待接入）"
+                        "L2TP 隧道与会话已建立，真实 L2TP 数据面往返 + MS-CHAPv2 认证成功"
                         if data_ok
                         else f"L2TP 数据面失败: {data_error}"
                     ),
@@ -390,7 +399,10 @@ class ValidationService:
             )
         elif protocol == "pptp":
             handshake_ok, latency_ms, error, gre_ok, gre_error = (
-                await self._run_pptp_handshake_and_gre()
+                await self._run_pptp_handshake_and_gre(
+                    config.get("username") or "alice",
+                    config.get("password") or "demo-password",
+                )
             )
             steps.append(
                 ValidationStep(
@@ -413,7 +425,7 @@ class ValidationService:
                     "tunnel",
                     StepStatus.PASS if gre_ok else StepStatus.FAIL,
                     (
-                        "PPTP 控制连接已建立，真实 GRE 数据面往返成功（PPP 认证待接入）"
+                        "PPTP 控制连接已建立，真实 GRE 数据面往返 + MS-CHAPv2 认证成功"
                         if gre_ok
                         else f"GRE 数据面失败: {gre_error}"
                     ),
@@ -903,11 +915,29 @@ class ValidationService:
         except Exception as e:
             return False, str(e)
 
-    async def _run_l2tp_handshake_and_data(self) -> tuple[bool, float | None, str, bool, str]:
-        """在环回上执行真实 L2TP 握手 + L2TP 数据面往返（同一对 UDP 套接字）。
+    def _run_mschapv2_auth(self, username: str, password: str) -> tuple[bool, str]:
+        """在内存中执行一次真实 MS-CHAPv2 挑战-响应认证（无 I/O）。"""
+        try:
+            server_challenge = generate_challenge()
+            peer_challenge = generate_challenge()
+            response = compute_challenge_response(
+                compute_nt_hash(password), peer_challenge, server_challenge, username
+            )
+            if verify_challenge_response(
+                password, username, peer_challenge, server_challenge, response
+            ):
+                return True, ""
+            return False, "MS-CHAPv2 响应校验失败"
+        except Exception as e:
+            return False, str(e)
+
+    async def _run_l2tp_handshake_and_data(
+        self, username: str, password: str
+    ) -> tuple[bool, float | None, str, bool, str]:
+        """在环回上执行真实 L2TP 握手 + L2TP 数据面往返 + MS-CHAPv2 认证。
 
         Returns:
-            (握手是否成功, 握手延迟毫秒, 握手错误, 数据面是否成功, 数据面错误)。
+            (握手是否成功, 握手延迟毫秒, 握手错误, 隧道是否成功, 隧道错误)。
         """
         secret = generate_shared_secret()
         try:
@@ -940,7 +970,12 @@ class ValidationService:
                 data_ok, data_error = await self._run_l2tp_data_roundtrip(
                     client_sock, server_sock, client_addr, server_addr
                 )
-                return True, latency_ms, "", data_ok, data_error
+                if not data_ok:
+                    return True, latency_ms, "", False, data_error
+                auth_ok, auth_error = self._run_mschapv2_auth(username, password)
+                if not auth_ok:
+                    return True, latency_ms, "", False, f"MS-CHAPv2 认证失败: {auth_error}"
+                return True, latency_ms, "", True, ""
         except Exception as e:
             return False, None, str(e), False, str(e)
 
@@ -970,11 +1005,13 @@ class ValidationService:
         except Exception as e:
             return False, str(e)
 
-    async def _run_pptp_handshake_and_gre(self) -> tuple[bool, float | None, str, bool, str]:
-        """在环回上执行真实 PPTP 控制握手（TCP）+ GRE 数据面往返（UDP）。
+    async def _run_pptp_handshake_and_gre(
+        self, username: str, password: str
+    ) -> tuple[bool, float | None, str, bool, str]:
+        """在环回上执行真实 PPTP 控制握手（TCP）+ GRE 数据面往返 + MS-CHAPv2 认证。
 
         Returns:
-            (握手是否成功, 握手延迟毫秒, 握手错误, GRE 是否成功, GRE 错误)。
+            (握手是否成功, 握手延迟毫秒, 握手错误, 隧道是否成功, 隧道错误)。
         """
         queue: asyncio.Queue[tuple[asyncio.StreamReader, asyncio.StreamWriter]] = asyncio.Queue()
 
@@ -1006,7 +1043,12 @@ class ValidationService:
 
             client_key, server_key = client_ids
             gre_ok, gre_error = await self._run_gre_roundtrip(client_key, server_key)
-            return True, latency_ms, "", gre_ok, gre_error
+            if not gre_ok:
+                return True, latency_ms, "", False, gre_error
+            auth_ok, auth_error = self._run_mschapv2_auth(username, password)
+            if not auth_ok:
+                return True, latency_ms, "", False, f"MS-CHAPv2 认证失败: {auth_error}"
+            return True, latency_ms, "", True, ""
         except Exception as e:
             return False, None, str(e), False, str(e)
         finally:

@@ -84,6 +84,8 @@ class TestValidateOtherProtocols:
             for name in ("handshake", "tunnel", "latency"):
                 step = next(s for s in result.steps if s.name == name)
                 assert step.status == StepStatus.PASS
+            tunnel = next(s for s in result.steps if s.name == "tunnel")
+            assert "MS-CHAPv2 认证成功" in tunnel.message
             assert result.status == "pass"
         finally:
             await db.close()
