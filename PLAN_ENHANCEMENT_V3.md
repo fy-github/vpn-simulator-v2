@@ -77,10 +77,10 @@ http://localhost:3000 可操作。
 ### P3 OpenVPN 试点 + 覆盖率门禁
 
 - OpenVPN 控制信道：`P_CONTROL_HARD_RESET_CLIENT_V2/SERVER_V2` 报文 framing +
-  `--tls-auth` 静态密钥 HMAC-SHA256 生成/校验（复用 `cryptography`），驱动
+  `--tls-auth` 静态密钥 HMAC-SHA256 生成/校验（标准库 `hmac`/`hashlib`），驱动
   OpenVPN 插件状态机推进一次握手状态跳转；TLS 会话载荷为 stub（同 WireGuard
   「控制面/握手层」边界，不做数据面）。
-- CI backend job 增 `--cov-fail-under=75`（先测量当前覆盖率，取略低的安全阈值）。
+- CI backend job 增 `--cov-fail-under=78`（实测当前覆盖率 80%，取略低的安全阈值）。
 
 ## 五、执行顺序与提交粒度
 
@@ -93,3 +93,18 @@ P0-A（A1→A2→A3→A4）→ P0-B（B1→B2→B3→B4→B5）→ P1 → P2 →
 - 后端：全部 pytest 通过（含新增契约测试与损伤/OpenVPN 测试）；mypy/ruff/black 全绿。
 - CI：backend（ruff/black/mypy/pytest+cov）、frontend（lint+build+test）全绿。
 - 文档：README 与计划文档与实际一致。
+
+## 七、完成状态
+
+全部阶段（P0-A → P0-B → P1 → P2 → P3）已实现、测试并推送到 `origin/main`。
+
+| 阶段 | 提交 | 说明 |
+|------|------|------|
+| P0-A | `1b430a4` `f2a1e99` `630d2fc` `0bc5251` | Impairment / Validation / PCAP / Routing 四页 |
+| P0-B | `3c6835f` `9ba318d` `d0b2960` `0364c64` `86830d1` | SNMP / Grafana / Scale / C2 / Retention 五页 |
+| P1 | `bbf6694` | 9 组路由 HTTP 集成测试（40 条）+ README 同步 |
+| P2 | `ef16558` `e853a90` | 损伤引擎 corrupt/reorder/duplicate/bandwidth + vitest 冒烟测试 + CI |
+| P3 | `05556f5` | OpenVPN 控制信道 framing + `--tls-auth` HMAC + 覆盖率门禁 |
+
+最终指标：后端 1197 tests 通过、80% 覆盖率（`--cov-fail-under=78`）；
+前端 4 个组件冒烟测试；`tsc --noEmit`、`eslint`、`mypy`、`ruff`、`black` 全绿。
