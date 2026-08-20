@@ -27,6 +27,7 @@ from vpn_simulator.core.events import EventBus
 from vpn_simulator.core.packetio import UdpSocket
 from vpn_simulator.domain.validation import StepStatus, ValidationResult, ValidationStep
 from vpn_simulator.plugins.protocols.ipsec.crypto import generate_psk
+from vpn_simulator.plugins.protocols.l2tp.control import generate_shared_secret
 from vpn_simulator.plugins.protocols.openvpn.control_channel import generate_tls_auth_key
 from vpn_simulator.plugins.protocols.openvpn.data_channel import (
     OpenVPNDataSession,
@@ -39,6 +40,7 @@ from vpn_simulator.plugins.protocols.wireguard.crypto import (
 from vpn_simulator.plugins.protocols.wireguard.transport import WireGuardTransportSession
 from vpn_simulator.services.ikev2_handshake import IKEv2Handshake
 from vpn_simulator.services.ipsec_handshake import IPsecHandshake
+from vpn_simulator.services.l2tp_handshake import L2TPHandshake
 from vpn_simulator.services.openvpn_handshake import OpenVPNHandshake
 from vpn_simulator.services.openvpn_transport import OpenVPNTransport
 from vpn_simulator.services.wireguard_handshake import WireGuardHandshake
@@ -304,8 +306,53 @@ class ValidationService:
                     ),
                 )
             )
+        elif protocol == "l2tp":
+            handshake_ok, latency_ms, error = await self._run_l2tp_handshake()
+            steps.append(
+                ValidationStep(
+                    "handshake",
+                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    (
+                        "真实 L2TP 握手成功（SCCRQ/SCCRP/SCCCN + ICRQ/ICRP/ICCN，隧道 HMAC 认证）"
+                        if handshake_ok
+                        else f"握手失败: {error}"
+                    ),
+                    (
+                        {"latency_ms": round(latency_ms, 2)}
+                        if handshake_ok and latency_ms is not None
+                        else {}
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "tunnel",
+                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    (
+                        "L2TP 隧道与会话已建立（PPP 数据面待接入）"
+                        if handshake_ok
+                        else "握手失败，未建立隧道"
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "latency",
+                    StepStatus.PASS if handshake_ok else StepStatus.SKIP,
+                    (
+                        f"握手延迟 {latency_ms:.2f} ms"
+                        if handshake_ok and latency_ms is not None
+                        else "握手失败，无法测量"
+                    ),
+                    (
+                        {"latency_ms": round(latency_ms, 2)}
+                        if handshake_ok and latency_ms is not None
+                        else {}
+                    ),
+                )
+            )
         else:
-            skip_msg = "真实握手仅 WireGuard/OpenVPN/IKEv2/IPSec 已实现，PPTP/L2TP 待接入"
+            skip_msg = "真实握手仅 WireGuard/OpenVPN/IKEv2/IPSec/L2TP 已实现，PPTP 待接入"
             steps.append(ValidationStep("handshake", StepStatus.SKIP, skip_msg))
             steps.append(ValidationStep("tunnel", StepStatus.SKIP, skip_msg))
             steps.append(ValidationStep("latency", StepStatus.SKIP, skip_msg))
@@ -597,6 +644,40 @@ class ValidationService:
             initiator_cookies, responder_cookies = results
             if initiator_cookies != responder_cookies:
                 return False, latency_ms, "双方 cookie 不一致"
+            return True, latency_ms, ""
+        except Exception as e:
+            return False, None, str(e)
+
+    async def _run_l2tp_handshake(self) -> tuple[bool, float | None, str]:
+        """在环回地址上执行一次真实 L2TP 握手（控制连接 + 会话 + 隧道认证）。
+
+        Returns:
+            (是否成功, 握手延迟毫秒, 错误信息)。
+        """
+        secret = generate_shared_secret()
+        try:
+            async with (
+                UdpSocket("127.0.0.1", 0) as client_sock,
+                UdpSocket("127.0.0.1", 0) as server_sock,
+            ):
+                server_addr = server_sock.local_address
+                if server_addr is None:
+                    return False, None, "服务端套接字未绑定"
+                client_hs = L2TPHandshake(secret, client_sock)
+                server_hs = L2TPHandshake(secret, server_sock)
+
+                start = time.perf_counter()
+                results = await asyncio.gather(
+                    client_hs.initiate(server_addr),
+                    server_hs.respond(),
+                )
+                latency_ms = (time.perf_counter() - start) * 1000.0
+
+            if len(results) != 2:
+                return False, latency_ms, "握手结果数量异常"
+            client_ids, server_ids = results
+            if client_ids != server_ids:
+                return False, latency_ms, "双方 tunnel_id 不一致"
             return True, latency_ms, ""
         except Exception as e:
             return False, None, str(e)
