@@ -27,6 +27,7 @@ from vpn_simulator.core.events import EventBus
 from vpn_simulator.core.packetio import UdpSocket
 from vpn_simulator.domain.validation import StepStatus, ValidationResult, ValidationStep
 from vpn_simulator.plugins.protocols.ipsec.crypto import generate_psk
+from vpn_simulator.plugins.protocols.ipsec.esp import ESPSession
 from vpn_simulator.plugins.protocols.l2tp.control import generate_shared_secret
 from vpn_simulator.plugins.protocols.openvpn.control_channel import generate_tls_auth_key
 from vpn_simulator.plugins.protocols.openvpn.data_channel import (
@@ -38,6 +39,7 @@ from vpn_simulator.plugins.protocols.wireguard.crypto import (
     b64_to_key,
 )
 from vpn_simulator.plugins.protocols.wireguard.transport import WireGuardTransportSession
+from vpn_simulator.services.esp_transport import ESPTransport
 from vpn_simulator.services.ikev2_handshake import IKEv2Handshake
 from vpn_simulator.services.ipsec_handshake import IPsecHandshake
 from vpn_simulator.services.l2tp_handshake import L2TPHandshake
@@ -218,7 +220,9 @@ class ValidationService:
                 )
             )
         elif protocol == "ikev2":
-            handshake_ok, latency_ms, error = await self._run_ikev2_handshake()
+            handshake_ok, latency_ms, error, esp_ok, esp_error = (
+                await self._run_ikev2_handshake_and_esp()
+            )
             steps.append(
                 ValidationStep(
                     "handshake",
@@ -238,11 +242,11 @@ class ValidationService:
             steps.append(
                 ValidationStep(
                     "tunnel",
-                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    StepStatus.PASS if esp_ok else StepStatus.FAIL,
                     (
-                        "IKE SA / Child SA 已建立，ESP 隧道就绪（数据面转发待接入）"
-                        if handshake_ok
-                        else "握手失败，未建立隧道"
+                        "IKE SA / Child SA 已建立，真实 AES-256-GCM ESP 数据面往返成功"
+                        if esp_ok
+                        else f"ESP 数据面失败: {esp_error}"
                     ),
                 )
             )
@@ -263,7 +267,9 @@ class ValidationService:
                 )
             )
         elif protocol == "ipsec":
-            handshake_ok, latency_ms, error = await self._run_ipsec_handshake()
+            handshake_ok, latency_ms, error, esp_ok, esp_error = (
+                await self._run_ipsec_handshake_and_esp()
+            )
             steps.append(
                 ValidationStep(
                     "handshake",
@@ -283,11 +289,11 @@ class ValidationService:
             steps.append(
                 ValidationStep(
                     "tunnel",
-                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    StepStatus.PASS if esp_ok else StepStatus.FAIL,
                     (
-                        "ISAKMP/IPSec SA 已建立，ESP 隧道就绪（数据面转发待接入）"
-                        if handshake_ok
-                        else "握手失败，未建立隧道"
+                        "ISAKMP/IPSec SA 已建立，真实 AES-256-GCM ESP 数据面往返成功"
+                        if esp_ok
+                        else f"ESP 数据面失败: {esp_error}"
                     ),
                 )
             )
@@ -623,11 +629,11 @@ class ValidationService:
         except Exception as e:
             return False, None, str(e), False, ""
 
-    async def _run_ikev2_handshake(self) -> tuple[bool, float | None, str]:
-        """在环回地址上执行一次真实 IKEv2 握手（IKE_SA_INIT + IKE_AUTH）。
+    async def _run_ikev2_handshake_and_esp(self) -> tuple[bool, float | None, str, bool, str]:
+        """在环回地址上执行真实 IKEv2 握手（IKE_SA_INIT + IKE_AUTH）+ ESP 数据面往返。
 
         Returns:
-            (是否成功, 握手延迟毫秒, 错误信息)。
+            (握手是否成功, 握手延迟毫秒, 握手错误, ESP 是否成功, ESP 错误)。
         """
         initiator_identity = b"initiator@vpn-simulator.local"
         responder_identity = b"responder@vpn-simulator.local"
@@ -637,8 +643,9 @@ class ValidationService:
                 UdpSocket("127.0.0.1", 0) as responder_sock,
             ):
                 responder_addr = responder_sock.local_address
-                if responder_addr is None:
-                    return False, None, "响应方套接字未绑定"
+                initiator_addr = initiator_sock.local_address
+                if responder_addr is None or initiator_addr is None:
+                    return False, None, "套接字未绑定", False, "套接字未绑定"
                 initiator_hs = IKEv2Handshake(initiator_identity, initiator_sock)
                 responder_hs = IKEv2Handshake(responder_identity, responder_sock)
 
@@ -649,20 +656,27 @@ class ValidationService:
                 )
                 latency_ms = (time.perf_counter() - start) * 1000.0
 
-            if len(results) != 2:
-                return False, latency_ms, "握手结果数量异常"
-            initiator_spis, responder_spis = results
-            if initiator_spis[1] != responder_spis[1] or initiator_spis[0] != responder_spis[0]:
-                return False, latency_ms, "双方 SPI 不一致"
-            return True, latency_ms, ""
-        except Exception as e:
-            return False, None, str(e)
+                if len(results) != 2:
+                    return False, latency_ms, "握手结果数量异常", False, "握手未完成"
+                initiator_spis, responder_spis = results
+                if initiator_spis[1] != responder_spis[1] or initiator_spis[0] != responder_spis[0]:
+                    return False, latency_ms, "双方 SPI 不一致", False, "握手未完成"
 
-    async def _run_ipsec_handshake(self) -> tuple[bool, float | None, str]:
-        """在环回地址上执行一次真实 IKEv1 握手（Main Mode + Quick Mode）。
+                esp_key = initiator_hs.esp_key()
+                if esp_key is None or esp_key != responder_hs.esp_key():
+                    return True, latency_ms, "", False, "双方 ESP 密钥不一致"
+                esp_ok, esp_error = await self._run_esp_roundtrip(
+                    esp_key, initiator_sock, responder_sock, initiator_addr, responder_addr
+                )
+                return True, latency_ms, "", esp_ok, esp_error
+        except Exception as e:
+            return False, None, str(e), False, str(e)
+
+    async def _run_ipsec_handshake_and_esp(self) -> tuple[bool, float | None, str, bool, str]:
+        """在环回地址上执行真实 IKEv1 握手（Main Mode + Quick Mode）+ ESP 数据面往返。
 
         Returns:
-            (是否成功, 握手延迟毫秒, 错误信息)。
+            (握手是否成功, 握手延迟毫秒, 握手错误, ESP 是否成功, ESP 错误)。
         """
         initiator_identity = b"initiator@vpn-simulator.local"
         responder_identity = b"responder@vpn-simulator.local"
@@ -673,8 +687,9 @@ class ValidationService:
                 UdpSocket("127.0.0.1", 0) as responder_sock,
             ):
                 responder_addr = responder_sock.local_address
-                if responder_addr is None:
-                    return False, None, "响应方套接字未绑定"
+                initiator_addr = initiator_sock.local_address
+                if responder_addr is None or initiator_addr is None:
+                    return False, None, "套接字未绑定", False, "套接字未绑定"
                 initiator_hs = IPsecHandshake(initiator_identity, psk, initiator_sock)
                 responder_hs = IPsecHandshake(responder_identity, psk, responder_sock)
 
@@ -685,14 +700,50 @@ class ValidationService:
                 )
                 latency_ms = (time.perf_counter() - start) * 1000.0
 
-            if len(results) != 2:
-                return False, latency_ms, "握手结果数量异常"
-            initiator_cookies, responder_cookies = results
-            if initiator_cookies != responder_cookies:
-                return False, latency_ms, "双方 cookie 不一致"
-            return True, latency_ms, ""
+                if len(results) != 2:
+                    return False, latency_ms, "握手结果数量异常", False, "握手未完成"
+                initiator_cookies, responder_cookies = results
+                if initiator_cookies != responder_cookies:
+                    return False, latency_ms, "双方 cookie 不一致", False, "握手未完成"
+
+                esp_key = initiator_hs.esp_key()
+                if esp_key is None or esp_key != responder_hs.esp_key():
+                    return True, latency_ms, "", False, "双方 ESP 密钥不一致"
+                esp_ok, esp_error = await self._run_esp_roundtrip(
+                    esp_key, initiator_sock, responder_sock, initiator_addr, responder_addr
+                )
+                return True, latency_ms, "", esp_ok, esp_error
         except Exception as e:
-            return False, None, str(e)
+            return False, None, str(e), False, str(e)
+
+    async def _run_esp_roundtrip(
+        self,
+        esp_key: bytes,
+        initiator_sock: UdpSocket,
+        responder_sock: UdpSocket,
+        initiator_addr: tuple[str, int],
+        responder_addr: tuple[str, int],
+    ) -> tuple[bool, str]:
+        """在环回 UDP 上做一次真实 AES-256-GCM ESP 数据面往返。"""
+        initiator_spi = 0x0000_1001
+        responder_spi = 0x0000_1002
+        initiator_t = ESPTransport(
+            initiator_sock, ESPSession(esp_key), initiator_spi, responder_spi
+        )
+        responder_t = ESPTransport(
+            responder_sock, ESPSession(esp_key), responder_spi, initiator_spi
+        )
+        payload = b"ESP data-plane roundtrip payload"
+        try:
+            await initiator_t.send_data(responder_addr, payload)
+            if await responder_t.recv_data() != payload:
+                return False, "ESP 明文不一致"
+            await responder_t.send_data(initiator_addr, payload)
+            if await initiator_t.recv_data() != payload:
+                return False, "ESP 回环明文不一致"
+            return True, ""
+        except Exception as e:
+            return False, str(e)
 
     async def _run_l2tp_handshake(self) -> tuple[bool, float | None, str]:
         """在环回地址上执行一次真实 L2TP 握手（控制连接 + 会话 + 隧道认证）。

@@ -23,6 +23,7 @@ from vpn_simulator.plugins.protocols.ikev2.crypto import (
     IKEv2KeySet,
     build_ike_auth,
     build_ike_sa_init,
+    derive_esp_key,
     derive_key_set,
     dh,
     generate_ephemeral,
@@ -55,6 +56,12 @@ class IKEv2Handshake:
         self._private, self._public = generate_ephemeral()
         self._nonce = generate_nonce()
         self._keys: IKEv2KeySet | None = None
+
+    def esp_key(self) -> bytes | None:
+        """派生并返回 ESP 数据面密钥（握手完成后可用）。"""
+        if self._keys is None:
+            return None
+        return derive_esp_key(self._keys.sk_ei)
 
     async def initiate(
         self,

@@ -25,6 +25,7 @@ from vpn_simulator.plugins.protocols.ipsec.crypto import (
     build_main_mode_ke,
     build_main_mode_sa,
     build_quick_mode_msg,
+    derive_esp_key,
     derive_key_set,
     dh,
     generate_cookie,
@@ -61,6 +62,12 @@ class IPsecHandshake:
         self._private, self._public = generate_ephemeral()
         self._nonce = generate_nonce()
         self._keys: IPsecKeySet | None = None
+
+    def esp_key(self) -> bytes | None:
+        """派生并返回 ESP 数据面密钥（握手完成后可用）。"""
+        if self._keys is None:
+            return None
+        return derive_esp_key(self._keys.skeyid)
 
     async def initiate(
         self,
