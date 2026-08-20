@@ -31,13 +31,15 @@ async def test_hard_reset_handshake_succeeds() -> None:
             server_hs.respond(),
         )
 
-    client_session_id, server_session_id = initiate_result
-    # respond() returns the initiator's session id.
-    assert respond_result == client_session_id
+    client_session_id, server_session_id, data_key = initiate_result
+    # respond() 返回 (发起方 session_id, 本端 session_id, 数据密钥)。
+    assert respond_result[0] == client_session_id
+    assert respond_result[1] == server_session_id
+    assert respond_result[2] == data_key
+    assert len(data_key) == 32
     assert server_session_id != client_session_id
-    # Initiator state machine: INITIAL -> HARD_RESET_SENT -> HARD_RESET_RECEIVED
-    # -> TLS_HANDSHAKE.
-    assert state_machine.current_state == "TLS_HANDSHAKE"
+    # 发起方状态机: INITIAL -> ... -> CONNECTED（完整 TLS + PUSH 流程）。
+    assert state_machine.current_state == "CONNECTED"
 
 
 @pytest.mark.asyncio

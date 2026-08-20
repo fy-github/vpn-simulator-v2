@@ -10,7 +10,6 @@ from vpn_simulator.plugins.protocols.openvpn.control_channel import generate_tls
 from vpn_simulator.plugins.protocols.openvpn.data_channel import (
     OpenVPNDataSession,
     build_data_packet,
-    derive_data_key,
 )
 from vpn_simulator.services.openvpn_handshake import OpenVPNHandshake
 from vpn_simulator.services.openvpn_transport import OpenVPNTransport
@@ -33,9 +32,8 @@ async def test_handshake_then_data_roundtrip() -> None:
             client_hs.initiate(server_addr),
             server_hs.respond(),
         )
-        client_session_id, server_session_id = client_result
+        client_session_id, server_session_id, data_key = client_result
 
-        data_key = derive_data_key(key, client_session_id, server_session_id)
         client_transport = OpenVPNTransport(
             client_sock,
             OpenVPNDataSession(data_key=data_key),
@@ -76,9 +74,8 @@ async def test_data_replay_rejected_across_sockets() -> None:
             client_hs.initiate(server_addr),
             server_hs.respond(),
         )
-        client_session_id, server_session_id = client_result
+        client_session_id, server_session_id, data_key = client_result
 
-        data_key = derive_data_key(key, client_session_id, server_session_id)
         client_transport = OpenVPNTransport(
             client_sock,
             OpenVPNDataSession(data_key=data_key),

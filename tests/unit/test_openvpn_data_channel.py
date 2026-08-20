@@ -7,7 +7,6 @@ from vpn_simulator.plugins.protocols.openvpn.control_channel import P_DATA_V2
 from vpn_simulator.plugins.protocols.openvpn.data_channel import (
     OpenVPNDataSession,
     build_data_packet,
-    derive_data_key,
     parse_data_packet,
 )
 
@@ -49,13 +48,6 @@ class TestDataChannelCrypto:
         raw = b"\x07" + b"\x00" * 12 + b"\x00" * 32
         with pytest.raises(ValueError, match="opcode"):
             parse_data_packet(KEY, raw)
-
-    def test_derive_data_key(self) -> None:
-        k1 = derive_data_key(b"k" * 32, client_session_id=1, server_session_id=2)
-        k2 = derive_data_key(b"k" * 32, client_session_id=1, server_session_id=3)
-        assert len(k1) == 32
-        assert k1 == derive_data_key(b"k" * 32, client_session_id=1, server_session_id=2)
-        assert k1 != k2
 
 
 class TestDataSession:

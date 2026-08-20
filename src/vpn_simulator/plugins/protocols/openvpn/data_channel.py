@@ -1,12 +1,11 @@
 """OpenVPN 数据信道报文格式与 AES-256-GCM 加解密。
 
-OpenVPN 控制信道（Hard Reset，见 `control_channel.py`）建立后，数据信道用
-对称加密传输真实载荷。本模块实现：
+OpenVPN 控制信道（Hard Reset + TLS，见 `control_channel.py` 与 `tls.py`）建立后，
+数据信道用对称加密传输真实载荷。本模块实现：
 
-- 数据密钥派生：真实 OpenVPN 用 TLS keying-material exporter 派生数据密钥；
-  本模块**不实现完整 TLS 握手**（超出「控制面/握手层」边界），改用 HKDF-SHA256
-  从 ``--tls-auth`` 预共享密钥 + 双方 session_id 派生 32 字节数据密钥，作为
-  「模拟的 TLS keying-material export」，已在模块与计划文档中明示该简化。
+- 数据密钥：由 `services/openvpn_handshake.py` 在真实 TLS 加密信道内交换（本环境
+  Python ssl 未暴露 ``export_keying_material``，见 `tls.py`），以 ``OpenVPNDataSession``
+  的 ``data_key`` 注入，双向对称。
 - 报文格式（P_DATA_V2 教学版）：::
 
     opcode(1, =9) | peer_id(8, BE) | packet_id(4, BE) | ciphertext+tag
@@ -23,9 +22,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from cryptography.exceptions import InvalidTag
-from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 
 from vpn_simulator.plugins.protocols.openvpn.control_channel import (
     P_DATA_V2,
@@ -36,24 +33,6 @@ PACKET_ID_LEN = 4
 TAG_LEN = 16
 DATA_KEY_LEN = 32
 DATA_HEADER_LEN = 1 + SESSION_ID_LEN + PACKET_ID_LEN  # opcode + peer_id + packet_id
-
-
-def derive_data_key(tls_auth_key: bytes, client_session_id: int, server_session_id: int) -> bytes:
-    """从 ``--tls-auth`` 预共享密钥 + 双方 session_id 派生数据密钥（HKDF-SHA256）。
-
-    模拟真实 OpenVPN 的 TLS keying-material export；未实现完整 TLS 握手。
-    """
-    info = (
-        b"openvpn-data-channel"
-        + client_session_id.to_bytes(SESSION_ID_LEN, "big")
-        + server_session_id.to_bytes(SESSION_ID_LEN, "big")
-    )
-    return HKDF(
-        algorithm=hashes.SHA256(),
-        length=DATA_KEY_LEN,
-        salt=b"",
-        info=info,
-    ).derive(tls_auth_key)
 
 
 def _nonce(packet_id: int) -> bytes:

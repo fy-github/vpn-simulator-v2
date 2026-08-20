@@ -32,7 +32,6 @@ from vpn_simulator.plugins.protocols.l2tp.control import generate_shared_secret
 from vpn_simulator.plugins.protocols.openvpn.control_channel import generate_tls_auth_key
 from vpn_simulator.plugins.protocols.openvpn.data_channel import (
     OpenVPNDataSession,
-    derive_data_key,
 )
 from vpn_simulator.plugins.protocols.ppp.mschapv2 import (
     compute_challenge_response,
@@ -783,10 +782,9 @@ class ValidationService:
                     server_hs.respond(),
                 )
                 latency_ms = (time.perf_counter() - start) * 1000.0
-                client_session_id, server_session_id = client_result
+                client_session_id, server_session_id, data_key = client_result
 
-                # 数据面：派生数据密钥，真实 AES-256-GCM 加解密往返。
-                data_key = derive_data_key(tls_auth_key, client_session_id, server_session_id)
+                # 数据面：握手返回的真实数据密钥（TLS 加密信道内交换），真实 AES-256-GCM 往返。
                 client_transport = OpenVPNTransport(
                     client_sock,
                     OpenVPNDataSession(data_key=data_key),
