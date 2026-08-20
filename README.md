@@ -39,6 +39,15 @@ Multi-protocol VPN Server Simulator with modern Web UI — supports **9 VPN/tunn
 - **Obfuscation Testing** — Traffic obfuscation technique testing
 - **Vendor CLI** — Cisco IOS and Huawei VRP command simulation
 - **DHCP Simulation** — Spoof random MAC addresses to concurrently acquire DHCP leases (with 802.1Q VLAN tagging and explicit release)
+- **Network Impairment** — Time-varying impairment presets/curves (linear/exponential/step/sine/random) applied to real packet flow
+- **Config Validation** — 7-step VPN config validation (syntax/port/handshake/auth/tunnel/latency/throughput) for 6 protocols
+- **PCAP Replay** — Upload PCAP/PCAPNG, replay at 0.5x–10x with protocol filter and session status
+- **Routing Protocols** — OSPF/BGP neighbor state machines and routing tables across 4 simulated routers
+- **SNMP Simulation** — 12 device types (v2c/v3), MIB-II OID GET/WALK
+- **Grafana** — Built-in dashboard JSON and Prometheus alert rules for one-click import
+- **Scale Devices** — Lazy 30,000-device simulation with aggregate stats, bulk poll, snapshot persistence
+- **C2 Scenarios** — 6 C2 attack scenarios (educational/defensive only) with detection indicators and ethics declaration
+- **Data Retention** — packets/state_transitions retention cleanup (max-rows + TTL)
 
 ### Tech Stack
 
@@ -192,6 +201,15 @@ but it is not yet the single source of truth for live protocol/connection state.
 | Obfuscation | `GET /api/v1/obfuscation/techniques` |
 | Vendor CLI | `POST /api/v1/vendor-cli/execute` |
 | DHCP | `POST /api/v1/dhcp/start\|stop\|release`, `GET /api/v1/dhcp/status\|leases` |
+| Impairment | `GET/POST /api/v1/impairments`, `POST /api/v1/impairments/presets/{name}/apply`, `GET /api/v1/impairments/{id}/status\|timeline` |
+| Validation | `POST /api/v1/validation/validate\|batch`, `GET /api/v1/validation/history` |
+| PCAP | `POST /api/v1/pcap/upload\|replay`, `GET /api/v1/pcap/files\|status/{id}\|stats/{id}` |
+| SNMP | `GET /api/v1/snmp/devices\|oids`, `GET /api/v1/snmp/devices/{id}/get\|walk` |
+| Routing | `GET /api/v1/routing/routers\|{id}/routes`, `GET /api/v1/routing/{id}/neighbors`, `POST /api/v1/routing/{id}/neighbors/{n}/establish` |
+| Grafana | `GET /api/v1/grafana/dashboards\|alert-rules`, `GET /api/v1/grafana/dashboards/{name}` |
+| Scale | `GET /api/v1/scale/devices\|stats\|snapshots`, `POST /api/v1/scale/poll\|persist` |
+| C2 | `GET /api/v1/c2/scenarios\|ethics\|scenarios/{id}\|scenarios/{id}/detection`, `POST /api/v1/c2/scenarios/{id}/simulate` |
+| Retention | `GET /api/v1/retention/status`, `POST /api/v1/retention/cleanup` |
 
 ## Testing
 
@@ -209,7 +227,7 @@ cd web-ui && npx tsc --noEmit
 cd web-ui && npm run build
 ```
 
-**Test Results:** 1040 tests passing, 81% coverage (Python 3.11, deps pinned by `uv.lock`).
+**Test Results:** 1180 tests passing (Python 3.11, deps pinned by `uv.lock`).
 
 ## Lint
 
