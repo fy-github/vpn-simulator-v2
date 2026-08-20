@@ -183,6 +183,16 @@ export const api = {
   getPcapStatus: (sessionId: string) => apiClient.get(`/pcap/status/${sessionId}`),
   stopPcapReplay: (sessionId: string) => apiClient.post(`/pcap/stop/${sessionId}`),
   getPcapStats: (fileId: string) => apiClient.get(`/pcap/stats/${fileId}`),
+
+  // Routing (F5)
+  getRouters: () => apiClient.get('/routing/routers'),
+  getRoutingNeighbors: (routerId: string, protocol?: string) =>
+    apiClient.get(`/routing/${routerId}/neighbors`, { params: { protocol } }),
+  establishNeighbor: (routerId: string, neighborId: string, protocol: string) =>
+    apiClient.post(`/routing/${routerId}/neighbors/${neighborId}/establish`, null, {
+      params: { protocol },
+    }),
+  getRoutingTable: (routerId: string) => apiClient.get(`/routing/${routerId}/routes`),
 }
 
 export default apiClient
