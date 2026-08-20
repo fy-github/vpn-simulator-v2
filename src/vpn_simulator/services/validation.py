@@ -26,6 +26,7 @@ from vpn_simulator.core.database import DatabaseManager, ValidationRecord
 from vpn_simulator.core.events import EventBus
 from vpn_simulator.core.packetio import UdpSocket
 from vpn_simulator.domain.validation import StepStatus, ValidationResult, ValidationStep
+from vpn_simulator.plugins.protocols.ipsec.crypto import generate_psk
 from vpn_simulator.plugins.protocols.openvpn.control_channel import generate_tls_auth_key
 from vpn_simulator.plugins.protocols.openvpn.data_channel import (
     OpenVPNDataSession,
@@ -37,6 +38,7 @@ from vpn_simulator.plugins.protocols.wireguard.crypto import (
 )
 from vpn_simulator.plugins.protocols.wireguard.transport import WireGuardTransportSession
 from vpn_simulator.services.ikev2_handshake import IKEv2Handshake
+from vpn_simulator.services.ipsec_handshake import IPsecHandshake
 from vpn_simulator.services.openvpn_handshake import OpenVPNHandshake
 from vpn_simulator.services.openvpn_transport import OpenVPNTransport
 from vpn_simulator.services.wireguard_handshake import WireGuardHandshake
@@ -257,8 +259,53 @@ class ValidationService:
                     ),
                 )
             )
+        elif protocol == "ipsec":
+            handshake_ok, latency_ms, error = await self._run_ipsec_handshake()
+            steps.append(
+                ValidationStep(
+                    "handshake",
+                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    (
+                        "真实 IKEv1 握手成功（Main Mode + Quick Mode，X25519/HKDF/AEAD/HMAC）"
+                        if handshake_ok
+                        else f"握手失败: {error}"
+                    ),
+                    (
+                        {"latency_ms": round(latency_ms, 2)}
+                        if handshake_ok and latency_ms is not None
+                        else {}
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "tunnel",
+                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    (
+                        "ISAKMP/IPSec SA 已建立，ESP 隧道就绪（数据面转发待接入）"
+                        if handshake_ok
+                        else "握手失败，未建立隧道"
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "latency",
+                    StepStatus.PASS if handshake_ok else StepStatus.SKIP,
+                    (
+                        f"握手延迟 {latency_ms:.2f} ms"
+                        if handshake_ok and latency_ms is not None
+                        else "握手失败，无法测量"
+                    ),
+                    (
+                        {"latency_ms": round(latency_ms, 2)}
+                        if handshake_ok and latency_ms is not None
+                        else {}
+                    ),
+                )
+            )
         else:
-            skip_msg = "真实握手仅 WireGuard/OpenVPN/IKEv2 已实现，其余协议待接入"
+            skip_msg = "真实握手仅 WireGuard/OpenVPN/IKEv2/IPSec 已实现，PPTP/L2TP 待接入"
             steps.append(ValidationStep("handshake", StepStatus.SKIP, skip_msg))
             steps.append(ValidationStep("tunnel", StepStatus.SKIP, skip_msg))
             steps.append(ValidationStep("latency", StepStatus.SKIP, skip_msg))
@@ -514,6 +561,42 @@ class ValidationService:
             initiator_spis, responder_spis = results
             if initiator_spis[1] != responder_spis[1] or initiator_spis[0] != responder_spis[0]:
                 return False, latency_ms, "双方 SPI 不一致"
+            return True, latency_ms, ""
+        except Exception as e:
+            return False, None, str(e)
+
+    async def _run_ipsec_handshake(self) -> tuple[bool, float | None, str]:
+        """在环回地址上执行一次真实 IKEv1 握手（Main Mode + Quick Mode）。
+
+        Returns:
+            (是否成功, 握手延迟毫秒, 错误信息)。
+        """
+        initiator_identity = b"initiator@vpn-simulator.local"
+        responder_identity = b"responder@vpn-simulator.local"
+        psk = generate_psk()
+        try:
+            async with (
+                UdpSocket("127.0.0.1", 0) as initiator_sock,
+                UdpSocket("127.0.0.1", 0) as responder_sock,
+            ):
+                responder_addr = responder_sock.local_address
+                if responder_addr is None:
+                    return False, None, "响应方套接字未绑定"
+                initiator_hs = IPsecHandshake(initiator_identity, psk, initiator_sock)
+                responder_hs = IPsecHandshake(responder_identity, psk, responder_sock)
+
+                start = time.perf_counter()
+                results = await asyncio.gather(
+                    initiator_hs.initiate(responder_addr, responder_identity),
+                    responder_hs.respond(initiator_identity),
+                )
+                latency_ms = (time.perf_counter() - start) * 1000.0
+
+            if len(results) != 2:
+                return False, latency_ms, "握手结果数量异常"
+            initiator_cookies, responder_cookies = results
+            if initiator_cookies != responder_cookies:
+                return False, latency_ms, "双方 cookie 不一致"
             return True, latency_ms, ""
         except Exception as e:
             return False, None, str(e)
