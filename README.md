@@ -40,7 +40,7 @@ Multi-protocol VPN Server Simulator with modern Web UI — supports **9 VPN/tunn
 - **Vendor CLI** — Cisco IOS and Huawei VRP command simulation
 - **DHCP Simulation** — Spoof random MAC addresses to concurrently acquire DHCP leases (with 802.1Q VLAN tagging and explicit release)
 - **Network Impairment** — Time-varying impairment presets/curves (linear/exponential/step/sine/random) applied to real packet flow
-- **Config Validation** — 7-step VPN config validation (syntax/port/handshake/auth/tunnel/latency/throughput) for 6 protocols
+- **Config Validation** — 7-step VPN config validation (syntax/port/handshake/auth/tunnel/latency/throughput) for 6 protocols; WireGuard does a real Noise handshake + ChaCha20-Poly1305 data-plane round-trip, OpenVPN does a real control-channel `--tls-auth` HMAC handshake
 - **PCAP Replay** — Upload PCAP/PCAPNG, replay at 0.5x–10x with protocol filter and session status
 - **Routing Protocols** — OSPF/BGP neighbor state machines and routing tables across 4 simulated routers
 - **SNMP Simulation** — 12 device types (v2c/v3), MIB-II OID GET/WALK
@@ -230,7 +230,7 @@ cd web-ui && npx tsc --noEmit
 cd web-ui && npm run build
 ```
 
-**Test Results:** 1198 tests passing, 80.5% coverage (Python 3.11, deps pinned by `uv.lock`).
+**Test Results:** 1209 tests passing, 80.6% coverage (Python 3.11, deps pinned by `uv.lock`).
 
 ## Lint
 
