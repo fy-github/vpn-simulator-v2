@@ -113,6 +113,21 @@ class TestValidateOtherProtocols:
         finally:
             await db.close()
 
+    @pytest.mark.asyncio
+    async def test_sstp_openconnect_mschapv2(self):
+        service, db = await _make_service()
+        try:
+            for protocol in ("sstp", "openconnect"):
+                result = await service.validate(
+                    protocol, {"port": 0, "username": "alice", "password": "secret"}
+                )
+                tunnel = next(s for s in result.steps if s.name == "tunnel")
+                assert tunnel.status == StepStatus.PASS
+                assert "MS-CHAPv2 认证成功" in tunnel.message
+                assert result.status == "pass"
+        finally:
+            await db.close()
+
 
 class TestBatchAndHistory:
     @pytest.mark.asyncio

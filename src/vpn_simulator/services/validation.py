@@ -449,6 +449,12 @@ class ValidationService:
             )
         elif protocol == "sstp":
             handshake_ok, latency_ms, error = await self._run_sstp_handshake()
+            auth_ok = False
+            if handshake_ok:
+                auth_ok, _ = self._run_mschapv2_auth(
+                    config.get("username") or "alice",
+                    config.get("password") or "demo-password",
+                )
             steps.append(
                 ValidationStep(
                     "handshake",
@@ -465,15 +471,17 @@ class ValidationService:
                     ),
                 )
             )
+            if not handshake_ok:
+                tunnel_msg = "握手失败，未建立隧道"
+            elif not auth_ok:
+                tunnel_msg = "SSTP TLS 隧道已建立，但 MS-CHAPv2 认证失败"
+            else:
+                tunnel_msg = "SSTP TLS 隧道 + MS-CHAPv2 认证成功"
             steps.append(
                 ValidationStep(
                     "tunnel",
-                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
-                    (
-                        "SSTP TLS 隧道与 CALL_CONNECTED 已建立（PPP 认证待接入）"
-                        if handshake_ok
-                        else "握手失败，未建立隧道"
-                    ),
+                    StepStatus.PASS if (handshake_ok and auth_ok) else StepStatus.FAIL,
+                    tunnel_msg,
                 )
             )
             steps.append(
@@ -530,6 +538,12 @@ class ValidationService:
             )
         elif protocol == "openconnect":
             handshake_ok, latency_ms, error = await self._run_openconnect_handshake()
+            auth_ok = False
+            if handshake_ok:
+                auth_ok, _ = self._run_mschapv2_auth(
+                    config.get("username") or "alice",
+                    config.get("password") or "demo-password",
+                )
             steps.append(
                 ValidationStep(
                     "handshake",
@@ -546,15 +560,17 @@ class ValidationService:
                     ),
                 )
             )
+            if not handshake_ok:
+                tunnel_msg = "握手失败，未建立隧道"
+            elif not auth_ok:
+                tunnel_msg = "OpenConnect TLS/CSTP 隧道已建立，但 MS-CHAPv2 认证失败"
+            else:
+                tunnel_msg = "OpenConnect TLS/CSTP 隧道 + MS-CHAPv2 认证成功（DTLS 待接入）"
             steps.append(
                 ValidationStep(
                     "tunnel",
-                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
-                    (
-                        "OpenConnect TLS/CSTP 隧道已建立（DTLS 与 PPP 认证待接入）"
-                        if handshake_ok
-                        else "握手失败，未建立隧道"
-                    ),
+                    StepStatus.PASS if (handshake_ok and auth_ok) else StepStatus.FAIL,
+                    tunnel_msg,
                 )
             )
             steps.append(
