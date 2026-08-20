@@ -106,5 +106,5 @@ P0-A（A1→A2→A3→A4）→ P0-B（B1→B2→B3→B4→B5）→ P1 → P2 →
 | P2 | `ef16558` `e853a90` | 损伤引擎 corrupt/reorder/duplicate/bandwidth + vitest 冒烟测试 + CI |
 | P3 | `05556f5` | OpenVPN 控制信道 framing + `--tls-auth` HMAC + 覆盖率门禁 |
 
-最终指标：后端 1197 tests 通过、80% 覆盖率（`--cov-fail-under=78`）；
+最终指标：后端 1198 tests 通过、80.5% 覆盖率（`--cov-fail-under=78`）；
 前端 4 个组件冒烟测试；`tsc --noEmit`、`eslint`、`mypy`、`ruff`、`black` 全绿。

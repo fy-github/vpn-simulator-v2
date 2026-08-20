@@ -230,7 +230,7 @@ cd web-ui && npx tsc --noEmit
 cd web-ui && npm run build
 ```
 
-**Test Results:** 1197 tests passing, 80% coverage (Python 3.11, deps pinned by `uv.lock`).
+**Test Results:** 1198 tests passing, 80.5% coverage (Python 3.11, deps pinned by `uv.lock`).
 
 ## Lint
 
