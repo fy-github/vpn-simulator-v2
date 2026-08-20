@@ -33,6 +33,7 @@ from vpn_simulator.plugins.protocols.openvpn.control_channel import generate_tls
 from vpn_simulator.plugins.protocols.openvpn.data_channel import (
     OpenVPNDataSession,
 )
+from vpn_simulator.plugins.protocols.ppp.mppe import MPPESession, derive_session_keys
 from vpn_simulator.plugins.protocols.ppp.mschapv2 import (
     compute_challenge_response,
     compute_nt_hash,
@@ -374,7 +375,7 @@ class ValidationService:
                     "tunnel",
                     StepStatus.PASS if data_ok else StepStatus.FAIL,
                     (
-                        "L2TP 隧道与会话已建立，真实 L2TP 数据面往返 + MS-CHAPv2 认证成功"
+                        "L2TP 隧道与会话已建立，真实 L2TP 数据面往返 + MS-CHAPv2 认证 + MPPE 加密成功"
                         if data_ok
                         else f"L2TP 数据面失败: {data_error}"
                     ),
@@ -424,7 +425,7 @@ class ValidationService:
                     "tunnel",
                     StepStatus.PASS if gre_ok else StepStatus.FAIL,
                     (
-                        "PPTP 控制连接已建立，真实 GRE 数据面往返 + MS-CHAPv2 认证成功"
+                        "PPTP 控制连接已建立，真实 GRE 数据面往返 + MS-CHAPv2 认证 + MPPE 加密成功"
                         if gre_ok
                         else f"GRE 数据面失败: {gre_error}"
                     ),
@@ -450,7 +451,7 @@ class ValidationService:
             handshake_ok, latency_ms, error = await self._run_sstp_handshake()
             auth_ok = False
             if handshake_ok:
-                auth_ok, _ = self._run_mschapv2_auth(
+                auth_ok, _, _, _ = self._run_mschapv2_auth(
                     config.get("username") or "alice",
                     config.get("password") or "demo-password",
                 )
@@ -539,7 +540,7 @@ class ValidationService:
             handshake_ok, latency_ms, error = await self._run_openconnect_handshake()
             auth_ok = False
             if handshake_ok:
-                auth_ok, _ = self._run_mschapv2_auth(
+                auth_ok, _, _, _ = self._run_mschapv2_auth(
                     config.get("username") or "alice",
                     config.get("password") or "demo-password",
                 )
@@ -929,21 +930,29 @@ class ValidationService:
         except Exception as e:
             return False, str(e)
 
-    def _run_mschapv2_auth(self, username: str, password: str) -> tuple[bool, str]:
-        """在内存中执行一次真实 MS-CHAPv2 挑战-响应认证（无 I/O）。"""
+    def _run_mschapv2_auth(
+        self, username: str, password: str
+    ) -> tuple[bool, str, bytes | None, bytes | None]:
+        """在内存中执行一次真实 MS-CHAPv2 认证并派生 MPPE 会话密钥（无 I/O）。
+
+        Returns:
+            (认证是否成功, 错误信息, MPPE 发送密钥, MPPE 接收密钥)；失败时后两项为 None。
+        """
         try:
             server_challenge = generate_challenge()
             peer_challenge = generate_challenge()
+            nt_hash = compute_nt_hash(password)
             response = compute_challenge_response(
-                compute_nt_hash(password), peer_challenge, server_challenge, username
+                nt_hash, peer_challenge, server_challenge, username
             )
             if verify_challenge_response(
                 password, username, peer_challenge, server_challenge, response
             ):
-                return True, ""
-            return False, "MS-CHAPv2 响应校验失败"
+                send_key, recv_key = derive_session_keys(nt_hash, response)
+                return True, "", send_key, recv_key
+            return False, "MS-CHAPv2 响应校验失败", None, None
         except Exception as e:
-            return False, str(e)
+            return False, str(e), None, None
 
     async def _run_l2tp_handshake_and_data(
         self, username: str, password: str
@@ -981,14 +990,17 @@ class ValidationService:
                 if client_ids != (CLIENT_TUNNEL_ID, SERVER_TUNNEL_ID):
                     return True, latency_ms, "", False, "tunnel_id 不符合预期"
 
+                auth_ok, auth_error, send_key, recv_key = self._run_mschapv2_auth(
+                    username, password
+                )
+                if not auth_ok:
+                    return True, latency_ms, "", False, f"MS-CHAPv2 认证失败: {auth_error}"
+                assert send_key is not None and recv_key is not None
                 data_ok, data_error = await self._run_l2tp_data_roundtrip(
-                    client_sock, server_sock, client_addr, server_addr
+                    client_sock, server_sock, client_addr, server_addr, send_key, recv_key
                 )
                 if not data_ok:
                     return True, latency_ms, "", False, data_error
-                auth_ok, auth_error = self._run_mschapv2_auth(username, password)
-                if not auth_ok:
-                    return True, latency_ms, "", False, f"MS-CHAPv2 认证失败: {auth_error}"
                 return True, latency_ms, "", True, ""
         except Exception as e:
             return False, None, str(e), False, str(e)
@@ -999,22 +1011,27 @@ class ValidationService:
         server_sock: UdpSocket,
         client_addr: tuple[str, int],
         server_addr: tuple[str, int],
+        send_key: bytes,
+        recv_key: bytes,
     ) -> tuple[bool, str]:
-        """在控制握手同一对 UDP 套接字上做一次真实 L2TP 数据面往返。"""
+        """在控制握手同一对 UDP 套接字上做一次真实 L2TP 数据面往返（MPPE 加密）。"""
         client_t = L2TPDataTransport(
             client_sock, CLIENT_TUNNEL_ID, CLIENT_SESSION_ID, SERVER_TUNNEL_ID, SERVER_SESSION_ID
         )
         server_t = L2TPDataTransport(
             server_sock, SERVER_TUNNEL_ID, SERVER_SESSION_ID, CLIENT_TUNNEL_ID, CLIENT_SESSION_ID
         )
-        payload = b"L2TP data-plane roundtrip payload"
+        # 客户端 send=client→server / recv=server→client；服务端相反。
+        client_mppe = MPPESession(send_key=send_key, recv_key=recv_key)
+        server_mppe = MPPESession(send_key=recv_key, recv_key=send_key)
+        payload = b"L2TP data-plane roundtrip payload (MPPE-encrypted)"
         try:
-            await client_t.send_data(server_addr, payload)
-            if await server_t.recv_data() != payload:
-                return False, "L2TP 数据明文不一致"
-            await server_t.send_data(client_addr, payload)
-            if await client_t.recv_data() != payload:
-                return False, "L2TP 回环明文不一致"
+            await client_t.send_data(server_addr, client_mppe.encrypt(payload))
+            if server_mppe.decrypt(await server_t.recv_data()) != payload:
+                return False, "L2TP 数据 MPPE 解密不一致"
+            await server_t.send_data(client_addr, server_mppe.encrypt(payload))
+            if client_mppe.decrypt(await client_t.recv_data()) != payload:
+                return False, "L2TP 回环 MPPE 解密不一致"
             return True, ""
         except Exception as e:
             return False, str(e)
@@ -1056,12 +1073,15 @@ class ValidationService:
                 return False, latency_ms, "双方 call_id 不一致", False, "握手未完成"
 
             client_key, server_key = client_ids
-            gre_ok, gre_error = await self._run_gre_roundtrip(client_key, server_key)
-            if not gre_ok:
-                return True, latency_ms, "", False, gre_error
-            auth_ok, auth_error = self._run_mschapv2_auth(username, password)
+            auth_ok, auth_error, send_key, recv_key = self._run_mschapv2_auth(username, password)
             if not auth_ok:
                 return True, latency_ms, "", False, f"MS-CHAPv2 认证失败: {auth_error}"
+            assert send_key is not None and recv_key is not None
+            gre_ok, gre_error = await self._run_gre_roundtrip(
+                client_key, server_key, send_key, recv_key
+            )
+            if not gre_ok:
+                return True, latency_ms, "", False, gre_error
             return True, latency_ms, "", True, ""
         except Exception as e:
             return False, None, str(e), False, str(e)
@@ -1073,8 +1093,10 @@ class ValidationService:
             server.close()
             await server.wait_closed()
 
-    async def _run_gre_roundtrip(self, client_key: int, server_key: int) -> tuple[bool, str]:
-        """在环回 UDP 上做一次真实 GRE 数据面往返（模拟 GRE-over-IP）。"""
+    async def _run_gre_roundtrip(
+        self, client_key: int, server_key: int, send_key: bytes, recv_key: bytes
+    ) -> tuple[bool, str]:
+        """在环回 UDP 上做一次真实 GRE 数据面往返（MPPE 加密，模拟 GRE-over-IP）。"""
         try:
             async with (
                 UdpSocket("127.0.0.1", 0) as client_sock,
@@ -1086,13 +1108,15 @@ class ValidationService:
                     return False, "套接字未绑定"
                 client_t = GRETransport(client_sock, client_key, server_key)
                 server_t = GRETransport(server_sock, server_key, client_key)
-                payload = b"GRE data-plane roundtrip payload"
-                await client_t.send_data(server_addr, payload)
-                if await server_t.recv_data() != payload:
-                    return False, "GRE 明文不一致"
-                await server_t.send_data(client_addr, payload)
-                if await client_t.recv_data() != payload:
-                    return False, "GRE 回环明文不一致"
+                client_mppe = MPPESession(send_key=send_key, recv_key=recv_key)
+                server_mppe = MPPESession(send_key=recv_key, recv_key=send_key)
+                payload = b"GRE data-plane roundtrip payload (MPPE-encrypted)"
+                await client_t.send_data(server_addr, client_mppe.encrypt(payload))
+                if server_mppe.decrypt(await server_t.recv_data()) != payload:
+                    return False, "GRE 数据 MPPE 解密不一致"
+                await server_t.send_data(client_addr, server_mppe.encrypt(payload))
+                if client_mppe.decrypt(await client_t.recv_data()) != payload:
+                    return False, "GRE 回环 MPPE 解密不一致"
                 return True, ""
         except Exception as e:
             return False, str(e)
