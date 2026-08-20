@@ -153,6 +153,17 @@ export const api = {
   getImpairmentTimeline: (id: string, samples = 60) =>
     apiClient.get(`/impairments/${id}/timeline`, { params: { samples } }),
   removeImpairment: (id: string) => apiClient.delete(`/impairments/${id}`),
+
+  // Validation (F2)
+  validateConfig: (protocol: string, config: Record<string, unknown>) =>
+    apiClient.post('/validation/validate', { protocol, config }),
+  getValidationResult: (id: string) => apiClient.get(`/validation/results/${id}`),
+  getValidationHistory: (protocol?: string, limit = 50) =>
+    apiClient.get('/validation/history', { params: { protocol, limit } }),
+  batchValidate: (
+    protocols?: string[],
+    configs?: Record<string, Record<string, unknown>>,
+  ) => apiClient.post('/validation/batch', { protocols, configs }),
 }
 
 export default apiClient
