@@ -40,6 +40,7 @@ from vpn_simulator.plugins.protocols.wireguard.crypto import (
 )
 from vpn_simulator.plugins.protocols.wireguard.transport import WireGuardTransportSession
 from vpn_simulator.services.esp_transport import ESPTransport
+from vpn_simulator.services.gre_transport import GRETransport
 from vpn_simulator.services.ikev2_handshake import IKEv2Handshake
 from vpn_simulator.services.ipsec_handshake import IPsecHandshake
 from vpn_simulator.services.l2tp_handshake import L2TPHandshake
@@ -359,7 +360,9 @@ class ValidationService:
                 )
             )
         elif protocol == "pptp":
-            handshake_ok, latency_ms, error = await self._run_pptp_handshake()
+            handshake_ok, latency_ms, error, gre_ok, gre_error = (
+                await self._run_pptp_handshake_and_gre()
+            )
             steps.append(
                 ValidationStep(
                     "handshake",
@@ -379,11 +382,11 @@ class ValidationService:
             steps.append(
                 ValidationStep(
                     "tunnel",
-                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    StepStatus.PASS if gre_ok else StepStatus.FAIL,
                     (
-                        "PPTP 控制连接与 GRE 隧道就绪（PPP 认证待接入）"
-                        if handshake_ok
-                        else "握手失败，未建立隧道"
+                        "PPTP 控制连接已建立，真实 GRE 数据面往返成功（PPP 认证待接入）"
+                        if gre_ok
+                        else f"GRE 数据面失败: {gre_error}"
                     ),
                 )
             )
@@ -779,11 +782,11 @@ class ValidationService:
         except Exception as e:
             return False, None, str(e)
 
-    async def _run_pptp_handshake(self) -> tuple[bool, float | None, str]:
-        """在环回 TCP 连接上执行一次真实 PPTP 控制握手。
+    async def _run_pptp_handshake_and_gre(self) -> tuple[bool, float | None, str, bool, str]:
+        """在环回上执行真实 PPTP 控制握手（TCP）+ GRE 数据面往返（UDP）。
 
         Returns:
-            (是否成功, 握手延迟毫秒, 错误信息)。
+            (握手是否成功, 握手延迟毫秒, 握手错误, GRE 是否成功, GRE 错误)。
         """
         queue: asyncio.Queue[tuple[asyncio.StreamReader, asyncio.StreamWriter]] = asyncio.Queue()
 
@@ -808,13 +811,16 @@ class ValidationService:
             latency_ms = (time.perf_counter() - start) * 1000.0
 
             if len(results) != 2:
-                return False, latency_ms, "握手结果数量异常"
+                return False, latency_ms, "握手结果数量异常", False, "握手未完成"
             client_ids, server_ids = results
             if client_ids != server_ids:
-                return False, latency_ms, "双方 call_id 不一致"
-            return True, latency_ms, ""
+                return False, latency_ms, "双方 call_id 不一致", False, "握手未完成"
+
+            client_key, server_key = client_ids
+            gre_ok, gre_error = await self._run_gre_roundtrip(client_key, server_key)
+            return True, latency_ms, "", gre_ok, gre_error
         except Exception as e:
-            return False, None, str(e)
+            return False, None, str(e), False, str(e)
         finally:
             if client_writer is not None:
                 client_writer.close()
@@ -822,6 +828,30 @@ class ValidationService:
                 server_writer.close()
             server.close()
             await server.wait_closed()
+
+    async def _run_gre_roundtrip(self, client_key: int, server_key: int) -> tuple[bool, str]:
+        """在环回 UDP 上做一次真实 GRE 数据面往返（模拟 GRE-over-IP）。"""
+        try:
+            async with (
+                UdpSocket("127.0.0.1", 0) as client_sock,
+                UdpSocket("127.0.0.1", 0) as server_sock,
+            ):
+                server_addr = server_sock.local_address
+                client_addr = client_sock.local_address
+                if server_addr is None or client_addr is None:
+                    return False, "套接字未绑定"
+                client_t = GRETransport(client_sock, client_key, server_key)
+                server_t = GRETransport(server_sock, server_key, client_key)
+                payload = b"GRE data-plane roundtrip payload"
+                await client_t.send_data(server_addr, payload)
+                if await server_t.recv_data() != payload:
+                    return False, "GRE 明文不一致"
+                await server_t.send_data(client_addr, payload)
+                if await client_t.recv_data() != payload:
+                    return False, "GRE 回环明文不一致"
+                return True, ""
+        except Exception as e:
+            return False, str(e)
 
     async def _measure_throughput(self, packets: int = 100, size: int = 1024) -> float:
         """在环回地址上做真实 UDP 单向吞吐测量（Mbps）。"""
