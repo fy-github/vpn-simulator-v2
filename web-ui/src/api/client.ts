@@ -164,6 +164,25 @@ export const api = {
     protocols?: string[],
     configs?: Record<string, Record<string, unknown>>,
   ) => apiClient.post('/validation/batch', { protocols, configs }),
+
+  // PCAP (F3)
+  uploadPcap: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return apiClient.post('/pcap/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  getPcapFiles: () => apiClient.get('/pcap/files'),
+  startPcapReplay: (fileId: string, speed: number, protocolFilter?: string) =>
+    apiClient.post('/pcap/replay', {
+      file_id: fileId,
+      speed,
+      protocol_filter: protocolFilter || null,
+    }),
+  getPcapStatus: (sessionId: string) => apiClient.get(`/pcap/status/${sessionId}`),
+  stopPcapReplay: (sessionId: string) => apiClient.post(`/pcap/stop/${sessionId}`),
+  getPcapStats: (fileId: string) => apiClient.get(`/pcap/stats/${fileId}`),
 }
 
 export default apiClient
