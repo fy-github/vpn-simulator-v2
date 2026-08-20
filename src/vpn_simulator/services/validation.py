@@ -43,7 +43,14 @@ from vpn_simulator.services.esp_transport import ESPTransport
 from vpn_simulator.services.gre_transport import GRETransport
 from vpn_simulator.services.ikev2_handshake import IKEv2Handshake
 from vpn_simulator.services.ipsec_handshake import IPsecHandshake
-from vpn_simulator.services.l2tp_handshake import L2TPHandshake
+from vpn_simulator.services.l2tp_data_transport import L2TPDataTransport
+from vpn_simulator.services.l2tp_handshake import (
+    CLIENT_SESSION_ID,
+    CLIENT_TUNNEL_ID,
+    SERVER_SESSION_ID,
+    SERVER_TUNNEL_ID,
+    L2TPHandshake,
+)
 from vpn_simulator.services.openvpn_handshake import OpenVPNHandshake
 from vpn_simulator.services.openvpn_transport import OpenVPNTransport
 from vpn_simulator.services.pptp_handshake import PPTPHandshake
@@ -315,7 +322,9 @@ class ValidationService:
                 )
             )
         elif protocol == "l2tp":
-            handshake_ok, latency_ms, error = await self._run_l2tp_handshake()
+            handshake_ok, latency_ms, error, data_ok, data_error = (
+                await self._run_l2tp_handshake_and_data()
+            )
             steps.append(
                 ValidationStep(
                     "handshake",
@@ -335,11 +344,11 @@ class ValidationService:
             steps.append(
                 ValidationStep(
                     "tunnel",
-                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    StepStatus.PASS if data_ok else StepStatus.FAIL,
                     (
-                        "L2TP 隧道与会话已建立（PPP 数据面待接入）"
-                        if handshake_ok
-                        else "握手失败，未建立隧道"
+                        "L2TP 隧道与会话已建立，真实 L2TP 数据面往返成功（PPP 认证待接入）"
+                        if data_ok
+                        else f"L2TP 数据面失败: {data_error}"
                     ),
                 )
             )
@@ -748,11 +757,11 @@ class ValidationService:
         except Exception as e:
             return False, str(e)
 
-    async def _run_l2tp_handshake(self) -> tuple[bool, float | None, str]:
-        """在环回地址上执行一次真实 L2TP 握手（控制连接 + 会话 + 隧道认证）。
+    async def _run_l2tp_handshake_and_data(self) -> tuple[bool, float | None, str, bool, str]:
+        """在环回上执行真实 L2TP 握手 + L2TP 数据面往返（同一对 UDP 套接字）。
 
         Returns:
-            (是否成功, 握手延迟毫秒, 错误信息)。
+            (握手是否成功, 握手延迟毫秒, 握手错误, 数据面是否成功, 数据面错误)。
         """
         secret = generate_shared_secret()
         try:
@@ -761,8 +770,9 @@ class ValidationService:
                 UdpSocket("127.0.0.1", 0) as server_sock,
             ):
                 server_addr = server_sock.local_address
-                if server_addr is None:
-                    return False, None, "服务端套接字未绑定"
+                client_addr = client_sock.local_address
+                if server_addr is None or client_addr is None:
+                    return False, None, "套接字未绑定", False, "套接字未绑定"
                 client_hs = L2TPHandshake(secret, client_sock)
                 server_hs = L2TPHandshake(secret, server_sock)
 
@@ -773,14 +783,46 @@ class ValidationService:
                 )
                 latency_ms = (time.perf_counter() - start) * 1000.0
 
-            if len(results) != 2:
-                return False, latency_ms, "握手结果数量异常"
-            client_ids, server_ids = results
-            if client_ids != server_ids:
-                return False, latency_ms, "双方 tunnel_id 不一致"
-            return True, latency_ms, ""
+                if len(results) != 2:
+                    return False, latency_ms, "握手结果数量异常", False, "握手未完成"
+                client_ids, server_ids = results
+                if client_ids != server_ids:
+                    return False, latency_ms, "双方 tunnel_id 不一致", False, "握手未完成"
+                if client_ids != (CLIENT_TUNNEL_ID, SERVER_TUNNEL_ID):
+                    return True, latency_ms, "", False, "tunnel_id 不符合预期"
+
+                data_ok, data_error = await self._run_l2tp_data_roundtrip(
+                    client_sock, server_sock, client_addr, server_addr
+                )
+                return True, latency_ms, "", data_ok, data_error
         except Exception as e:
-            return False, None, str(e)
+            return False, None, str(e), False, str(e)
+
+    async def _run_l2tp_data_roundtrip(
+        self,
+        client_sock: UdpSocket,
+        server_sock: UdpSocket,
+        client_addr: tuple[str, int],
+        server_addr: tuple[str, int],
+    ) -> tuple[bool, str]:
+        """在控制握手同一对 UDP 套接字上做一次真实 L2TP 数据面往返。"""
+        client_t = L2TPDataTransport(
+            client_sock, CLIENT_TUNNEL_ID, CLIENT_SESSION_ID, SERVER_TUNNEL_ID, SERVER_SESSION_ID
+        )
+        server_t = L2TPDataTransport(
+            server_sock, SERVER_TUNNEL_ID, SERVER_SESSION_ID, CLIENT_TUNNEL_ID, CLIENT_SESSION_ID
+        )
+        payload = b"L2TP data-plane roundtrip payload"
+        try:
+            await client_t.send_data(server_addr, payload)
+            if await server_t.recv_data() != payload:
+                return False, "L2TP 数据明文不一致"
+            await server_t.send_data(client_addr, payload)
+            if await client_t.recv_data() != payload:
+                return False, "L2TP 回环明文不一致"
+            return True, ""
+        except Exception as e:
+            return False, str(e)
 
     async def _run_pptp_handshake_and_gre(self) -> tuple[bool, float | None, str, bool, str]:
         """在环回上执行真实 PPTP 控制握手（TCP）+ GRE 数据面往返（UDP）。
