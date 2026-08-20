@@ -55,6 +55,11 @@ class UdpSocket:
         self._protocol: _DatagramProtocol | None = None
         self._impairment = impairment
         self._dropped = 0
+        self._duplicated = 0
+        self._reordered = 0
+        self._corrupted = 0
+        self._held: bytes | None = None
+        self._held_addr: tuple[str, int] | None = None
 
     async def __aenter__(self) -> UdpSocket:
         await self.bind()
@@ -81,22 +86,69 @@ class UdpSocket:
     async def sendto(self, data: bytes, addr: tuple[str, int]) -> None:
         """发送 datagram 到指定地址。
 
-        若配置了损伤引擎，则在发送前应用延迟/抖动与丢包：丢包时该报文
-        不会被真正发送（计入 `dropped_packets`）。
+        若配置了损伤引擎，则在发送前应用延迟/抖动、丢包、损坏、重复、乱序
+        与带宽限速：丢包时该报文不会被真正发送（计入 `dropped_packets`）。
         """
         if self._transport is None:
             raise RuntimeError("UdpSocket not bound; call bind() first")
-        if self._impairment is not None:
-            should_send = await self._impairment.apply_outbound()
-            if not should_send:
-                self._dropped += 1
-                return
-        self._transport.sendto(data, addr)
+        if self._impairment is None:
+            self._transport.sendto(data, addr)
+            return
+
+        decision = await self._impairment.apply_outbound(data)
+        if decision.drop:
+            self._dropped += 1
+            return
+
+        if decision.delay_ms > 0.0:
+            await asyncio.sleep(decision.delay_ms / 1000.0)
+
+        payload = decision.data if decision.data is not None else data
+        if decision.data is not None:
+            self._corrupted += 1
+
+        # 若上一报文因乱序被暂存，则先发当前报文、再补发暂存报文（交换顺序）。
+        if self._held is not None:
+            assert self._held_addr is not None
+            self._transport.sendto(payload, addr)
+            if decision.duplicate:
+                self._transport.sendto(payload, addr)
+            self._transport.sendto(self._held, self._held_addr)
+            self._held = None
+            self._held_addr = None
+            self._reordered += 1
+            return
+
+        # 当前报文被标记为乱序：暂存，等待下一报文交换。
+        if decision.reorder:
+            self._held = payload
+            self._held_addr = addr
+            return
+
+        self._transport.sendto(payload, addr)
+        if decision.duplicate:
+            self._transport.sendto(payload, addr)
+            self._duplicated += 1
 
     @property
     def dropped_packets(self) -> int:
         """因损伤丢包而被丢弃的出站报文数量。"""
         return self._dropped
+
+    @property
+    def duplicated_packets(self) -> int:
+        """因损伤重复而被额外发送的出站报文数量。"""
+        return self._duplicated
+
+    @property
+    def reordered_packets(self) -> int:
+        """因损伤乱序而发生顺序交换的报文对数量。"""
+        return self._reordered
+
+    @property
+    def corrupted_packets(self) -> int:
+        """因损伤损坏而被修改字节的出站报文数量。"""
+        return self._corrupted
 
     async def recvfrom(self, timeout: float | None = None) -> tuple[bytes, tuple[str, int]]:
         """接收一个 datagram，返回 (data, addr)。
@@ -120,3 +172,5 @@ class UdpSocket:
             self._transport.close()
             self._transport = None
             self._protocol = None
+        self._held = None
+        self._held_addr = None
