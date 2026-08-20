@@ -31,8 +31,10 @@ from vpn_simulator.plugins.protocols.wireguard.crypto import (
     WireGuardIdentity,
     b64_to_key,
 )
+from vpn_simulator.plugins.protocols.wireguard.transport import WireGuardTransportSession
 from vpn_simulator.services.openvpn_handshake import OpenVPNHandshake
 from vpn_simulator.services.wireguard_handshake import WireGuardHandshake
+from vpn_simulator.services.wireguard_transport import WireGuardTransport
 
 logger = structlog.get_logger(__name__)
 
@@ -104,7 +106,9 @@ class ValidationService:
         handshake_ok = False
         latency_ms: float | None = None
         if protocol == "wireguard":
-            handshake_ok, latency_ms, error = await self._run_wireguard_handshake()
+            handshake_ok, latency_ms, error, initiator_keys, responder_keys = (
+                await self._run_wireguard_handshake()
+            )
             steps.append(
                 ValidationStep(
                     "handshake",
@@ -117,13 +121,24 @@ class ValidationService:
                     ),
                 )
             )
-            steps.append(
-                ValidationStep(
-                    "tunnel",
-                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
-                    "传输密钥已派生（真实握手）" if handshake_ok else "握手失败，未建立隧道",
+            # 隧道：真实数据面加解密往返（握手已派生传输密钥）。
+            if handshake_ok and initiator_keys is not None and responder_keys is not None:
+                tunnel_ok, tunnel_error = await self._run_wireguard_data_roundtrip(
+                    initiator_keys, responder_keys
                 )
-            )
+                steps.append(
+                    ValidationStep(
+                        "tunnel",
+                        StepStatus.PASS if tunnel_ok else StepStatus.FAIL,
+                        (
+                            "真实数据面 ChaCha20-Poly1305 加解密往返成功"
+                            if tunnel_ok
+                            else f"数据面往返失败: {tunnel_error}"
+                        ),
+                    )
+                )
+            else:
+                steps.append(ValidationStep("tunnel", StepStatus.FAIL, "握手失败，未建立隧道"))
             steps.append(
                 ValidationStep(
                     "latency",
@@ -263,11 +278,14 @@ class ValidationService:
             "auth", StepStatus.FAIL, f"缺少认证字段（至少其一）: {', '.join(fields)}"
         )
 
-    async def _run_wireguard_handshake(self) -> tuple[bool, float | None, str]:
+    async def _run_wireguard_handshake(
+        self,
+    ) -> tuple[bool, float | None, str, tuple[bytes, bytes] | None, tuple[bytes, bytes] | None]:
         """在环回地址上执行一次真实 WireGuard 握手。
 
         Returns:
-            (是否成功, 握手延迟毫秒, 错误信息)。
+            (是否成功, 握手延迟毫秒, 错误信息, 发起方密钥对, 响应方密钥对)。
+            密钥对为 ``(send_key, recv_key)``，失败时为 ``None``。
         """
         initiator = WireGuardIdentity.generate()
         responder = WireGuardIdentity.generate()
@@ -278,7 +296,7 @@ class ValidationService:
             ):
                 responder_addr = responder_sock.local_address
                 if responder_addr is None:
-                    return False, None, "响应方套接字未绑定"
+                    return False, None, "响应方套接字未绑定", None, None
                 initiator_hs = WireGuardHandshake(initiator, initiator_sock)
                 responder_hs = WireGuardHandshake(responder, responder_sock)
 
@@ -290,10 +308,65 @@ class ValidationService:
                 latency_ms = (time.perf_counter() - start) * 1000.0
 
             if len(keys) != 2 or any(len(k) != 2 or any(len(b) != 32 for b in k) for k in keys):
-                return False, latency_ms, "派生密钥长度异常"
-            return True, latency_ms, ""
+                return False, latency_ms, "派生密钥长度异常", None, None
+            initiator_keys, responder_keys = keys
+            return True, latency_ms, "", initiator_keys, responder_keys
         except Exception as e:
-            return False, None, str(e)
+            return False, None, str(e), None, None
+
+    async def _run_wireguard_data_roundtrip(
+        self,
+        initiator_keys: tuple[bytes, bytes],
+        responder_keys: tuple[bytes, bytes],
+    ) -> tuple[bool, str]:
+        """在环回地址上做一次真实 WireGuard 数据面加解密往返。
+
+        Args:
+            initiator_keys: 发起方 ``(send_key, recv_key)``。
+            responder_keys: 响应方 ``(send_key, recv_key)``。
+
+        Returns:
+            (是否成功, 错误信息)。
+        """
+        initiator_send, initiator_recv = initiator_keys
+        responder_recv, responder_send = responder_keys
+        try:
+            async with (
+                UdpSocket("127.0.0.1", 0) as initiator_sock,
+                UdpSocket("127.0.0.1", 0) as responder_sock,
+            ):
+                responder_addr = responder_sock.local_address
+                if responder_addr is None:
+                    return False, "响应方套接字未绑定"
+
+                initiator_transport = WireGuardTransport(
+                    initiator_sock,
+                    WireGuardTransportSession(send_key=initiator_send, recv_key=initiator_recv),
+                    local_index=1,
+                    peer_index=2,
+                )
+                responder_transport = WireGuardTransport(
+                    responder_sock,
+                    WireGuardTransportSession(send_key=responder_send, recv_key=responder_recv),
+                    local_index=2,
+                    peer_index=1,
+                )
+
+                plaintext = b"wireguard data-plane roundtrip"
+                await initiator_transport.send_data(responder_addr, plaintext)
+                received = await responder_transport.recv_data()
+                if received != plaintext:
+                    return False, "响应方解密明文不一致"
+
+                await responder_transport.send_data(
+                    initiator_sock.local_address or ("127.0.0.1", 0), b"ack"
+                )
+                ack = await initiator_transport.recv_data()
+                if ack != b"ack":
+                    return False, "发起方解密应答不一致"
+            return True, ""
+        except Exception as e:
+            return False, str(e)
 
     async def _run_openvpn_handshake(self) -> tuple[bool, float | None, str]:
         """在环回地址上执行一次真实 OpenVPN 控制信道 Hard Reset 握手。
