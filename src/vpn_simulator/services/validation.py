@@ -56,12 +56,13 @@ from vpn_simulator.services.openvpn_handshake import OpenVPNHandshake
 from vpn_simulator.services.openvpn_transport import OpenVPNTransport
 from vpn_simulator.services.pptp_handshake import PPTPHandshake
 from vpn_simulator.services.sstp_handshake import SSTPHandshake
+from vpn_simulator.services.vxlan_transport import VXLANTransport
 from vpn_simulator.services.wireguard_handshake import WireGuardHandshake
 from vpn_simulator.services.wireguard_transport import WireGuardTransport
 
 logger = structlog.get_logger(__name__)
 
-SUPPORTED_PROTOCOLS = ["pptp", "l2tp", "openvpn", "ipsec", "ikev2", "wireguard", "sstp"]
+SUPPORTED_PROTOCOLS = ["pptp", "l2tp", "openvpn", "ipsec", "ikev2", "wireguard", "sstp", "vxlan"]
 
 _AUTH_FIELDS: dict[str, list[str]] = {
     "wireguard": ["private_key", "public_key"],
@@ -71,6 +72,7 @@ _AUTH_FIELDS: dict[str, list[str]] = {
     "ipsec": ["psk", "cert"],
     "ikev2": ["psk", "cert", "username", "password"],
     "sstp": ["username", "password", "cert"],
+    "vxlan": ["vni"],
 }
 
 _DEFAULT_PORTS: dict[str, int] = {
@@ -81,6 +83,7 @@ _DEFAULT_PORTS: dict[str, int] = {
     "ikev2": 500,
     "wireguard": 51820,
     "sstp": 443,
+    "vxlan": 4789,
 }
 
 
@@ -460,6 +463,42 @@ class ValidationService:
                     (
                         {"latency_ms": round(latency_ms, 2)}
                         if handshake_ok and latency_ms is not None
+                        else {}
+                    ),
+                )
+            )
+        elif protocol == "vxlan":
+            tunnel_ok, vxlan_latency, error = await self._run_vxlan_roundtrip()
+            steps.append(
+                ValidationStep(
+                    "handshake",
+                    StepStatus.SKIP,
+                    "VXLAN 无握手（无状态数据面封装，控制面为外部静态配置）",
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "tunnel",
+                    StepStatus.PASS if tunnel_ok else StepStatus.FAIL,
+                    (
+                        "真实 VXLAN 封装/解封装往返成功（VNI 校验）"
+                        if tunnel_ok
+                        else f"VXLAN 数据面失败: {error}"
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "latency",
+                    StepStatus.PASS if tunnel_ok else StepStatus.SKIP,
+                    (
+                        f"VXLAN 往返延迟 {vxlan_latency:.2f} ms"
+                        if tunnel_ok and vxlan_latency is not None
+                        else "VXLAN 往返失败，无法测量"
+                    ),
+                    (
+                        {"latency_ms": round(vxlan_latency, 2)}
+                        if tunnel_ok and vxlan_latency is not None
                         else {}
                     ),
                 )
@@ -988,6 +1027,38 @@ class ValidationService:
                 server_writer.close()
             server.close()
             await server.wait_closed()
+
+    async def _run_vxlan_roundtrip(self) -> tuple[bool, float | None, str]:
+        """在环回 UDP 上做一次真实 VXLAN 封装/解封装往返。
+
+        Returns:
+            (是否成功, 往返延迟毫秒, 错误信息)。
+        """
+        vni = 100
+        try:
+            async with (
+                UdpSocket("127.0.0.1", 0) as client_sock,
+                UdpSocket("127.0.0.1", 0) as server_sock,
+            ):
+                server_addr = server_sock.local_address
+                client_addr = client_sock.local_address
+                if server_addr is None or client_addr is None:
+                    return False, None, "套接字未绑定"
+                client_t = VXLANTransport(client_sock, vni, vni)
+                server_t = VXLANTransport(server_sock, vni, vni)
+                payload = b"VXLAN data-plane roundtrip payload"
+
+                start = time.perf_counter()
+                await client_t.send_data(server_addr, payload)
+                if await server_t.recv_data() != payload:
+                    return False, None, "VXLAN 明文不一致"
+                await server_t.send_data(client_addr, payload)
+                if await client_t.recv_data() != payload:
+                    return False, None, "VXLAN 回环明文不一致"
+                latency_ms = (time.perf_counter() - start) * 1000.0
+                return True, latency_ms, ""
+        except Exception as e:
+            return False, None, str(e)
 
     async def _measure_throughput(self, packets: int = 100, size: int = 1024) -> float:
         """在环回地址上做真实 UDP 单向吞吐测量（Mbps）。"""

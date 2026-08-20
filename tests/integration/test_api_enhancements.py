@@ -112,7 +112,7 @@ class TestValidationEndpoints:
         assert response.status_code == 200
         results = response.json()
         assert isinstance(results, list)
-        assert len(results) == 7
+        assert len(results) == 8
 
 
 class TestPcapEndpoints:
