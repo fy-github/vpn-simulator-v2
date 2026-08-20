@@ -34,6 +34,7 @@ from vpn_simulator.plugins.protocols.openvpn.data_channel import (
     OpenVPNDataSession,
     derive_data_key,
 )
+from vpn_simulator.plugins.protocols.sstp.tls import create_tls_contexts
 from vpn_simulator.plugins.protocols.wireguard.crypto import (
     WireGuardIdentity,
     b64_to_key,
@@ -54,12 +55,13 @@ from vpn_simulator.services.l2tp_handshake import (
 from vpn_simulator.services.openvpn_handshake import OpenVPNHandshake
 from vpn_simulator.services.openvpn_transport import OpenVPNTransport
 from vpn_simulator.services.pptp_handshake import PPTPHandshake
+from vpn_simulator.services.sstp_handshake import SSTPHandshake
 from vpn_simulator.services.wireguard_handshake import WireGuardHandshake
 from vpn_simulator.services.wireguard_transport import WireGuardTransport
 
 logger = structlog.get_logger(__name__)
 
-SUPPORTED_PROTOCOLS = ["pptp", "l2tp", "openvpn", "ipsec", "ikev2", "wireguard"]
+SUPPORTED_PROTOCOLS = ["pptp", "l2tp", "openvpn", "ipsec", "ikev2", "wireguard", "sstp"]
 
 _AUTH_FIELDS: dict[str, list[str]] = {
     "wireguard": ["private_key", "public_key"],
@@ -68,6 +70,7 @@ _AUTH_FIELDS: dict[str, list[str]] = {
     "openvpn": ["ca", "cert", "key", "username", "password"],
     "ipsec": ["psk", "cert"],
     "ikev2": ["psk", "cert", "username", "password"],
+    "sstp": ["username", "password", "cert"],
 }
 
 _DEFAULT_PORTS: dict[str, int] = {
@@ -77,6 +80,7 @@ _DEFAULT_PORTS: dict[str, int] = {
     "ipsec": 500,
     "ikev2": 500,
     "wireguard": 51820,
+    "sstp": 443,
 }
 
 
@@ -396,6 +400,51 @@ class ValidationService:
                         "PPTP 控制连接已建立，真实 GRE 数据面往返成功（PPP 认证待接入）"
                         if gre_ok
                         else f"GRE 数据面失败: {gre_error}"
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "latency",
+                    StepStatus.PASS if handshake_ok else StepStatus.SKIP,
+                    (
+                        f"握手延迟 {latency_ms:.2f} ms"
+                        if handshake_ok and latency_ms is not None
+                        else "握手失败，无法测量"
+                    ),
+                    (
+                        {"latency_ms": round(latency_ms, 2)}
+                        if handshake_ok and latency_ms is not None
+                        else {}
+                    ),
+                )
+            )
+        elif protocol == "sstp":
+            handshake_ok, latency_ms, error = await self._run_sstp_handshake()
+            steps.append(
+                ValidationStep(
+                    "handshake",
+                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    (
+                        "真实 SSTP 握手成功（TLS 1.2/1.3 + CALL_CONNECT_REQUEST/ACK）"
+                        if handshake_ok
+                        else f"握手失败: {error}"
+                    ),
+                    (
+                        {"latency_ms": round(latency_ms, 2)}
+                        if handshake_ok and latency_ms is not None
+                        else {}
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "tunnel",
+                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    (
+                        "SSTP TLS 隧道与 CALL_CONNECTED 已建立（PPP 认证待接入）"
+                        if handshake_ok
+                        else "握手失败，未建立隧道"
                     ),
                 )
             )
@@ -894,6 +943,51 @@ class ValidationService:
                 return True, ""
         except Exception as e:
             return False, str(e)
+
+    async def _run_sstp_handshake(self) -> tuple[bool, float | None, str]:
+        """在环回 TCP 上执行一次真实 SSTP 握手（TLS + CALL_CONNECT）。
+
+        Returns:
+            (是否成功, 握手延迟毫秒, 错误信息)。
+        """
+        queue: asyncio.Queue[tuple[asyncio.StreamReader, asyncio.StreamWriter]] = asyncio.Queue()
+
+        async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+            await queue.put((reader, writer))
+
+        try:
+            contexts = create_tls_contexts()
+            server = await asyncio.start_server(handle_client, "127.0.0.1", 0, ssl=contexts.server)
+        except Exception as e:
+            return False, None, f"TLS 服务端启动失败: {e}"
+
+        client_writer: asyncio.StreamWriter | None = None
+        server_writer: asyncio.StreamWriter | None = None
+        try:
+            port = server.sockets[0].getsockname()[1]
+            start = time.perf_counter()
+            client_reader, client_writer = await asyncio.open_connection(
+                "127.0.0.1", port, ssl=contexts.client
+            )
+            server_reader, server_writer = await queue.get()
+
+            client_hs = SSTPHandshake(client_reader, client_writer)
+            server_hs = SSTPHandshake(server_reader, server_writer)
+            await asyncio.gather(
+                client_hs.initiate(),
+                server_hs.respond(),
+            )
+            latency_ms = (time.perf_counter() - start) * 1000.0
+            return True, latency_ms, ""
+        except Exception as e:
+            return False, None, str(e)
+        finally:
+            if client_writer is not None:
+                client_writer.close()
+            if server_writer is not None:
+                server_writer.close()
+            server.close()
+            await server.wait_closed()
 
     async def _measure_throughput(self, packets: int = 100, size: int = 1024) -> float:
         """在环回地址上做真实 UDP 单向吞吐测量（Mbps）。"""

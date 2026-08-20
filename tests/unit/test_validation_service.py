@@ -114,11 +114,11 @@ class TestValidateOtherProtocols:
 
 class TestBatchAndHistory:
     @pytest.mark.asyncio
-    async def test_batch_validates_six_protocols(self):
+    async def test_batch_validates_seven_protocols(self):
         service, db = await _make_service()
         try:
             results = await service.batch()
-            assert len(results) == 6
+            assert len(results) == 7
             protocols = {r["protocol"] for r in results}
             assert protocols == {
                 "pptp",
@@ -127,6 +127,7 @@ class TestBatchAndHistory:
                 "ipsec",
                 "ikev2",
                 "wireguard",
+                "sstp",
             }
         finally:
             await db.close()
