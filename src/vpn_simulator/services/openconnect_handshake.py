@@ -26,6 +26,18 @@ from vpn_simulator.plugins.protocols.openconnect.cstp import (
     parse_connect_request,
     parse_connect_response,
 )
+from vpn_simulator.plugins.protocols.ppp.control import (
+    CONFIGURE_ACK,
+    CONFIGURE_REQUEST,
+    build_configure_ack,
+    build_configure_request,
+    build_ipcp_ip_option,
+    build_lcp_mru_option,
+    parse_frame,
+)
+from vpn_simulator.plugins.protocols.ppp.control import (
+    HEADER_LEN as PPP_HEADER_LEN,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -46,10 +58,11 @@ class OpenConnectHandshake:
         self._on_packet = on_packet
 
     async def initiate(self) -> None:
-        """客户端执行 CSTP CONNECT 握手。"""
+        """客户端执行 CSTP CONNECT 握手 + PPP LCP/IPCP 协商。"""
         await self._send(build_connect_request(), "CSTP_CONNECT_REQUEST")
         raw = await self._recv_headers_and_record("CSTP_CONNECT_RESPONSE")
         parse_connect_response(raw)
+        await self._negotiate_ppp()
         logger.info("openconnect_connected")
 
     async def respond(self) -> None:
@@ -62,12 +75,47 @@ class OpenConnectHandshake:
 
         await self._send(build_connect_response(), "CSTP_CONNECT_RESPONSE")
         await self._trigger("CSTP_NEGOTIATION_COMPLETE")
-        # DTLS 数据通道与 PPP LCP/IPCP/MSCHAPv2 不实现，教学简化驱动状态机
+        # DTLS 数据通道不实现，走 DTLS_SKIPPED
         await self._trigger("DTLS_SKIPPED")
+
+        # PPP LCP 协商（真实 Configure-Request/Ack）
+        code, identifier, options = parse_frame(await self._recv_ppp("LCP_CONFIGURE_REQUEST"))
+        if code != CONFIGURE_REQUEST:
+            raise ValueError(f"expected LCP Configure-Request, got code {code}")
+        await self._send_ppp(build_configure_ack(identifier, options), "LCP_CONFIGURE_ACK")
         await self._trigger("LCP_NEGOTIATION_COMPLETE")
+        # MS-CHAPv2 认证在 validation 层执行，此处合成触发
         await self._trigger("AUTHENTICATION_SUCCESS")
+
+        # PPP IPCP 协商（真实 Configure-Request/Ack）
+        code, identifier, options = parse_frame(await self._recv_ppp("IPCP_CONFIGURE_REQUEST"))
+        if code != CONFIGURE_REQUEST:
+            raise ValueError(f"expected IPCP Configure-Request, got code {code}")
+        await self._send_ppp(build_configure_ack(identifier, options), "IPCP_CONFIGURE_ACK")
         await self._trigger("IPCP_NEGOTIATION_COMPLETE")
         logger.info("openconnect_tunnel_established")
+
+    async def _negotiate_ppp(self) -> None:
+        """客户端执行 PPP LCP/IPCP 协商（真实 Configure-Request/Ack）。"""
+        code, _id, _data = parse_frame(
+            await self._send_ppp_and_recv(
+                build_configure_request(1, build_lcp_mru_option()),
+                "LCP_CONFIGURE_REQUEST",
+                "LCP_CONFIGURE_ACK",
+            )
+        )
+        if code != CONFIGURE_ACK:
+            raise ValueError(f"expected LCP Configure-Ack, got code {code}")
+
+        code, _id, _data = parse_frame(
+            await self._send_ppp_and_recv(
+                build_configure_request(2, build_ipcp_ip_option()),
+                "IPCP_CONFIGURE_REQUEST",
+                "IPCP_CONFIGURE_ACK",
+            )
+        )
+        if code != CONFIGURE_ACK:
+            raise ValueError(f"expected IPCP Configure-Ack, got code {code}")
 
     async def _send(self, data: bytes, message_type: str) -> None:
         self._writer.write(data)
@@ -78,6 +126,26 @@ class OpenConnectHandshake:
         raw = await self._reader.readuntil(HEADER_END)
         self._record(PacketDirection.INCOMING, message_type, raw)
         return raw
+
+    async def _send_ppp_and_recv(self, data: bytes, send_type: str, recv_type: str) -> bytes:
+        """发送一条 PPP 控制帧并接收响应（客户端）。"""
+        await self._send_ppp(data, send_type)
+        return await self._recv_ppp(recv_type)
+
+    async def _send_ppp(self, data: bytes, message_type: str) -> None:
+        self._writer.write(data)
+        await self._writer.drain()
+        self._record(PacketDirection.OUTGOING, message_type, data)
+
+    async def _recv_ppp(self, message_type: str) -> bytes:
+        header = await self._reader.readexactly(PPP_HEADER_LEN)
+        length = int.from_bytes(header[2:4], "big")
+        if length < PPP_HEADER_LEN:
+            raise ValueError(f"invalid PPP control length: {length}")
+        body = await self._reader.readexactly(length - PPP_HEADER_LEN)
+        full = header + body
+        self._record(PacketDirection.INCOMING, message_type, full)
+        return full
 
     async def _trigger(self, event: str) -> None:
         if self._state_machine is not None:
