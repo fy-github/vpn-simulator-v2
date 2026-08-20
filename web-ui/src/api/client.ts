@@ -207,6 +207,16 @@ export const api = {
   getGrafanaDashboards: () => apiClient.get('/grafana/dashboards'),
   getGrafanaDashboard: (name: string) => apiClient.get(`/grafana/dashboards/${name}`),
   getGrafanaAlertRules: () => apiClient.get('/grafana/alert-rules'),
+
+  // Scale (F7)
+  getScaleDevices: (offset = 0, limit = 100) =>
+    apiClient.get('/scale/devices', { params: { offset, limit } }),
+  getScaleDevice: (index: number) => apiClient.get(`/scale/devices/${index}`),
+  getScaleStats: () => apiClient.get('/scale/stats'),
+  runScalePoll: (count?: number, concurrency?: number) =>
+    apiClient.post('/scale/poll', { count, concurrency }),
+  persistScaleSnapshot: () => apiClient.post('/scale/persist'),
+  getScaleSnapshot: () => apiClient.get('/scale/snapshots'),
 }
 
 export default apiClient
