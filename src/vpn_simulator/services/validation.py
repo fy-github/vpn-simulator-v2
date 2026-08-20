@@ -52,6 +52,7 @@ from vpn_simulator.services.l2tp_handshake import (
     SERVER_TUNNEL_ID,
     L2TPHandshake,
 )
+from vpn_simulator.services.openconnect_handshake import OpenConnectHandshake
 from vpn_simulator.services.openvpn_handshake import OpenVPNHandshake
 from vpn_simulator.services.openvpn_transport import OpenVPNTransport
 from vpn_simulator.services.pptp_handshake import PPTPHandshake
@@ -62,7 +63,17 @@ from vpn_simulator.services.wireguard_transport import WireGuardTransport
 
 logger = structlog.get_logger(__name__)
 
-SUPPORTED_PROTOCOLS = ["pptp", "l2tp", "openvpn", "ipsec", "ikev2", "wireguard", "sstp", "vxlan"]
+SUPPORTED_PROTOCOLS = [
+    "pptp",
+    "l2tp",
+    "openvpn",
+    "ipsec",
+    "ikev2",
+    "wireguard",
+    "sstp",
+    "vxlan",
+    "openconnect",
+]
 
 _AUTH_FIELDS: dict[str, list[str]] = {
     "wireguard": ["private_key", "public_key"],
@@ -73,6 +84,7 @@ _AUTH_FIELDS: dict[str, list[str]] = {
     "ikev2": ["psk", "cert", "username", "password"],
     "sstp": ["username", "password", "cert"],
     "vxlan": ["vni"],
+    "openconnect": ["username", "password", "cert"],
 }
 
 _DEFAULT_PORTS: dict[str, int] = {
@@ -84,6 +96,7 @@ _DEFAULT_PORTS: dict[str, int] = {
     "wireguard": 51820,
     "sstp": 443,
     "vxlan": 4789,
+    "openconnect": 443,
 }
 
 
@@ -499,6 +512,51 @@ class ValidationService:
                     (
                         {"latency_ms": round(vxlan_latency, 2)}
                         if tunnel_ok and vxlan_latency is not None
+                        else {}
+                    ),
+                )
+            )
+        elif protocol == "openconnect":
+            handshake_ok, latency_ms, error = await self._run_openconnect_handshake()
+            steps.append(
+                ValidationStep(
+                    "handshake",
+                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    (
+                        "真实 OpenConnect 握手成功（TLS + CSTP CONNECT，X-CSTP-* 协商）"
+                        if handshake_ok
+                        else f"握手失败: {error}"
+                    ),
+                    (
+                        {"latency_ms": round(latency_ms, 2)}
+                        if handshake_ok and latency_ms is not None
+                        else {}
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "tunnel",
+                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    (
+                        "OpenConnect TLS/CSTP 隧道已建立（DTLS 与 PPP 认证待接入）"
+                        if handshake_ok
+                        else "握手失败，未建立隧道"
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "latency",
+                    StepStatus.PASS if handshake_ok else StepStatus.SKIP,
+                    (
+                        f"握手延迟 {latency_ms:.2f} ms"
+                        if handshake_ok and latency_ms is not None
+                        else "握手失败，无法测量"
+                    ),
+                    (
+                        {"latency_ms": round(latency_ms, 2)}
+                        if handshake_ok and latency_ms is not None
                         else {}
                     ),
                 )
@@ -1012,6 +1070,51 @@ class ValidationService:
 
             client_hs = SSTPHandshake(client_reader, client_writer)
             server_hs = SSTPHandshake(server_reader, server_writer)
+            await asyncio.gather(
+                client_hs.initiate(),
+                server_hs.respond(),
+            )
+            latency_ms = (time.perf_counter() - start) * 1000.0
+            return True, latency_ms, ""
+        except Exception as e:
+            return False, None, str(e)
+        finally:
+            if client_writer is not None:
+                client_writer.close()
+            if server_writer is not None:
+                server_writer.close()
+            server.close()
+            await server.wait_closed()
+
+    async def _run_openconnect_handshake(self) -> tuple[bool, float | None, str]:
+        """在环回 TCP 上执行一次真实 OpenConnect 握手（TLS + CSTP CONNECT）。
+
+        Returns:
+            (是否成功, 握手延迟毫秒, 错误信息)。
+        """
+        queue: asyncio.Queue[tuple[asyncio.StreamReader, asyncio.StreamWriter]] = asyncio.Queue()
+
+        async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+            await queue.put((reader, writer))
+
+        try:
+            contexts = create_tls_contexts()
+            server = await asyncio.start_server(handle_client, "127.0.0.1", 0, ssl=contexts.server)
+        except Exception as e:
+            return False, None, f"TLS 服务端启动失败: {e}"
+
+        client_writer: asyncio.StreamWriter | None = None
+        server_writer: asyncio.StreamWriter | None = None
+        try:
+            port = server.sockets[0].getsockname()[1]
+            start = time.perf_counter()
+            client_reader, client_writer = await asyncio.open_connection(
+                "127.0.0.1", port, ssl=contexts.client
+            )
+            server_reader, server_writer = await queue.get()
+
+            client_hs = OpenConnectHandshake(client_reader, client_writer)
+            server_hs = OpenConnectHandshake(server_reader, server_writer)
             await asyncio.gather(
                 client_hs.initiate(),
                 server_hs.respond(),

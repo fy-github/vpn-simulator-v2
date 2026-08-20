@@ -114,11 +114,11 @@ class TestValidateOtherProtocols:
 
 class TestBatchAndHistory:
     @pytest.mark.asyncio
-    async def test_batch_validates_eight_protocols(self):
+    async def test_batch_validates_nine_protocols(self):
         service, db = await _make_service()
         try:
             results = await service.batch()
-            assert len(results) == 8
+            assert len(results) == 9
             protocols = {r["protocol"] for r in results}
             assert protocols == {
                 "pptp",
@@ -129,6 +129,7 @@ class TestBatchAndHistory:
                 "wireguard",
                 "sstp",
                 "vxlan",
+                "openconnect",
             }
         finally:
             await db.close()
