@@ -217,8 +217,11 @@ but it is not yet the single source of truth for live protocol/connection state.
 # Run all tests
 uv run pytest tests/ -q
 
-# Run with coverage
-uv run pytest tests/ --cov=vpn_simulator --cov-report=term
+# Run with coverage (CI enforces a 78% floor)
+uv run pytest tests/ --cov=vpn_simulator --cov-report=term --cov-fail-under=78
+
+# Frontend unit tests (vitest)
+cd web-ui && npm test
 
 # TypeScript type check
 cd web-ui && npx tsc --noEmit
@@ -227,7 +230,7 @@ cd web-ui && npx tsc --noEmit
 cd web-ui && npm run build
 ```
 
-**Test Results:** 1180 tests passing (Python 3.11, deps pinned by `uv.lock`).
+**Test Results:** 1197 tests passing, 80% coverage (Python 3.11, deps pinned by `uv.lock`).
 
 ## Lint
 

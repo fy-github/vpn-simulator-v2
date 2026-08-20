@@ -97,6 +97,20 @@ class TestValidateOtherProtocols:
         finally:
             await db.close()
 
+    @pytest.mark.asyncio
+    async def test_openvpn_real_handshake(self):
+        service, db = await _make_service()
+        try:
+            result = await service.validate(
+                "openvpn", {"port": 0, "ca": "ca", "cert": "cert", "key": "key"}
+            )
+            for name in ("handshake", "tunnel", "latency"):
+                step = next(s for s in result.steps if s.name == name)
+                assert step.status == StepStatus.PASS
+            assert result.status == "pass"
+        finally:
+            await db.close()
+
 
 class TestBatchAndHistory:
     @pytest.mark.asyncio

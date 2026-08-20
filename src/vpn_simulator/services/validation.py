@@ -1,8 +1,9 @@
 """VPN 配置验证服务（F2）。
 
 对 6 种协议执行 7 项配置验证：语法、端口可达性、握手、认证、隧道、延迟、
-吞吐。其中 WireGuard 的握手/延迟走 Phase 1 真实报文真测，吞吐做真实 UDP
-回环测量；其余协议的握手/隧道/延迟标注 skip（真实握手待相应协议接入）。
+吞吐。其中 WireGuard 的握手/延迟走 Noise_IKpsk2 真实报文真测，OpenVPN 走
+控制信道 Hard Reset（``--tls-auth`` HMAC）真测，吞吐做真实 UDP 回环测量；
+其余协议的握手/隧道/延迟标注 skip（真实握手待相应协议接入）。
 
 Example:
     >>> service = ValidationService(event_bus, config_manager, db_manager)
@@ -25,10 +26,12 @@ from vpn_simulator.core.database import DatabaseManager, ValidationRecord
 from vpn_simulator.core.events import EventBus
 from vpn_simulator.core.packetio import UdpSocket
 from vpn_simulator.domain.validation import StepStatus, ValidationResult, ValidationStep
+from vpn_simulator.plugins.protocols.openvpn.control_channel import generate_tls_auth_key
 from vpn_simulator.plugins.protocols.wireguard.crypto import (
     WireGuardIdentity,
     b64_to_key,
 )
+from vpn_simulator.services.openvpn_handshake import OpenVPNHandshake
 from vpn_simulator.services.wireguard_handshake import WireGuardHandshake
 
 logger = structlog.get_logger(__name__)
@@ -137,8 +140,53 @@ class ValidationService:
                     ),
                 )
             )
+        elif protocol == "openvpn":
+            handshake_ok, latency_ms, error = await self._run_openvpn_handshake()
+            steps.append(
+                ValidationStep(
+                    "handshake",
+                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    (
+                        "控制信道 Hard Reset 成功（--tls-auth HMAC 校验通过）"
+                        if handshake_ok
+                        else f"握手失败: {error}"
+                    ),
+                    (
+                        {"latency_ms": round(latency_ms, 2)}
+                        if handshake_ok and latency_ms is not None
+                        else {}
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "tunnel",
+                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    (
+                        "控制信道已建立（TLS 数据面密钥协商待接入）"
+                        if handshake_ok
+                        else "握手失败，未建立隧道"
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "latency",
+                    StepStatus.PASS if handshake_ok else StepStatus.SKIP,
+                    (
+                        f"握手延迟 {latency_ms:.2f} ms"
+                        if handshake_ok and latency_ms is not None
+                        else "握手失败，无法测量"
+                    ),
+                    (
+                        {"latency_ms": round(latency_ms, 2)}
+                        if handshake_ok and latency_ms is not None
+                        else {}
+                    ),
+                )
+            )
         else:
-            skip_msg = "真实握手仅 WireGuard 已实现（Phase 1），其余协议待接入"
+            skip_msg = "真实握手仅 WireGuard/OpenVPN 已实现（Phase 1），其余协议待接入"
             steps.append(ValidationStep("handshake", StepStatus.SKIP, skip_msg))
             steps.append(ValidationStep("tunnel", StepStatus.SKIP, skip_msg))
             steps.append(ValidationStep("latency", StepStatus.SKIP, skip_msg))
@@ -243,6 +291,37 @@ class ValidationService:
 
             if len(keys) != 2 or any(len(k) != 2 or any(len(b) != 32 for b in k) for k in keys):
                 return False, latency_ms, "派生密钥长度异常"
+            return True, latency_ms, ""
+        except Exception as e:
+            return False, None, str(e)
+
+    async def _run_openvpn_handshake(self) -> tuple[bool, float | None, str]:
+        """在环回地址上执行一次真实 OpenVPN 控制信道 Hard Reset 握手。
+
+        Returns:
+            (是否成功, 握手延迟毫秒, 错误信息)。
+        """
+        tls_auth_key = generate_tls_auth_key()
+        try:
+            async with (
+                UdpSocket("127.0.0.1", 0) as client_sock,
+                UdpSocket("127.0.0.1", 0) as server_sock,
+            ):
+                server_addr = server_sock.local_address
+                if server_addr is None:
+                    return False, None, "服务端套接字未绑定"
+                client_hs = OpenVPNHandshake(tls_auth_key, client_sock)
+                server_hs = OpenVPNHandshake(tls_auth_key, server_sock)
+
+                start = time.perf_counter()
+                results = await asyncio.gather(
+                    client_hs.initiate(server_addr),
+                    server_hs.respond(),
+                )
+                latency_ms = (time.perf_counter() - start) * 1000.0
+
+            if len(results) != 2:
+                return False, latency_ms, "握手结果数量异常"
             return True, latency_ms, ""
         except Exception as e:
             return False, None, str(e)
