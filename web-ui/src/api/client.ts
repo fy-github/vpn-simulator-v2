@@ -193,6 +193,15 @@ export const api = {
       params: { protocol },
     }),
   getRoutingTable: (routerId: string) => apiClient.get(`/routing/${routerId}/routes`),
+
+  // SNMP (F4)
+  getSnmpDevices: () => apiClient.get('/snmp/devices'),
+  getSnmpOids: () => apiClient.get('/snmp/oids'),
+  getSnmpDevice: (deviceId: string) => apiClient.get(`/snmp/devices/${deviceId}`),
+  snmpGet: (deviceId: string, oid: string, version: string) =>
+    apiClient.get(`/snmp/devices/${deviceId}/get`, { params: { oid, version } }),
+  snmpWalk: (deviceId: string, oid: string, version: string) =>
+    apiClient.get(`/snmp/devices/${deviceId}/walk`, { params: { oid, version } }),
 }
 
 export default apiClient
