@@ -75,7 +75,7 @@ class TestValidateWireGuard:
 
 class TestValidateOtherProtocols:
     @pytest.mark.asyncio
-    async def test_non_wireguard_skips_real_handshake(self):
+    async def test_pptp_real_handshake(self):
         service, db = await _make_service()
         try:
             result = await service.validate(
@@ -83,8 +83,8 @@ class TestValidateOtherProtocols:
             )
             for name in ("handshake", "tunnel", "latency"):
                 step = next(s for s in result.steps if s.name == name)
-                assert step.status == StepStatus.SKIP
-            assert result.status == "pass"  # 语法/端口/认证/吞吐通过
+                assert step.status == StepStatus.PASS
+            assert result.status == "pass"
         finally:
             await db.close()
 

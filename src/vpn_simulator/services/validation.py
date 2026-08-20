@@ -43,6 +43,7 @@ from vpn_simulator.services.ipsec_handshake import IPsecHandshake
 from vpn_simulator.services.l2tp_handshake import L2TPHandshake
 from vpn_simulator.services.openvpn_handshake import OpenVPNHandshake
 from vpn_simulator.services.openvpn_transport import OpenVPNTransport
+from vpn_simulator.services.pptp_handshake import PPTPHandshake
 from vpn_simulator.services.wireguard_handshake import WireGuardHandshake
 from vpn_simulator.services.wireguard_transport import WireGuardTransport
 
@@ -351,8 +352,53 @@ class ValidationService:
                     ),
                 )
             )
+        elif protocol == "pptp":
+            handshake_ok, latency_ms, error = await self._run_pptp_handshake()
+            steps.append(
+                ValidationStep(
+                    "handshake",
+                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    (
+                        "真实 PPTP 握手成功（SCCRQ/SCCRP + OCRQ/OCRP，TCP 控制连接）"
+                        if handshake_ok
+                        else f"握手失败: {error}"
+                    ),
+                    (
+                        {"latency_ms": round(latency_ms, 2)}
+                        if handshake_ok and latency_ms is not None
+                        else {}
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "tunnel",
+                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    (
+                        "PPTP 控制连接与 GRE 隧道就绪（PPP 认证待接入）"
+                        if handshake_ok
+                        else "握手失败，未建立隧道"
+                    ),
+                )
+            )
+            steps.append(
+                ValidationStep(
+                    "latency",
+                    StepStatus.PASS if handshake_ok else StepStatus.SKIP,
+                    (
+                        f"握手延迟 {latency_ms:.2f} ms"
+                        if handshake_ok and latency_ms is not None
+                        else "握手失败，无法测量"
+                    ),
+                    (
+                        {"latency_ms": round(latency_ms, 2)}
+                        if handshake_ok and latency_ms is not None
+                        else {}
+                    ),
+                )
+            )
         else:
-            skip_msg = "真实握手仅 WireGuard/OpenVPN/IKEv2/IPSec/L2TP 已实现，PPTP 待接入"
+            skip_msg = "该协议真实握手待接入"
             steps.append(ValidationStep("handshake", StepStatus.SKIP, skip_msg))
             steps.append(ValidationStep("tunnel", StepStatus.SKIP, skip_msg))
             steps.append(ValidationStep("latency", StepStatus.SKIP, skip_msg))
@@ -681,6 +727,50 @@ class ValidationService:
             return True, latency_ms, ""
         except Exception as e:
             return False, None, str(e)
+
+    async def _run_pptp_handshake(self) -> tuple[bool, float | None, str]:
+        """在环回 TCP 连接上执行一次真实 PPTP 控制握手。
+
+        Returns:
+            (是否成功, 握手延迟毫秒, 错误信息)。
+        """
+        queue: asyncio.Queue[tuple[asyncio.StreamReader, asyncio.StreamWriter]] = asyncio.Queue()
+
+        async def handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+            await queue.put((reader, writer))
+
+        server = await asyncio.start_server(handle_client, "127.0.0.1", 0)
+        client_writer: asyncio.StreamWriter | None = None
+        server_writer: asyncio.StreamWriter | None = None
+        try:
+            port = server.sockets[0].getsockname()[1]
+            start = time.perf_counter()
+            client_reader, client_writer = await asyncio.open_connection("127.0.0.1", port)
+            server_reader, server_writer = await queue.get()
+
+            client_hs = PPTPHandshake(client_reader, client_writer)
+            server_hs = PPTPHandshake(server_reader, server_writer)
+            results = await asyncio.gather(
+                client_hs.initiate(),
+                server_hs.respond(),
+            )
+            latency_ms = (time.perf_counter() - start) * 1000.0
+
+            if len(results) != 2:
+                return False, latency_ms, "握手结果数量异常"
+            client_ids, server_ids = results
+            if client_ids != server_ids:
+                return False, latency_ms, "双方 call_id 不一致"
+            return True, latency_ms, ""
+        except Exception as e:
+            return False, None, str(e)
+        finally:
+            if client_writer is not None:
+                client_writer.close()
+            if server_writer is not None:
+                server_writer.close()
+            server.close()
+            await server.wait_closed()
 
     async def _measure_throughput(self, packets: int = 100, size: int = 1024) -> float:
         """在环回地址上做真实 UDP 单向吞吐测量（Mbps）。"""
