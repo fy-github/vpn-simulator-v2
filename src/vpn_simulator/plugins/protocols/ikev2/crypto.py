@@ -126,6 +126,11 @@ def _hkdf(ikm: bytes, salt: bytes, info: bytes, length: int = KEY_LEN) -> bytes:
     return HKDF(algorithm=hashes.SHA256(), length=length, salt=salt, info=info).derive(ikm)
 
 
+def derive_esp_key(sk_ei: bytes) -> bytes:
+    """从 IKEv2 加密密钥派生 ESP 密钥（教学简化替代 CHILD_SA KEYMAT）。"""
+    return _hkdf(sk_ei, salt=b"", info=b"IPsec ESP KEYMAT")
+
+
 def derive_key_set(shared_secret: bytes, nonce_i: bytes, nonce_r: bytes) -> IKEv2KeySet:
     """从 DH 共享密钥 + 双方 nonce 派生 IKEv2 密钥集（HKDF-SHA256）。"""
     skeyseed = _hkdf(shared_secret, salt=nonce_i + nonce_r, info=b"IKEv2 SKEYSEED")

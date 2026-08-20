@@ -142,6 +142,11 @@ def _hkdf(ikm: bytes, salt: bytes, info: bytes, length: int = KEY_LEN) -> bytes:
     return HKDF(algorithm=hashes.SHA256(), length=length, salt=salt, info=info).derive(ikm)
 
 
+def derive_esp_key(skeyid: bytes) -> bytes:
+    """从 IKEv1 SKEYID 派生 ESP 密钥（教学简化替代 Quick Mode KEYMAT）。"""
+    return _hkdf(skeyid, salt=b"", info=b"IPsec ESP KEYMAT")
+
+
 def derive_key_set(psk: bytes, nonce_i: bytes, nonce_r: bytes) -> IPsecKeySet:
     """从 PSK + 双方 nonce 派生 IKEv1 密钥集（HKDF-SHA256）。"""
     skeyid = _hkdf(psk, salt=nonce_i + nonce_r, info=b"IKEv1 SKEYID")
