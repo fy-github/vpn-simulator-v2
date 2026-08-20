@@ -224,6 +224,11 @@ export const api = {
   getC2Scenario: (id: string) => apiClient.get(`/c2/scenarios/${id}`),
   simulateC2: (id: string) => apiClient.post(`/c2/scenarios/${id}/simulate`),
   getC2Detection: (id: string) => apiClient.get(`/c2/scenarios/${id}/detection`),
+
+  // Retention
+  getRetentionStatus: () => apiClient.get('/retention/status'),
+  runRetentionCleanup: (overrides?: Record<string, unknown>) =>
+    apiClient.post('/retention/cleanup', overrides || {}),
 }
 
 export default apiClient
