@@ -40,7 +40,7 @@ Multi-protocol VPN Server Simulator with modern Web UI — supports **9 VPN/tunn
 - **Vendor CLI** — Cisco IOS and Huawei VRP command simulation
 - **DHCP Simulation** — Spoof random MAC addresses to concurrently acquire DHCP leases (with 802.1Q VLAN tagging and explicit release)
 - **Network Impairment** — Time-varying impairment presets/curves (linear/exponential/step/sine/random) applied to real packet flow
-- **Config Validation** — 7-step VPN config validation (syntax/port/handshake/auth/tunnel/latency/throughput) for all 6 protocols; every protocol now performs a real control-plane handshake — WireGuard (Noise + ChaCha20-Poly1305 data round-trip), OpenVPN (`--tls-auth` HMAC + AES-256-GCM data round-trip), IKEv2 (IKE_SA_INIT + IKE_AUTH), IKEv1/IPSec (Main Mode + Quick Mode), L2TP (SCCRQ/SCCRP/SCCCN + ICRQ/ICRP/ICCN with HMAC tunnel auth), PPTP (TCP SCCRQ/SCCRP + OCRQ/OCRP)
+- **Config Validation** — 7-step VPN config validation (syntax/port/handshake/auth/tunnel/latency/throughput) for all 6 protocols; every protocol now performs a real control-plane handshake — WireGuard (Noise + ChaCha20-Poly1305 data round-trip), OpenVPN (`--tls-auth` HMAC + AES-256-GCM data round-trip), IKEv2 (IKE_SA_INIT + IKE_AUTH), IKEv1/IPSec (Main Mode + Quick Mode), L2TP (SCCRQ/SCCRP/SCCCN + ICRQ/ICRP/ICCN with HMAC tunnel auth), PPTP (TCP SCCRQ/SCCRP + OCRQ/OCRP); IKEv2/IPSec additionally do a real AES-256-GCM ESP data-plane round-trip
 - **PCAP Replay** — Upload PCAP/PCAPNG, replay at 0.5x–10x with protocol filter and session status
 - **Routing Protocols** — OSPF/BGP neighbor state machines and routing tables across 4 simulated routers
 - **SNMP Simulation** — 12 device types (v2c/v3), MIB-II OID GET/WALK
@@ -230,7 +230,7 @@ cd web-ui && npx tsc --noEmit
 cd web-ui && npm run build
 ```
 
-**Test Results:** 1271 tests passing, 81.6% coverage (Python 3.11, deps pinned by `uv.lock`).
+**Test Results:** 1279 tests passing, 81.7% coverage (Python 3.11, deps pinned by `uv.lock`).
 
 ## Lint
 
