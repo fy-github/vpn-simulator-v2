@@ -202,6 +202,11 @@ export const api = {
     apiClient.get(`/snmp/devices/${deviceId}/get`, { params: { oid, version } }),
   snmpWalk: (deviceId: string, oid: string, version: string) =>
     apiClient.get(`/snmp/devices/${deviceId}/walk`, { params: { oid, version } }),
+
+  // Grafana (F6)
+  getGrafanaDashboards: () => apiClient.get('/grafana/dashboards'),
+  getGrafanaDashboard: (name: string) => apiClient.get(`/grafana/dashboards/${name}`),
+  getGrafanaAlertRules: () => apiClient.get('/grafana/alert-rules'),
 }
 
 export default apiClient
