@@ -53,3 +53,21 @@ encrypt/decrypt）。单元测试覆盖 RFC 3079 §4.1 输入向量 + RC4 经典
 - 后端 pytest 全绿；mypy/ruff/black 全绿。
 - l2tp / pptp 数据面走真实 MPPE（RFC 3079 密钥 + RC4 加密）。
 - 每功能独立提交并推送到 `origin/main`。
+
+## 五、完成状态
+
+全部阶段（P1–P3）已实现、测试并推送到 `origin/main`。l2tp / pptp 的 PPP 数据面
+现为：真实 MS-CHAPv2 认证（V16）→ MPPE 密钥派生（RFC 3079）→ RC4 加密数据往返。
+
+| 阶段 | 提交 | 说明 |
+|------|------|------|
+| P1 | `4b9e7cb` | `ppp/mppe.py`：RFC 3079 密钥派生 + RC4 + `MPPESession`；官方向量验证 |
+| P2 | `59c0d41` | `validation.py`：l2tp/pptp 数据面改用 MPPE 加密往返 |
+| P3 | 本提交 | README 同步 |
+
+官方向量：RFC 3079 §4.1（PasswordHashHash=`41C00C584BD2D91C4017A2A12FA59F3F`、
+MasterKey=`FDECE3717A8C838CB388E527AE3CDD31`、SendSessionKey=`BD005EBA041CD3AFEE847C5A2CB19064`）
+与 RFC 6229 §1.2（RC4 keystream `9AC7CC9A609D1EF7B2932899CDE41B97`）逐字节通过。
+最终指标：后端 1338 tests 通过、82.4% 覆盖率（`--cov-fail-under=78`）；
+mypy / ruff / black 全绿。
+
