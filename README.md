@@ -40,7 +40,7 @@ Multi-protocol VPN Server Simulator with modern Web UI — supports **9 VPN/tunn
 - **Vendor CLI** — Cisco IOS and Huawei VRP command simulation
 - **DHCP Simulation** — Spoof random MAC addresses to concurrently acquire DHCP leases (with 802.1Q VLAN tagging and explicit release)
 - **Network Impairment** — Time-varying impairment presets/curves (linear/exponential/step/sine/random) applied to real packet flow
-- **Config Validation** — 7-step VPN config validation (syntax/port/handshake/auth/tunnel/latency/throughput) for all 9 protocols; every protocol now performs a real control-plane handshake AND a real data-plane round-trip — WireGuard (Noise + ChaCha20-Poly1305), OpenVPN (`--tls-auth` HMAC + AES-256-GCM), IKEv2/IPSec (IKE handshake + AES-256-GCM ESP), L2TP (control + HMAC tunnel auth + L2TP data + MS-CHAPv2), PPTP (TCP control + GRE RFC 2784 + MS-CHAPv2), SSTP (real TLS + CALL_CONNECT + MS-CHAPv2), VXLAN (RFC 7348 stateless encapsulation), OpenConnect (real TLS + CSTP CONNECT + MS-CHAPv2)
+- **Config Validation** — 7-step VPN config validation (syntax/port/handshake/auth/tunnel/latency/throughput) for all 9 protocols; every protocol now performs a real control-plane handshake AND a real data-plane round-trip — WireGuard (Noise + ChaCha20-Poly1305), OpenVPN (`--tls-auth` HMAC + AES-256-GCM), IKEv2/IPSec (IKE handshake + AES-256-GCM ESP), L2TP (control + HMAC tunnel auth + L2TP data + MS-CHAPv2), PPTP (TCP control + GRE RFC 2784 + MS-CHAPv2), SSTP (real TLS + CALL_CONNECT + PPP LCP/IPCP + MS-CHAPv2), VXLAN (RFC 7348 stateless encapsulation), OpenConnect (real TLS + CSTP CONNECT + MS-CHAPv2)
 - **PCAP Replay** — Upload PCAP/PCAPNG, replay at 0.5x–10x with protocol filter and session status
 - **Routing Protocols** — OSPF/BGP neighbor state machines and routing tables across 4 simulated routers
 - **SNMP Simulation** — 12 device types (v2c/v3), MIB-II OID GET/WALK
@@ -230,7 +230,7 @@ cd web-ui && npx tsc --noEmit
 cd web-ui && npm run build
 ```
 
-**Test Results:** 1322 tests passing, 82.2% coverage (Python 3.11, deps pinned by `uv.lock`).
+**Test Results:** 1328 tests passing, 82.2% coverage (Python 3.11, deps pinned by `uv.lock`).
 
 ## Lint
 
