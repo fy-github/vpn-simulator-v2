@@ -18,6 +18,15 @@ import Voice from './pages/Voice'
 import Obfuscation from './pages/Obfuscation'
 import VendorCLI from './pages/VendorCLI'
 import DHCP from './pages/DHCP'
+import Impairment from './pages/Impairment'
+import Validation from './pages/Validation'
+import Pcap from './pages/Pcap'
+import Routing from './pages/Routing'
+import Snmp from './pages/Snmp'
+import Grafana from './pages/Grafana'
+import Scale from './pages/Scale'
+import C2 from './pages/C2'
+import Retention from './pages/Retention'
 
 function App() {
   return (
@@ -41,6 +50,15 @@ function App() {
         <Route path="obfuscation" element={<Obfuscation />} />
         <Route path="vendor-cli" element={<VendorCLI />} />
         <Route path="dhcp" element={<DHCP />} />
+        <Route path="impairment" element={<Impairment />} />
+        <Route path="validation" element={<Validation />} />
+        <Route path="pcap" element={<Pcap />} />
+        <Route path="routing" element={<Routing />} />
+        <Route path="snmp" element={<Snmp />} />
+        <Route path="grafana" element={<Grafana />} />
+        <Route path="scale" element={<Scale />} />
+        <Route path="c2" element={<C2 />} />
+        <Route path="retention" element={<Retention />} />
       </Route>
     </Routes>
   )

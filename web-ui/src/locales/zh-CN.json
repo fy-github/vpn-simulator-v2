@@ -9,7 +9,16 @@
     "tutorials": "教程引导",
     "learning": "学习资源",
     "packets": "报文分析",
-    "dhcp": "DHCP 模拟"
+    "dhcp": "DHCP 模拟",
+    "impairment": "网络损伤",
+    "validation": "配置验证",
+    "pcap": "PCAP 回放",
+    "routing": "路由协议",
+    "snmp": "SNMP 仿真",
+    "grafana": "Grafana",
+    "scale": "大规模设备",
+    "c2": "C2 场景",
+    "retention": "数据保留"
   },
   "status": {
     "connected": "已连接",

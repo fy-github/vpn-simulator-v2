@@ -140,6 +140,19 @@ export const api = {
   releaseDhcp: (data?: Record<string, unknown>) => apiClient.post('/dhcp/release', data || {}),
   getDhcpStatus: (after?: number) => apiClient.get('/dhcp/status', { params: { after } }),
   getDhcpLeases: () => apiClient.get('/dhcp/leases'),
+
+  // Impairments (F1)
+  getImpairmentPresets: () => apiClient.get('/impairments/presets'),
+  applyImpairmentPreset: (name: string) =>
+    apiClient.post(`/impairments/presets/${encodeURIComponent(name)}/apply`),
+  getImpairments: () => apiClient.get('/impairments'),
+  createImpairment: (data: Record<string, unknown>) => apiClient.post('/impairments', data),
+  startImpairment: (id: string) => apiClient.post(`/impairments/${id}/start`),
+  stopImpairment: (id: string) => apiClient.post(`/impairments/${id}/stop`),
+  getImpairmentStatus: (id: string) => apiClient.get(`/impairments/${id}/status`),
+  getImpairmentTimeline: (id: string, samples = 60) =>
+    apiClient.get(`/impairments/${id}/timeline`, { params: { samples } }),
+  removeImpairment: (id: string) => apiClient.delete(`/impairments/${id}`),
 }
 
 export default apiClient

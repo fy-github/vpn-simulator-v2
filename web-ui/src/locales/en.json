@@ -9,7 +9,16 @@
     "tutorials": "Tutorials",
     "learning": "Learning Resources",
     "packets": "Packet Analysis",
-    "dhcp": "DHCP Simulation"
+    "dhcp": "DHCP Simulation",
+    "impairment": "Network Impairment",
+    "validation": "Config Validation",
+    "pcap": "PCAP Replay",
+    "routing": "Routing Protocols",
+    "snmp": "SNMP Simulation",
+    "grafana": "Grafana",
+    "scale": "Scale Devices",
+    "c2": "C2 Scenarios",
+    "retention": "Data Retention"
   },
   "status": {
     "connected": "Connected",
