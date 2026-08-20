@@ -217,6 +217,13 @@ export const api = {
     apiClient.post('/scale/poll', { count, concurrency }),
   persistScaleSnapshot: () => apiClient.post('/scale/persist'),
   getScaleSnapshot: () => apiClient.get('/scale/snapshots'),
+
+  // C2 (F8)
+  getC2Scenarios: () => apiClient.get('/c2/scenarios'),
+  getC2Ethics: () => apiClient.get('/c2/ethics'),
+  getC2Scenario: (id: string) => apiClient.get(`/c2/scenarios/${id}`),
+  simulateC2: (id: string) => apiClient.post(`/c2/scenarios/${id}/simulate`),
+  getC2Detection: (id: string) => apiClient.get(`/c2/scenarios/${id}/detection`),
 }
 
 export default apiClient
