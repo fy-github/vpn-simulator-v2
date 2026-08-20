@@ -27,12 +27,17 @@ from vpn_simulator.core.events import EventBus
 from vpn_simulator.core.packetio import UdpSocket
 from vpn_simulator.domain.validation import StepStatus, ValidationResult, ValidationStep
 from vpn_simulator.plugins.protocols.openvpn.control_channel import generate_tls_auth_key
+from vpn_simulator.plugins.protocols.openvpn.data_channel import (
+    OpenVPNDataSession,
+    derive_data_key,
+)
 from vpn_simulator.plugins.protocols.wireguard.crypto import (
     WireGuardIdentity,
     b64_to_key,
 )
 from vpn_simulator.plugins.protocols.wireguard.transport import WireGuardTransportSession
 from vpn_simulator.services.openvpn_handshake import OpenVPNHandshake
+from vpn_simulator.services.openvpn_transport import OpenVPNTransport
 from vpn_simulator.services.wireguard_handshake import WireGuardHandshake
 from vpn_simulator.services.wireguard_transport import WireGuardTransport
 
@@ -156,7 +161,9 @@ class ValidationService:
                 )
             )
         elif protocol == "openvpn":
-            handshake_ok, latency_ms, error = await self._run_openvpn_handshake()
+            handshake_ok, latency_ms, error, tunnel_ok, tunnel_error = (
+                await self._run_openvpn_handshake_and_data()
+            )
             steps.append(
                 ValidationStep(
                     "handshake",
@@ -176,11 +183,15 @@ class ValidationService:
             steps.append(
                 ValidationStep(
                     "tunnel",
-                    StepStatus.PASS if handshake_ok else StepStatus.FAIL,
+                    StepStatus.PASS if (handshake_ok and tunnel_ok) else StepStatus.FAIL,
                     (
-                        "控制信道已建立（TLS 数据面密钥协商待接入）"
-                        if handshake_ok
-                        else "握手失败，未建立隧道"
+                        "真实数据面 AES-256-GCM 加解密往返成功"
+                        if tunnel_ok
+                        else (
+                            f"数据面往返失败: {tunnel_error}"
+                            if handshake_ok
+                            else "握手失败，未建立隧道"
+                        )
                     ),
                 )
             )
@@ -368,11 +379,13 @@ class ValidationService:
         except Exception as e:
             return False, str(e)
 
-    async def _run_openvpn_handshake(self) -> tuple[bool, float | None, str]:
-        """在环回地址上执行一次真实 OpenVPN 控制信道 Hard Reset 握手。
+    async def _run_openvpn_handshake_and_data(
+        self,
+    ) -> tuple[bool, float | None, str, bool, str]:
+        """在环回地址上执行 OpenVPN 控制信道握手 + 数据面加密往返。
 
         Returns:
-            (是否成功, 握手延迟毫秒, 错误信息)。
+            (握手是否成功, 握手延迟毫秒, 握手错误, 数据面是否成功, 数据面错误)。
         """
         tls_auth_key = generate_tls_auth_key()
         try:
@@ -382,22 +395,47 @@ class ValidationService:
             ):
                 server_addr = server_sock.local_address
                 if server_addr is None:
-                    return False, None, "服务端套接字未绑定"
+                    return False, None, "服务端套接字未绑定", False, ""
                 client_hs = OpenVPNHandshake(tls_auth_key, client_sock)
                 server_hs = OpenVPNHandshake(tls_auth_key, server_sock)
 
                 start = time.perf_counter()
-                results = await asyncio.gather(
+                client_result, _respond_result = await asyncio.gather(
                     client_hs.initiate(server_addr),
                     server_hs.respond(),
                 )
                 latency_ms = (time.perf_counter() - start) * 1000.0
+                client_session_id, server_session_id = client_result
 
-            if len(results) != 2:
-                return False, latency_ms, "握手结果数量异常"
-            return True, latency_ms, ""
+                # 数据面：派生数据密钥，真实 AES-256-GCM 加解密往返。
+                data_key = derive_data_key(tls_auth_key, client_session_id, server_session_id)
+                client_transport = OpenVPNTransport(
+                    client_sock,
+                    OpenVPNDataSession(data_key=data_key),
+                    local_id=client_session_id,
+                    peer_id=server_session_id,
+                )
+                server_transport = OpenVPNTransport(
+                    server_sock,
+                    OpenVPNDataSession(data_key=data_key),
+                    local_id=server_session_id,
+                    peer_id=client_session_id,
+                )
+
+                plaintext = b"openvpn data-plane roundtrip"
+                await client_transport.send_data(server_addr, plaintext)
+                if await server_transport.recv_data() != plaintext:
+                    return True, latency_ms, "", False, "服务端解密明文不一致"
+
+                await server_transport.send_data(
+                    client_sock.local_address or ("127.0.0.1", 0), b"ack"
+                )
+                if await client_transport.recv_data() != b"ack":
+                    return True, latency_ms, "", False, "客户端解密应答不一致"
+
+            return True, latency_ms, "", True, ""
         except Exception as e:
-            return False, None, str(e)
+            return False, None, str(e), False, ""
 
     async def _measure_throughput(self, packets: int = 100, size: int = 1024) -> float:
         """在环回地址上做真实 UDP 单向吞吐测量（Mbps）。"""
